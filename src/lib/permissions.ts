@@ -26,6 +26,11 @@ export const PERMISSIONS = {
   PROJECTS_CREATE_OFFICIAL: "projects.create_official",
   TASKS_VIEW: "tasks.view",
   TASKS_CREATE: "tasks.create",
+  REPORTS_VIEW: "reports.view",
+  REPORTS_SUBMIT_DAILY: "reports.submit_daily",
+  REPORTS_REVIEW_DAILY: "reports.review_daily",
+  REPORTS_SUBMIT_WEEKLY: "reports.submit_weekly",
+  REPORTS_REVIEW_WEEKLY: "reports.review_weekly",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -46,6 +51,11 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "projects.create_official": "Tạo dự án",
   "tasks.view": "Xem công việc trong phạm vi",
   "tasks.create": "Tạo công việc",
+  "reports.view": "Xem báo cáo trong phạm vi",
+  "reports.submit_daily": "Gửi báo cáo ngày",
+  "reports.review_daily": "Duyệt báo cáo ngày",
+  "reports.submit_weekly": "Gửi báo cáo tuần của Team",
+  "reports.review_weekly": "Duyệt báo cáo tuần",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -64,6 +74,11 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "projects.create_official": "Dự án",
   "tasks.view": "Công việc",
   "tasks.create": "Công việc",
+  "reports.view": "Báo cáo",
+  "reports.submit_daily": "Báo cáo",
+  "reports.review_daily": "Báo cáo",
+  "reports.submit_weekly": "Báo cáo",
+  "reports.review_weekly": "Báo cáo",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
@@ -84,6 +99,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "projects.create_official",
     "tasks.view",
     "tasks.create",
+    "reports.view",
+    "reports.review_daily",
+    "reports.review_weekly",
   ],
   cmo: [
     "members.view",
@@ -97,6 +115,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "projects.create",
     "tasks.view",
     "tasks.create",
+    "reports.view",
+    "reports.review_daily",
+    "reports.review_weekly",
   ],
   leader: [
     "members.view",
@@ -107,8 +128,18 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "projects.create",
     "tasks.view",
     "tasks.create",
+    "reports.view",
+    "reports.submit_daily",
+    "reports.review_daily",
+    "reports.submit_weekly",
   ],
-  member: ["organization.view", "projects.view", "projects.create"],
+  member: [
+    "organization.view",
+    "projects.view",
+    "projects.create",
+    "reports.view",
+    "reports.submit_daily",
+  ],
 };
 
 export function hasPermission(role: AppRoleKey | null, permission: PermissionKey): boolean {
