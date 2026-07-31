@@ -4,6 +4,7 @@ import { hasPermission, type AppRoleKey, type PermissionKey } from "@/lib/permis
 import {
   Building2,
   FolderKanban,
+  ListChecks,
   LayoutDashboard,
   Palette,
   ScrollText,
@@ -58,6 +59,13 @@ export const navGroups: NavGroup[] = [
         to: "/projects",
         icon: FolderKanban,
         permissionKey: "projects.view",
+      },
+      {
+        key: "tasks",
+        label: "Công việc",
+        to: "/tasks",
+        icon: ListChecks,
+        permissionKey: "tasks.view",
       },
     ],
   },
