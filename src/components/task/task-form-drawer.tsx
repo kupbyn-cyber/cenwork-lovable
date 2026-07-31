@@ -357,16 +357,34 @@ export function TaskFormDrawer({
               />
             )}
           </FormField>
-          <FormField id="task-deadline" label="Deadline" required error={errors.deadline}>
+          <FormField
+            id="task-deadline"
+            label="Deadline"
+            required
+            error={errors.deadline}
+            helperText="Theo giờ Hà Nội (GMT+7), gồm ngày và giờ."
+          >
             {(control) => (
-              <Input
-                {...control}
-                type="date"
-                value={form.deadline}
-                onChange={(event) => setForm({ ...form, deadline: event.target.value })}
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  {...control}
+                  type="date"
+                  className="w-full sm:flex-1 sm:min-w-0"
+                  value={form.deadlineDate}
+                  onChange={(event) => setForm({ ...form, deadlineDate: event.target.value })}
+                />
+                <Input
+                  type="time"
+                  aria-label="Giờ deadline"
+                  step={60}
+                  className="w-full sm:w-[120px] sm:shrink-0"
+                  value={form.deadlineTime}
+                  onChange={(event) => setForm({ ...form, deadlineTime: event.target.value })}
+                />
+              </div>
             )}
           </FormField>
+
           <FormField id="task-priority" label="Mức ưu tiên">
             {(control) => (
               <Select
