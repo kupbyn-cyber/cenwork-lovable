@@ -16,8 +16,18 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
+    // Chặn mọi route ứng dụng khi tài khoản còn dùng mật khẩu tạm thời.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile?.must_change_password) {
+      throw redirect({ to: "/change-password" });
+    }
     return { user: data.user };
   },
+
   pendingComponent: () => (
     <div className="flex min-h-dvh items-center justify-center bg-background">
       <LoadingBlock label="Đang kiểm tra phiên đăng nhập" />
