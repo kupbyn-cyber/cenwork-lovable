@@ -62,7 +62,10 @@ interface FormState {
   assigneeId: string;
   teamId: string;
   startDate: string;
-  deadline: string;
+  /** Ngày deadline theo giờ Hà Nội (yyyy-MM-dd). */
+  deadlineDate: string;
+  /** Giờ deadline theo giờ Hà Nội (HH:mm). */
+  deadlineTime: string;
   priority: TaskPriority;
   status: TaskStatus;
   participantIds: string[];
@@ -73,6 +76,7 @@ function initialState(
   ctx: TaskAccessContext,
   lockedProjectId?: string | null,
 ): FormState {
+  const deadline = utcToHanoiInputs(task?.deadline ?? null);
   return {
     name: task?.name ?? "",
     description: task?.description ?? "",
@@ -80,12 +84,14 @@ function initialState(
     assigneeId: task?.assignee_id ?? ctx.userId ?? "",
     teamId: task?.team_id ?? NONE,
     startDate: task?.start_date ?? "",
-    deadline: task?.deadline ?? "",
+    deadlineDate: deadline.date,
+    deadlineTime: deadline.time || (task ? "" : "17:00"),
     priority: task?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
   };
 }
+
 
 function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
