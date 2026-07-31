@@ -83,6 +83,79 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_reports: {
+        Row: {
+          author_id: string
+          blockers: string | null
+          created_at: string
+          id: string
+          next_plan: string | null
+          report_date: string
+          results: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          blockers?: string | null
+          created_at?: string
+          id?: string
+          next_plan?: string | null
+          report_date: string
+          results?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          submitted_at?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          blockers?: string | null
+          created_at?: string
+          id?: string
+          next_plan?: string | null
+          report_date?: string
+          results?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          submitted_at?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_reports_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_reports_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_reports_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilities: {
         Row: {
           address: string
@@ -527,6 +600,82 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reports: {
+        Row: {
+          blockers: string | null
+          created_at: string
+          highlights: string | null
+          id: string
+          leader_id: string
+          next_week_plan: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          submitted_at: string | null
+          team_id: string
+          unfinished: string | null
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          blockers?: string | null
+          created_at?: string
+          highlights?: string | null
+          id?: string
+          leader_id: string
+          next_week_plan?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          submitted_at?: string | null
+          team_id: string
+          unfinished?: string | null
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          blockers?: string | null
+          created_at?: string
+          highlights?: string | null
+          id?: string
+          leader_id?: string
+          next_week_plan?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          submitted_at?: string | null
+          team_id?: string
+          unfinished?: string | null
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_reports_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_reports_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -542,8 +691,15 @@ export type Database = {
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
+      can_review_daily_report: { Args: { _author: string }; Returns: boolean }
+      can_review_weekly_report: { Args: never; Returns: boolean }
+      can_view_daily_report: {
+        Args: { _author: string; _team: string }
+        Returns: boolean
+      }
       can_view_project: { Args: { _project: string }; Returns: boolean }
       can_view_task: { Args: { _task: string }; Returns: boolean }
+      can_view_weekly_report: { Args: { _team: string }; Returns: boolean }
       current_app_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -588,6 +744,7 @@ export type Database = {
         | "pending_acceptance"
         | "completed"
         | "archived"
+      report_status: "draft" | "submitted" | "changes_requested" | "approved"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
     }
@@ -729,6 +886,7 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      report_status: ["draft", "submitted", "changes_requested", "approved"],
       task_priority: ["low", "medium", "high"],
       task_status: ["not_started", "in_progress", "review", "done"],
     },
