@@ -62,12 +62,12 @@ const brand = [
 ];
 
 const states = [
-  { name: "Hoàn thành", token: "state-success", className: "bg-state-success" },
-  { name: "Sắp đến hạn", token: "state-warning", className: "bg-state-warning" },
-  { name: "Quá hạn", token: "state-danger", className: "bg-state-danger" },
-  { name: "Đang thực hiện", token: "state-progress", className: "bg-state-progress" },
-  { name: "Thông tin", token: "state-info", className: "bg-state-info" },
-  { name: "Chờ xử lý", token: "state-neutral", className: "bg-state-neutral" },
+  { name: "Success", token: "state-success", className: "bg-state-success" },
+  { name: "Warning", token: "state-warning", className: "bg-state-warning" },
+  { name: "Danger", token: "state-danger", className: "bg-state-danger" },
+  { name: "Progress", token: "state-progress", className: "bg-state-progress" },
+  { name: "Info", token: "state-info", className: "bg-state-info" },
+  { name: "Neutral", token: "state-neutral", className: "bg-state-neutral" },
 ];
 
 const surfaces = [
