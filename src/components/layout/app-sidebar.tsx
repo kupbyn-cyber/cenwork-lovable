@@ -4,7 +4,8 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { IconButton } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { isNavItemActive, navGroups, type NavItem } from "@/config/navigation";
+import { isNavItemActive, visibleNavGroups, type NavItem } from "@/config/navigation";
+import { useOrgAccess } from "@/hooks/use-org-access";
 
 /**
  * CEN 1.0 — Sidebar điều hướng (M1.2)
@@ -105,7 +106,7 @@ export function SidebarNav({
 
   return (
     <nav aria-label="Điều hướng chính" className="flex flex-col gap-5 px-2.5 py-3">
-      {navGroups.map((group) => (
+      {groups.map((group) => (
         <div key={group.key} className="flex flex-col gap-1">
           {!collapsed ? (
             <p className="px-2.5 pb-1 text-caption font-semibold tracking-[0.14em] text-text-muted uppercase">

@@ -13,8 +13,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAuditLogsRouteImport } from './routes/_authenticated/audit-logs'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedOrganizationRouteImport } from './routes/_authenticated/organization'
+import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
 
@@ -37,6 +39,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAuditLogsRoute = AuthenticatedAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -48,6 +55,11 @@ const AuthenticatedOrganizationRoute =
     path: '/organization',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -64,16 +76,20 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/members': typeof AuthenticatedMembersRoute
   '/organization': typeof AuthenticatedOrganizationRoute
+  '/roles': typeof AuthenticatedRolesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/members': typeof AuthenticatedMembersRoute
   '/organization': typeof AuthenticatedOrganizationRoute
+  '/roles': typeof AuthenticatedRolesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/': typeof AuthenticatedIndexRoute
@@ -83,8 +99,10 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/_authenticated/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/organization': typeof AuthenticatedOrganizationRoute
+  '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -95,16 +113,20 @@ export interface FileRouteTypes {
     | '/'
     | '/change-password'
     | '/login'
+    | '/audit-logs'
     | '/members'
     | '/organization'
+    | '/roles'
     | '/settings'
     | '/theme-preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
     | '/login'
+    | '/audit-logs'
     | '/members'
     | '/organization'
+    | '/roles'
     | '/settings'
     | '/theme-preview'
     | '/'
@@ -113,8 +135,10 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/change-password'
     | '/login'
+    | '/_authenticated/audit-logs'
     | '/_authenticated/members'
     | '/_authenticated/organization'
+    | '/_authenticated/roles'
     | '/_authenticated/settings'
     | '/_authenticated/theme-preview'
     | '/_authenticated/'
@@ -156,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/audit-logs': {
+      id: '/_authenticated/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuthenticatedAuditLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/members': {
       id: '/_authenticated/members'
       path: '/members'
@@ -168,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/organization'
       fullPath: '/organization'
       preLoaderRoute: typeof AuthenticatedOrganizationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/roles': {
+      id: '/_authenticated/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AuthenticatedRolesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -188,16 +226,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAuditLogsRoute: typeof AuthenticatedAuditLogsRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedOrganizationRoute: typeof AuthenticatedOrganizationRoute
+  AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAuditLogsRoute: AuthenticatedAuditLogsRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedOrganizationRoute: AuthenticatedOrganizationRoute,
+  AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedThemePreviewRoute: AuthenticatedThemePreviewRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

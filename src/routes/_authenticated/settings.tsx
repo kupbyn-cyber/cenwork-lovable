@@ -9,13 +9,17 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { PageHeader } from "@/components/ui/page-header";
 import { cenToast } from "@/components/ui/toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminSettingsSection } from "@/components/settings/admin-settings-section";
+import { useOrgAccess } from "@/hooks/use-org-access";
+import { logSelfAuditEvent } from "@/lib/audit-data";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Hồ sơ cá nhân — CEN 1.0" },
+      { title: "Cài đặt — CEN 1.0" },
       {
         name: "description",
         content: "Xem hồ sơ cá nhân, cập nhật tên hiển thị và đổi mật khẩu tài khoản CEN 1.0.",
@@ -124,6 +128,7 @@ function ProfileSection() {
 }
 
 function PasswordSection() {
+  const { user } = useAuth();
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [errors, setErrors] = React.useState<{ password?: string; confirm?: string }>({});
@@ -153,6 +158,9 @@ function PasswordSection() {
     }
     setPassword("");
     setConfirm("");
+    if (user?.id) {
+      await logSelfAuditEvent(user.id, "account.password_changed").catch(() => undefined);
+    }
     cenToast.success("Đã đổi mật khẩu.");
   }
 
@@ -223,16 +231,33 @@ function PasswordSection() {
 }
 
 function SettingsPage() {
+  const access = useOrgAccess();
+
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
-        title="Hồ sơ cá nhân"
-        description="Quản lý thông tin cá nhân và bảo mật cho tài khoản đang đăng nhập."
+        title="Cài đặt"
+        description="Hồ sơ cá nhân, bảo mật và cấu hình quản trị của hệ thống CEN."
       />
-      <div className="grid min-w-0 gap-5 lg:grid-cols-2">
-        <ProfileSection />
-        <PasswordSection />
-      </div>
+      <Tabs defaultValue="account" className="min-w-0">
+        <TabsList>
+          <TabsTrigger value="account">Cá nhân và bảo mật</TabsTrigger>
+          {access.canManageSettings ? (
+            <TabsTrigger value="system">Quản trị hệ thống</TabsTrigger>
+          ) : null}
+        </TabsList>
+        <TabsContent value="account">
+          <div className="grid min-w-0 gap-5 lg:grid-cols-2">
+            <ProfileSection />
+            <PasswordSection />
+          </div>
+        </TabsContent>
+        {access.canManageSettings ? (
+          <TabsContent value="system">
+            <AdminSettingsSection />
+          </TabsContent>
+        ) : null}
+      </Tabs>
     </div>
   );
 }

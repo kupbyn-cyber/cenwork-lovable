@@ -17,6 +17,7 @@ import { EntityAvatar } from "@/components/ui/avatar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cenToast } from "@/components/ui/toast";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
+import { logSelfAuditEvent } from "@/lib/audit-data";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -35,6 +36,10 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   async function signOut(scope: "local" | "global") {
     if (signingOut) return;
     setSigningOut(true);
+    if (scope === "global" && user?.id) {
+      // Ghi audit trước khi phiên bị thu hồi (không lưu token hay mật khẩu).
+      await logSelfAuditEvent(user.id, "account.signed_out_all").catch(() => undefined);
+    }
     await queryClient.cancelQueries();
     queryClient.clear();
     const { error } = await supabase.auth.signOut({ scope });
