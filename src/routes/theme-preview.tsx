@@ -119,7 +119,7 @@ function Group({ id, title, hint, children }: { id: string; title: string; hint:
 
 function ThemePreview() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl">
       <header className="mb-6">
         <p className="text-caption font-semibold tracking-[0.18em] text-text-muted uppercase">
           Nội bộ · M1.1
@@ -132,7 +132,7 @@ function ThemePreview() {
 
       <nav
         aria-label="Nhóm component"
-        className="sticky top-0 z-30 -mx-4 mb-8 overflow-x-auto border-b border-border-default bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6"
+        className="sticky top-0 z-20 mb-8 overflow-x-auto border-b border-border-default bg-background/95 py-2 backdrop-blur"
       >
         <ul className="flex w-max min-w-full gap-2">
           {groups.map((g) => (
@@ -311,7 +311,7 @@ function ThemePreview() {
           </Section>
         </Group>
       </div>
-    </main>
+    </div>
   );
 }
 
