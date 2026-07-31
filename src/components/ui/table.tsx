@@ -13,7 +13,7 @@ const TableContainer = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
     <div
       ref={ref}
       className={cn(
-        "w-full max-w-full overflow-x-auto overscroll-x-contain rounded-card border border-border-default bg-surface shadow-level-1",
+        "relative w-full max-w-full overflow-x-auto overscroll-x-contain rounded-card border border-border-default bg-surface shadow-level-1",
         className,
       )}
       {...props}
