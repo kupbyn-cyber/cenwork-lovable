@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           address: string
@@ -48,6 +72,7 @@ export type Database = {
           email: string
           id: string
           job_title: string | null
+          must_change_password: boolean
           primary_team_id: string | null
           status: Database["public"]["Enums"]["account_status"]
           updated_at: string
@@ -58,6 +83,7 @@ export type Database = {
           email: string
           id: string
           job_title?: string | null
+          must_change_password?: boolean
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
@@ -68,6 +94,7 @@ export type Database = {
           email?: string
           id?: string
           job_title?: string | null
+          must_change_password?: boolean
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
