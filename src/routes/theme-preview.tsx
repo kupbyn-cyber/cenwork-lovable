@@ -2,6 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { ButtonPreview, FormPreview } from "@/components/preview/component-preview";
+import {
+  BadgeAvatarPreview,
+  CardPreview,
+  StructurePreview,
+  TablePreview,
+} from "@/components/preview/data-display-preview";
 
 export const Route = createFileRoute("/theme-preview")({
   head: () => ({
