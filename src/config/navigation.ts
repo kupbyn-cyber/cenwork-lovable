@@ -1,5 +1,13 @@
 import type { LinkProps } from "@tanstack/react-router";
-import { LayoutDashboard, Palette, UserCog, type LucideIcon } from "lucide-react";
+import {
+  Building2,
+  LayoutDashboard,
+  Palette,
+  UserCog,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
 
 /**
  * CEN 1.0 — Navigation config (M1.2)
