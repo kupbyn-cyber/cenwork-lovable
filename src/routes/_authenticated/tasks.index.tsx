@@ -26,7 +26,7 @@ import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
-  formatDate,
+  formatDateTime,
   isTaskOverdue,
   tasksQuery,
   type TaskAccessContext,
@@ -138,10 +138,10 @@ function TasksPage() {
     {
       id: "deadline",
       header: "Deadline",
-      className: "min-w-[130px]",
+      className: "min-w-[160px]",
       cell: (row: TaskRow) => (
         <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
-          {formatDate(row.deadline)}
+          {formatDateTime(row.deadline)}
         </span>
       ),
     },

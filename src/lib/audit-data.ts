@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatHanoiDateTime, isIsoInstant } from "@/lib/datetime";
 
 /**
  * CEN 1.0 — M1.5 Audit Log data layer (chỉ đọc).
@@ -122,13 +123,7 @@ export const auditLogsQuery = (filters: AuditFilters) =>
   });
 
 export function formatAuditTime(value: string) {
-  return new Date(value).toLocaleString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatHanoiDateTime(value);
 }
 
 /** Rút gọn dữ liệu trước/sau để hiển thị — không chứa mật khẩu, token hay secret. */
@@ -139,7 +134,12 @@ export function summarizeChange(value: unknown): string {
   );
   if (entries.length === 0) return "—";
   return entries
-    .map(([key, val]) => `${key}: ${val === null || val === "" ? "—" : String(val)}`)
+    .map(([key, val]) => {
+      if (val === null || val === "") return `${key}: —`;
+      const text = String(val);
+      // Thời điểm lưu UTC → hiển thị theo giờ Hà Nội (vd deadline công việc).
+      return `${key}: ${isIsoInstant(text) ? formatHanoiDateTime(text) : text}`;
+    })
     .join(" · ");
 }
 
