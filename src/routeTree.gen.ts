@@ -21,8 +21,11 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
+import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks.index'
 import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenticated/tasks.$taskId'
+import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
+import { Route as AuthenticatedReportsWeeklyReportIdRouteImport } from './routes/_authenticated/reports.weekly.$reportId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -87,6 +90,12 @@ const AuthenticatedProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsIndexRoute =
+  AuthenticatedReportsIndexRouteImport.update({
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTasksIndexRoute = AuthenticatedTasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
@@ -96,6 +105,18 @@ const AuthenticatedTasksTaskIdRoute =
   AuthenticatedTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
     path: '/tasks/$taskId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedReportsDailyReportIdRoute =
+  AuthenticatedReportsDailyReportIdRouteImport.update({
+    id: '/reports/daily/$reportId',
+    path: '/reports/daily/$reportId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedReportsWeeklyReportIdRoute =
+  AuthenticatedReportsWeeklyReportIdRouteImport.update({
+    id: '/reports/weekly/$reportId',
+    path: '/reports/weekly/$reportId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -112,7 +133,10 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/reports/': typeof AuthenticatedReportsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
+  '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
@@ -127,7 +151,10 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/reports': typeof AuthenticatedReportsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
+  '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -144,7 +171,10 @@ export interface FileRoutesById {
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
+  '/_authenticated/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/_authenticated/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,7 +191,10 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/projects/'
+    | '/reports/'
     | '/tasks/'
+    | '/reports/daily/$reportId'
+    | '/reports/weekly/$reportId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
@@ -176,7 +209,10 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/projects'
+    | '/reports'
     | '/tasks'
+    | '/reports/daily/$reportId'
+    | '/reports/weekly/$reportId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -192,7 +228,10 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
     | '/_authenticated/projects/'
+    | '/_authenticated/reports/'
     | '/_authenticated/tasks/'
+    | '/_authenticated/reports/daily/$reportId'
+    | '/_authenticated/reports/weekly/$reportId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/': {
+      id: '/_authenticated/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tasks/': {
       id: '/_authenticated/tasks/'
       path: '/tasks'
@@ -299,6 +345,20 @@ declare module '@tanstack/react-router' {
       path: '/tasks/$taskId'
       fullPath: '/tasks/$taskId'
       preLoaderRoute: typeof AuthenticatedTasksTaskIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports/daily/$reportId': {
+      id: '/_authenticated/reports/daily/$reportId'
+      path: '/reports/daily/$reportId'
+      fullPath: '/reports/daily/$reportId'
+      preLoaderRoute: typeof AuthenticatedReportsDailyReportIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports/weekly/$reportId': {
+      id: '/_authenticated/reports/weekly/$reportId'
+      path: '/reports/weekly/$reportId'
+      fullPath: '/reports/weekly/$reportId'
+      preLoaderRoute: typeof AuthenticatedReportsWeeklyReportIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -315,7 +375,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedTasksTaskIdRoute: typeof AuthenticatedTasksTaskIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
+  AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
+  AuthenticatedReportsDailyReportIdRoute: typeof AuthenticatedReportsDailyReportIdRoute
+  AuthenticatedReportsWeeklyReportIdRoute: typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -329,7 +392,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedTasksTaskIdRoute: AuthenticatedTasksTaskIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
+  AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
+  AuthenticatedReportsDailyReportIdRoute:
+    AuthenticatedReportsDailyReportIdRoute,
+  AuthenticatedReportsWeeklyReportIdRoute:
+    AuthenticatedReportsWeeklyReportIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
