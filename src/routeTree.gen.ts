@@ -25,6 +25,7 @@ import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks.index'
 import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenticated/tasks.$taskId'
 import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
+import { Route as AuthenticatedReportsWeeklyReportIdRouteImport } from './routes/_authenticated/reports.weekly.$reportId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -112,6 +113,12 @@ const AuthenticatedReportsDailyReportIdRoute =
     path: '/reports/daily/$reportId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsWeeklyReportIdRoute =
+  AuthenticatedReportsWeeklyReportIdRouteImport.update({
+    id: '/reports/weekly/$reportId',
+    path: '/reports/weekly/$reportId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
@@ -146,6 +154,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
+  '/_authenticated/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/tasks/'
     | '/reports/daily/$reportId'
+    | '/reports/weekly/$reportId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/tasks'
     | '/reports/daily/$reportId'
+    | '/reports/weekly/$reportId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -219,6 +231,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/'
     | '/_authenticated/tasks/'
     | '/_authenticated/reports/daily/$reportId'
+    | '/_authenticated/reports/weekly/$reportId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -341,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsDailyReportIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/weekly/$reportId': {
+      id: '/_authenticated/reports/weekly/$reportId'
+      path: '/reports/weekly/$reportId'
+      fullPath: '/reports/weekly/$reportId'
+      preLoaderRoute: typeof AuthenticatedReportsWeeklyReportIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -358,6 +378,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedReportsDailyReportIdRoute: typeof AuthenticatedReportsDailyReportIdRoute
+  AuthenticatedReportsWeeklyReportIdRoute: typeof AuthenticatedReportsWeeklyReportIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -375,6 +396,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedReportsDailyReportIdRoute:
     AuthenticatedReportsDailyReportIdRoute,
+  AuthenticatedReportsWeeklyReportIdRoute:
+    AuthenticatedReportsWeeklyReportIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

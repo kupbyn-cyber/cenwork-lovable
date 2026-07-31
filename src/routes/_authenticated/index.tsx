@@ -1,43 +1,296 @@
+import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useOrgAccess } from "@/hooks/use-org-access";
+import { formatHanoiDate } from "@/lib/datetime";
+import {
+  PROJECT_STATUS_LABEL,
+  PROJECT_STATUS_TONE,
+  projectsQuery,
+  type ProjectStatus,
+} from "@/lib/project-data";
+import {
+  REPORT_STATUS_LABEL,
+  REPORT_STATUS_TONE,
+  dailyReportsQuery,
+  hanoiToday,
+  mustSubmitDaily,
+  weekStartOf,
+  weeklyReportsQuery,
+} from "@/lib/report-data";
+import {
+  TASK_STATUS_LABEL,
+  TASK_STATUS_ORDER,
+  TASK_STATUS_TONE,
+  formatDateTime,
+  isTaskOverdue,
+  tasksQuery,
+  type TaskRow,
+} from "@/lib/task-data";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "CEN 1.0 — Theme Foundation" },
+      { title: "Bảng điều hành — CEN 1.0" },
       {
         name: "description",
         content:
-          "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung.",
+          "Tổng quan vận hành CEN 1.0: dự án đang hoạt động, công việc của tôi, việc quá hạn và tình trạng báo cáo.",
       },
-      { property: "og:title", content: "CEN 1.0 — Theme Foundation" },
+      { property: "og:title", content: "Bảng điều hành — CEN 1.0" },
       {
         property: "og:description",
-        content: "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung.",
+        content:
+          "Tổng quan vận hành CEN 1.0: dự án đang hoạt động, công việc của tôi, việc quá hạn và tình trạng báo cáo.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Index,
+  component: Dashboard,
 });
 
-function Index() {
+const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = [
+  "planning",
+  "in_progress",
+  "pending_acceptance",
+];
+
+function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 py-6">
-      <p className="text-caption font-semibold tracking-[0.18em] text-text-muted uppercase">
-        CEN 1.0 — M1.1A
-      </p>
-      <h1 className="text-h1 text-text-primary">Theme Foundation — Forest Command</h1>
-      <p className="text-body-lg max-w-xl text-text-secondary">
-        Hệ design token tập trung, dark mode duy nhất, palette CEN và các quy tắc hình khối đã được
-        chuẩn hóa. Mở trang preview nội bộ để rà soát trực quan.
-      </p>
-      <div>
-        <Link
-          to="/theme-preview"
-          className="cen-transition inline-flex h-control-lg items-center rounded-control border border-border-strong bg-brand-primary px-4 text-label font-semibold text-brand-foreground shadow-level-1 hover:bg-brand-primary-hover"
-        >
-          Mở Theme Preview
-        </Link>
+    <Card density="compact">
+      <CardContent className="flex flex-col gap-1 pt-(--card-pad)">
+        <span className="text-caption tracking-[0.12em] text-text-muted uppercase">{label}</span>
+        <span className="text-h2 font-semibold text-text-primary">{value}</span>
+        {hint ? <span className="text-helper text-text-muted">{hint}</span> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Dashboard() {
+  const access = useOrgAccess();
+
+  const projectsResult = useQuery(projectsQuery());
+  const tasksResult = useQuery(tasksQuery());
+  const dailyResult = useQuery(dailyReportsQuery());
+  const weeklyResult = useQuery(weeklyReportsQuery());
+
+  const today = hanoiToday();
+  const thisWeek = weekStartOf(today);
+
+  const projects = projectsResult.data ?? [];
+  const tasks = (tasksResult.data ?? []).filter((task) => !task.is_archived);
+  const dailies = dailyResult.data ?? [];
+  const weeklies = weeklyResult.data ?? [];
+
+  const myTasks = React.useMemo(
+    () =>
+      tasks.filter(
+        (task) =>
+          task.assignee_id === access.userId ||
+          (access.userId ? task.participantIds.includes(access.userId) : false),
+      ),
+    [tasks, access.userId],
+  );
+
+  const overdue = tasks.filter(isTaskOverdue);
+  const dueToday = tasks.filter(
+    (task) => task.status !== "done" && task.deadline.slice(0, 10) === today,
+  );
+  const inReview = tasks.filter((task) => task.status === "review");
+
+  const activeProjects = projects.filter((project) =>
+    ACTIVE_PROJECT_STATUSES.includes(project.status),
+  );
+
+  const projectByStatus = React.useMemo(() => {
+    const map = new Map<ProjectStatus, number>();
+    for (const project of projects) {
+      map.set(project.status, (map.get(project.status) ?? 0) + 1);
+    }
+    return map;
+  }, [projects]);
+
+  const taskByStatus = React.useMemo(() => {
+    const map = new Map<TaskRow["status"], number>();
+    for (const task of tasks) map.set(task.status, (map.get(task.status) ?? 0) + 1);
+    return map;
+  }, [tasks]);
+
+  const myTodayReport = dailies.find(
+    (row) => row.author_id === access.userId && row.report_date === today,
+  );
+  const todayReports = dailies.filter((row) => row.report_date === today);
+  const pendingDaily = dailies.filter((row) => row.status === "submitted");
+  const pendingWeekly = weeklies.filter((row) => row.status === "submitted");
+  const myWeekly = weeklies.find(
+    (row) => row.team_id === access.leaderTeamId && row.week_start === thisWeek,
+  );
+
+  const loading =
+    projectsResult.isLoading || tasksResult.isLoading || dailyResult.isLoading || weeklyResult.isLoading;
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={3} />
       </div>
-    </main>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-5">
+      <PageHeader
+        title="Bảng điều hành"
+        description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
+      />
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Metric label="Dự án đang chạy" value={activeProjects.length} hint={`${projects.length} dự án trong phạm vi`} />
+        <Metric label="Công việc của tôi" value={myTasks.length} hint={`${myTasks.filter(isTaskOverdue).length} quá hạn`} />
+        <Metric label="Đến hạn hôm nay" value={dueToday.length} hint={`${overdue.length} việc quá hạn`} />
+        <Metric label="Chờ kiểm tra" value={inReview.length} hint="Công việc ở trạng thái chờ kiểm tra" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Dự án theo trạng thái</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {projects.length === 0 ? (
+              <p className="text-helper text-text-muted">Chưa có dự án nào trong phạm vi.</p>
+            ) : (
+              [...projectByStatus.entries()].map(([status, count]) => (
+                <span key={status} className="flex items-center gap-2">
+                  <StatusBadge
+                    label={`${PROJECT_STATUS_LABEL[status]}: ${count}`}
+                    tone={PROJECT_STATUS_TONE[status]}
+                  />
+                </span>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tiến độ công việc</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {tasks.length === 0 ? (
+              <p className="text-helper text-text-muted">Chưa có công việc nào trong phạm vi.</p>
+            ) : (
+              TASK_STATUS_ORDER.map((status) => (
+                <StatusBadge
+                  key={status}
+                  label={`${TASK_STATUS_LABEL[status]}: ${taskByStatus.get(status) ?? 0}`}
+                  tone={TASK_STATUS_TONE[status]}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Công việc của tôi cần xử lý</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {myTasks.filter((task) => task.status !== "done").length === 0 ? (
+              <p className="text-helper text-text-muted">Không có công việc nào đang mở.</p>
+            ) : (
+              myTasks
+                .filter((task) => task.status !== "done")
+                .slice(0, 6)
+                .map((task) => (
+                  <Link
+                    key={task.id}
+                    to="/tasks/$taskId"
+                    params={{ taskId: task.id }}
+                    className="cen-transition flex min-w-0 flex-col gap-1 rounded-control px-2 py-1.5 hover:bg-surface-subtle"
+                  >
+                    <span className="min-w-0 break-words text-body text-text-primary">
+                      {task.name}
+                    </span>
+                    <span
+                      className={
+                        isTaskOverdue(task)
+                          ? "text-helper text-state-danger"
+                          : "text-helper text-text-muted"
+                      }
+                    >
+                      {formatDateTime(task.deadline)} · {TASK_STATUS_LABEL[task.status]}
+                    </span>
+                  </Link>
+                ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tình trạng báo cáo</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {mustSubmitDaily({
+              userId: access.userId,
+              role: access.role,
+              leaderTeamId: access.leaderTeamId,
+            }) ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-body text-text-secondary">
+                  Báo cáo ngày {formatHanoiDate(today)}:
+                </span>
+                {myTodayReport ? (
+                  <StatusBadge
+                    label={REPORT_STATUS_LABEL[myTodayReport.status]}
+                    tone={REPORT_STATUS_TONE[myTodayReport.status]}
+                  />
+                ) : (
+                  <StatusBadge label="Chưa gửi" tone="warning" />
+                )}
+              </div>
+            ) : null}
+
+            <p className="text-body text-text-secondary">
+              Báo cáo ngày hôm nay đã nộp: <strong>{todayReports.length}</strong>
+            </p>
+            <p className="text-body text-text-secondary">
+              Báo cáo ngày chờ duyệt: <strong>{pendingDaily.length}</strong>
+            </p>
+            <p className="text-body text-text-secondary">
+              Báo cáo tuần chờ duyệt: <strong>{pendingWeekly.length}</strong>
+            </p>
+            {access.leaderTeamId ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-body text-text-secondary">Báo cáo tuần của Team:</span>
+                {myWeekly ? (
+                  <StatusBadge
+                    label={REPORT_STATUS_LABEL[myWeekly.status]}
+                    tone={REPORT_STATUS_TONE[myWeekly.status]}
+                  />
+                ) : (
+                  <StatusBadge label="Chưa gửi" tone="warning" />
+                )}
+              </div>
+            ) : null}
+            <Link to="/reports" className="cen-transition text-label text-brand-primary hover:underline">
+              Mở trang Báo cáo
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
