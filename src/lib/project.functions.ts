@@ -51,27 +51,33 @@ export const createProject = createServerFn({ method: "POST" })
 
     const projectId = created.id as string;
 
-    async function insertLinks(
-      table: "project_teams" | "project_members" | "project_facilities",
-      rows: Record<string, string>[],
-    ) {
-      if (rows.length === 0) return;
-      const { error: linkError } = await context.supabase.from(table).insert(rows);
-      if (linkError) throw new Error(linkError.message);
+    function check(error: { message: string } | null) {
+      if (error) throw new Error(error.message);
     }
 
-    await insertLinks(
-      "project_teams",
-      data.teamIds.map((teamId) => ({ project_id: projectId, team_id: teamId })),
-    );
-    await insertLinks(
-      "project_members",
-      data.memberIds.map((userId) => ({ project_id: projectId, user_id: userId })),
-    );
-    await insertLinks(
-      "project_facilities",
-      data.facilityIds.map((facilityId) => ({ project_id: projectId, facility_id: facilityId })),
-    );
+    if (data.teamIds.length > 0) {
+      const { error: teamError } = await context.supabase
+        .from("project_teams")
+        .insert(data.teamIds.map((teamId) => ({ project_id: projectId, team_id: teamId })));
+      check(teamError);
+    }
+    if (data.memberIds.length > 0) {
+      const { error: memberError } = await context.supabase
+        .from("project_members")
+        .insert(data.memberIds.map((userId) => ({ project_id: projectId, user_id: userId })));
+      check(memberError);
+    }
+    if (data.facilityIds.length > 0) {
+      const { error: facilityError } = await context.supabase
+        .from("project_facilities")
+        .insert(
+          data.facilityIds.map((facilityId) => ({
+            project_id: projectId,
+            facility_id: facilityId,
+          })),
+        );
+      check(facilityError);
+    }
 
     return { projectId };
   });
