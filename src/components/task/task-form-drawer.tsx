@@ -142,7 +142,7 @@ export function TaskFormDrawer({
         assigneeId: state.assigneeId,
         teamId: state.teamId === NONE ? null : state.teamId,
         startDate: state.startDate || null,
-        deadline: state.deadline,
+        deadline: hanoiToUtcISO(state.deadlineDate, state.deadlineTime)!,
         priority: state.priority,
         status: state.status,
       };
