@@ -42,6 +42,18 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    key: "account",
+    label: "Tài khoản",
+    items: [
+      {
+        key: "settings",
+        label: "Hồ sơ cá nhân",
+        to: "/settings",
+        icon: UserCog,
+      },
+    ],
+  },
+  {
     key: "system",
     label: "Hệ thống",
     items: [
@@ -54,6 +66,7 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
+
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   const to = String(item.to ?? "/");
