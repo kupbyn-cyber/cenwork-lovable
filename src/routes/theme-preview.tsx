@@ -139,7 +139,7 @@ function ThemePreview() {
             <li key={g.id}>
               <a
                 href={`#${g.id}`}
-                className="cen-transition inline-flex h-control-sm items-center rounded-control border border-border-default bg-surface px-3 text-label whitespace-nowrap text-text-secondary hover:bg-surface-subtle hover:text-text-primary focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+                className="cen-transition inline-flex h-control-lg items-center rounded-control border border-border-default bg-surface px-3 sm:h-control-md text-label whitespace-nowrap text-text-secondary hover:bg-surface-subtle hover:text-text-primary focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
               >
                 {g.label}
               </a>
