@@ -2,143 +2,239 @@
 @source "../src";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * CEN 1.0 — Design Token Foundation ("Forest Command")
+ * Single source of truth for color, typography, spacing, radius, border,
+ * shadow, z-index, control height and icon size tokens.
+ * DARK MODE ONLY. No light theme, no theme switcher.
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* ---- Typography ---- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-helper: 0.75rem;
+  --text-helper--line-height: 1.125rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.25rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.5rem;
+  --text-h4: 1.0625rem;
+  --text-h4--line-height: 1.5rem;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.75rem;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 2rem;
+  --text-h1: 1.875rem;
+  --text-h1--line-height: 2.375rem;
+  --text-kpi: 2.25rem;
+  --text-kpi--line-height: 2.5rem;
+
+  /* ---- Radius ---- */
+  --radius-badge: var(--radius-badge-v);
+  --radius-control: var(--radius-control-v);
+  --radius-card: var(--radius-card-v);
+  --radius-container: var(--radius-container-v);
+
+  /* ---- Colors (semantic) ---- */
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-background-elevated: var(--background-elevated);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-foreground: var(--text-primary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+
+  --color-border: var(--border-default);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--border-default);
+  --color-ring: var(--focus-ring);
+  --color-focus-ring: var(--focus-ring);
+  --color-overlay: var(--overlay-backdrop);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-orange: var(--accent-orange);
+
+  --color-state-success: var(--state-success);
+  --color-state-warning: var(--state-warning);
+  --color-state-danger: var(--state-danger);
+  --color-state-info: var(--state-info);
+  --color-state-progress: var(--state-progress);
+  --color-state-neutral: var(--state-neutral);
+  --color-state-success-surface: var(--state-success-surface);
+  --color-state-warning-surface: var(--state-warning-surface);
+  --color-state-danger-surface: var(--state-danger-surface);
+  --color-state-info-surface: var(--state-info-surface);
+  --color-state-neutral-surface: var(--state-neutral-surface);
+
+  /* shadcn compatibility aliases (mapped to CEN tokens) */
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--background-elevated);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--brand-foreground);
+  --color-secondary: var(--surface-subtle);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--surface-subtle);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-subtle);
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--state-danger);
+  --color-destructive-foreground: var(--text-primary);
   --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ---- Shadow ---- */
+  --shadow-level-1: var(--elev-1);
+  --shadow-level-2: var(--elev-2);
+  --shadow-level-3: var(--elev-3);
+
+  /* ---- Control height / icon size ---- */
+  --spacing-control-sm: 1.75rem;
+  --spacing-control-md: 2.25rem;
+  --spacing-control-lg: 2.5rem;
+  --spacing-icon-sm: 0.875rem;
+  --spacing-icon-md: 1rem;
+  --spacing-icon-lg: 1.25rem;
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
+  color-scheme: dark;
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Base surfaces — charcoal with a faint cool/green cast */
+  --background: oklch(0.18 0.008 165);
+  --background-elevated: oklch(0.215 0.009 165);
+  --surface: oklch(0.235 0.01 165);
+  --surface-subtle: oklch(0.268 0.011 165);
+
+  /* Borders */
+  --border-default: oklch(0.32 0.012 165);
+  --border-strong: oklch(0.42 0.015 165);
+
+  /* Text hierarchy */
+  --text-primary: oklch(0.965 0.004 160);
+  --text-secondary: oklch(0.82 0.008 160);
+  --text-muted: oklch(0.66 0.009 165);
+  --text-disabled: oklch(0.5 0.008 165);
+
+  /* Brand — CEN forest green (#194D3A / #2F7252) */
+  --brand-primary: oklch(0.4482 0.0728 158.3);
+  --brand-primary-hover: oklch(0.51 0.082 158.3);
+  --brand-secondary: oklch(0.3277 0.0602 160.4);
+  --brand-foreground: oklch(0.98 0.005 160);
+  --brand-subtle: oklch(0.28 0.032 160);
+
+  /* Accents — #F6C833 / #E67E22 (used sparingly) */
+  --accent-yellow: oklch(0.8464 0.1585 88.5);
+  --accent-orange: oklch(0.7101 0.1541 53.2);
+
+  /* Business status colors (kept separate from brand) */
+  --state-success: oklch(0.72 0.14 152);
+  --state-warning: oklch(0.8464 0.1585 88.5);
+  --state-danger: oklch(0.63 0.2 25);
+  --state-info: oklch(0.72 0.11 220);
+  --state-progress: oklch(0.72 0.1 195);
+  --state-neutral: oklch(0.62 0.008 165);
+
+  --state-success-surface: oklch(0.3 0.045 152);
+  --state-warning-surface: oklch(0.33 0.055 88.5);
+  --state-danger-surface: oklch(0.31 0.06 25);
+  --state-info-surface: oklch(0.3 0.04 220);
+  --state-neutral-surface: oklch(0.28 0.008 165);
+
+  --focus-ring: oklch(0.62 0.098 158.3);
+  --overlay-backdrop: oklch(0.12 0.008 165 / 72%);
+
+  /* Radius scale */
+  --radius-badge-v: 6px;
+  --radius-control-v: 8px;
+  --radius-card-v: 10px;
+  --radius-container-v: 12px;
+
+  /* Elevation — soft, low blur, no glow */
+  --elev-1: 0 1px 2px oklch(0 0 0 / 35%);
+  --elev-2: 0 2px 6px oklch(0 0 0 / 40%);
+  --elev-3: 0 6px 16px oklch(0 0 0 / 45%);
+
+  /* Z-index foundation */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-drawer: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--border-default);
+  }
+
+  html {
+    background-color: var(--background);
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ---- Motion foundation: fast, light, purposeful ---- */
+@utility cen-transition {
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+  transition-duration: 140ms;
+  transition-timing-function: var(--ease-standard);
+}
+
+@utility cen-kpi {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
