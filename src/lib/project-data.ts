@@ -1,0 +1,361 @@
+import { queryOptions } from "@tanstack/react-query";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import type { StatusTone } from "@/components/ui/status-badge";
+import type { AppRoleKey } from "@/lib/permissions";
+
+/**
+ * CEN 1.0 — M2 Project data layer.
+ * Đọc/ghi qua client trình duyệt; RLS + trigger phía database là ràng buộc thật.
+ * Các helper quyền ở đây chỉ để UI ẩn/disable đúng, không thay thế kiểm tra backend.
+ */
+export type ProjectStatus = Database["public"]["Enums"]["project_status"];
+
+export const PROJECT_STATUS_ORDER: ProjectStatus[] = [
+  "idea",
+  "leader_review",
+  "proposal",
+  "planning",
+  "in_progress",
+  "pending_acceptance",
+  "completed",
+  "archived",
+];
+
+export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
+  idea: "Ý tưởng",
+  leader_review: "Leader xem xét",
+  proposal: "Chờ CMO duyệt",
+  planning: "Lập kế hoạch",
+  in_progress: "Đang thực hiện",
+  pending_acceptance: "Chờ nghiệm thu",
+  completed: "Hoàn thành",
+  archived: "Lưu trữ",
+};
+
+export const PROJECT_STATUS_TONE: Record<ProjectStatus, StatusTone> = {
+  idea: "neutral",
+  leader_review: "warning",
+  proposal: "warning",
+  planning: "progress",
+  in_progress: "progress",
+  pending_acceptance: "warning",
+  completed: "success",
+  archived: "neutral",
+};
+
+export interface ProjectRow {
+  id: string;
+  name: string;
+  objective: string;
+  description: string | null;
+  owner_id: string | null;
+  ownerName: string | null;
+  creatorName: string | null;
+  creatorTeamId: string | null;
+  start_date: string | null;
+  deadline: string | null;
+  status: ProjectStatus;
+  last_decision_note: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  teamIds: string[];
+  memberIds: string[];
+  memberNames: string[];
+  facilityIds: string[];
+}
+
+const SELECT = `
+  id,name,objective,description,owner_id,start_date,deadline,status,last_decision_note,
+  created_by,created_at,updated_at,
+  owner:profiles!projects_owner_id_fkey(id,display_name),
+  creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
+  project_teams(team_id),
+  project_members(user_id,profiles(display_name)),
+  project_facilities(facility_id)
+`;
+
+type RawProject = Record<string, unknown>;
+
+function mapProject(raw: RawProject): ProjectRow {
+  const owner = raw["owner"] as { display_name: string } | null;
+  const creator = raw["creator"] as
+    | { display_name: string; primary_team_id: string | null }
+    | null;
+  const teams = (raw["project_teams"] ?? []) as { team_id: string }[];
+  const members = (raw["project_members"] ?? []) as {
+    user_id: string;
+    profiles: { display_name: string } | null;
+  }[];
+  const facilities = (raw["project_facilities"] ?? []) as { facility_id: string }[];
+
+  return {
+    id: raw["id"] as string,
+    name: raw["name"] as string,
+    objective: raw["objective"] as string,
+    description: (raw["description"] as string | null) ?? null,
+    owner_id: (raw["owner_id"] as string | null) ?? null,
+    ownerName: owner?.display_name ?? null,
+    creatorName: creator?.display_name ?? null,
+    creatorTeamId: creator?.primary_team_id ?? null,
+    start_date: (raw["start_date"] as string | null) ?? null,
+    deadline: (raw["deadline"] as string | null) ?? null,
+    status: raw["status"] as ProjectStatus,
+    last_decision_note: (raw["last_decision_note"] as string | null) ?? null,
+    created_by: raw["created_by"] as string,
+    created_at: raw["created_at"] as string,
+    updated_at: raw["updated_at"] as string,
+    teamIds: teams.map((t) => t.team_id),
+    memberIds: members.map((m) => m.user_id),
+    memberNames: members.map((m) => m.profiles?.display_name ?? "—"),
+    facilityIds: facilities.map((f) => f.facility_id),
+  };
+}
+
+export async function fetchProjects(): Promise<ProjectRow[]> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select(SELECT)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapProject(row as RawProject));
+}
+
+export async function fetchProject(id: string): Promise<ProjectRow | null> {
+  const { data, error } = await supabase.from("projects").select(SELECT).eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapProject(data as RawProject) : null;
+}
+
+export const projectsQuery = () =>
+  queryOptions({ queryKey: ["projects"], queryFn: fetchProjects });
+
+export const projectQuery = (id: string) =>
+  queryOptions({ queryKey: ["project", id], queryFn: () => fetchProject(id) });
+
+/** Danh sách nhân sự đang hoạt động mà người dùng hiện tại được nhìn thấy (RLS quyết định). */
+export interface PersonOption {
+  id: string;
+  display_name: string;
+}
+
+export async function fetchActivePeople(): Promise<PersonOption[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,display_name,status")
+    .eq("status", "active")
+    .order("display_name");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({ id: row.id, display_name: row.display_name }));
+}
+
+export const activePeopleQuery = () =>
+  queryOptions({ queryKey: ["active-people"], queryFn: fetchActivePeople });
+
+/* ================= Quyền (mirror của RLS/trigger) ================= */
+
+export interface ProjectAccessContext {
+  userId: string | null;
+  role: AppRoleKey | null;
+  leaderTeamId: string | null;
+}
+
+const privileged = (ctx: ProjectAccessContext) => ctx.role === "admin" || ctx.role === "cmo";
+
+export function isProjectOwner(project: ProjectRow, ctx: ProjectAccessContext) {
+  return Boolean(ctx.userId && project.owner_id === ctx.userId);
+}
+
+export function isIdeaAuthor(project: ProjectRow, ctx: ProjectAccessContext) {
+  return Boolean(ctx.userId && project.created_by === ctx.userId);
+}
+
+/** Leader của Team chính người gửi — người duy nhất (ngoài Admin) được duyệt ý tưởng. */
+export function isReviewLeader(project: ProjectRow, ctx: ProjectAccessContext) {
+  return Boolean(
+    ctx.leaderTeamId && project.creatorTeamId && ctx.leaderTeamId === project.creatorTeamId,
+  );
+}
+
+/** Sửa nội dung dự án (không gồm chuyển trạng thái). */
+export function canEditProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  if (project.status === "archived") return ctx.role === "admin";
+  if (project.status === "idea") return isIdeaAuthor(project, ctx) || ctx.role === "admin";
+  if (project.status === "leader_review" || project.status === "proposal") return privileged(ctx);
+  return privileged(ctx) || isProjectOwner(project, ctx);
+}
+
+export function canSubmitIdea(project: ProjectRow, ctx: ProjectAccessContext) {
+  return project.status === "idea" && (isIdeaAuthor(project, ctx) || ctx.role === "admin");
+}
+
+export function canLeaderDecide(project: ProjectRow, ctx: ProjectAccessContext) {
+  return project.status === "leader_review" && (isReviewLeader(project, ctx) || ctx.role === "admin");
+}
+
+export function canCmoDecide(project: ProjectRow, ctx: ProjectAccessContext) {
+  return project.status === "proposal" && (ctx.role === "cmo" || ctx.role === "admin");
+}
+
+export function canArchive(project: ProjectRow, ctx: ProjectAccessContext) {
+  return project.status !== "archived" && (privileged(ctx) || isProjectOwner(project, ctx));
+}
+
+const RUN_TRANSITIONS: Partial<Record<ProjectStatus, ProjectStatus[]>> = {
+  planning: ["in_progress"],
+  in_progress: ["pending_acceptance"],
+  pending_acceptance: ["completed", "in_progress"],
+};
+
+/** Bước trạng thái hợp lệ kế tiếp của dự án đã duyệt. */
+export function nextStatuses(project: ProjectRow, ctx: ProjectAccessContext): ProjectStatus[] {
+  if (!(privileged(ctx) || isProjectOwner(project, ctx))) return [];
+  return RUN_TRANSITIONS[project.status] ?? [];
+}
+
+/* ================= Ghi dữ liệu ================= */
+
+function fail(error: { message: string } | null) {
+  if (error) throw new Error(error.message);
+}
+
+export async function createProjectIdea(input: {
+  createdBy: string;
+  name: string;
+  objective: string;
+  description: string | null;
+}) {
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      name: input.name,
+      objective: input.objective,
+      description: input.description,
+      created_by: input.createdBy,
+      status: "idea",
+    })
+    .select("id")
+    .single();
+  fail(error);
+  return data!.id;
+}
+
+export interface ProjectDetailInput {
+  name: string;
+  objective: string;
+  description: string | null;
+  ownerId: string | null;
+  startDate: string | null;
+  deadline: string | null;
+}
+
+export async function updateProjectDetail(id: string, input: ProjectDetailInput) {
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      name: input.name,
+      objective: input.objective,
+      description: input.description,
+      owner_id: input.ownerId,
+      start_date: input.startDate,
+      deadline: input.deadline,
+    })
+    .eq("id", id);
+  fail(error);
+}
+
+export async function setProjectStatus(id: string, status: ProjectStatus, note?: string | null) {
+  const { error } = await supabase
+    .from("projects")
+    .update({ status, ...(note === undefined ? {} : { last_decision_note: note }) })
+    .eq("id", id);
+  fail(error);
+}
+
+type LinkTable = "project_teams" | "project_members" | "project_facilities";
+const LINK_COLUMN: Record<LinkTable, "team_id" | "user_id" | "facility_id"> = {
+  project_teams: "team_id",
+  project_members: "user_id",
+  project_facilities: "facility_id",
+};
+
+/** Đồng bộ liên kết: chỉ thêm/gỡ phần khác nhau để lịch sử ghi đúng thay đổi. */
+export async function syncProjectLinks(
+  table: LinkTable,
+  projectId: string,
+  current: string[],
+  next: string[],
+) {
+  const column = LINK_COLUMN[table];
+  const removed = current.filter((id) => !next.includes(id));
+  const added = next.filter((id) => !current.includes(id));
+
+  if (removed.length > 0) {
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq("project_id", projectId)
+      .in(column, removed);
+    fail(error);
+  }
+  if (added.length > 0) {
+    const rows = added.map((value) => ({ project_id: projectId, [column]: value }));
+    const { error } = await supabase.from(table).insert(rows as never);
+    fail(error);
+  }
+}
+
+export function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** Tiến độ thời gian theo lịch (0–100). Không phải tiến độ công việc. */
+export function timeProgress(project: ProjectRow): number | null {
+  if (!project.start_date || !project.deadline) return null;
+  const start = new Date(project.start_date).getTime();
+  const end = new Date(project.deadline).getTime();
+  if (end <= start) return 100;
+  const ratio = ((Date.now() - start) / (end - start)) * 100;
+  return Math.max(0, Math.min(100, Math.round(ratio)));
+}
+
+export function isOverdue(project: ProjectRow) {
+  if (!project.deadline) return false;
+  if (project.status === "completed" || project.status === "archived") return false;
+  return new Date(project.deadline).getTime() < Date.now();
+}
+
+/** Lịch sử thay đổi quan trọng của một dự án (đọc từ nhật ký hoạt động). */
+export interface ProjectHistoryEntry {
+  id: string;
+  action: string;
+  actor_email: string | null;
+  created_at: string;
+  before_data: unknown;
+  after_data: unknown;
+}
+
+export async function fetchProjectHistory(projectId: string): Promise<ProjectHistoryEntry[]> {
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("id,action,actor_email,created_at,before_data,after_data")
+    .eq("entity_type", "project")
+    .eq("entity_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ProjectHistoryEntry[];
+}
+
+export const projectHistoryQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ["project-history", projectId],
+    queryFn: () => fetchProjectHistory(projectId),
+  });
