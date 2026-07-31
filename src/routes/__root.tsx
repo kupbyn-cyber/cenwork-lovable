@@ -17,19 +17,19 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+        <p className="text-caption font-semibold tracking-[0.18em] text-text-muted uppercase">404</p>
+        <h1 className="mt-3 text-h2 text-text-primary">Không tìm thấy trang</h1>
+        <p className="mt-2 text-body text-text-secondary">
+          Đường dẫn không tồn tại hoặc đã được di chuyển.
         </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="cen-transition inline-flex h-control-md items-center justify-center rounded-control bg-brand-primary px-4 text-label font-semibold text-brand-foreground hover:bg-brand-primary-hover"
           >
-            Go home
+            Về trang chủ
           </Link>
         </div>
       </div>
@@ -45,13 +45,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <h1 className="text-h3 text-text-primary">Trang không tải được</h1>
+        <p className="mt-2 text-body text-text-secondary">
+          Đã có lỗi xảy ra. Bạn có thể thử lại hoặc quay về trang chủ.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -59,21 +57,22 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="cen-transition inline-flex h-control-md items-center justify-center rounded-control bg-brand-primary px-4 text-label font-semibold text-brand-foreground hover:bg-brand-primary-hover"
           >
-            Try again
+            Thử lại
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="cen-transition inline-flex h-control-md items-center justify-center rounded-control border border-border-strong bg-surface px-4 text-label font-medium text-text-primary hover:bg-surface-subtle"
           >
-            Go home
+            Về trang chủ
           </a>
         </div>
       </div>
     </div>
   );
 }
+
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -110,7 +109,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <HeadContent />
       </head>
