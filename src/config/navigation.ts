@@ -1,5 +1,13 @@
 import type { LinkProps } from "@tanstack/react-router";
-import { LayoutDashboard, Palette, UserCog, type LucideIcon } from "lucide-react";
+import {
+  Building2,
+  LayoutDashboard,
+  Palette,
+  UserCog,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
 
 /**
  * CEN 1.0 — Navigation config (M1.2)
@@ -41,6 +49,27 @@ export const navGroups: NavGroup[] = [
       },
     ],
   },
+  {
+    key: "organization",
+    label: "Tổ chức",
+    items: [
+      {
+        key: "members",
+        label: "Thành viên",
+        to: "/members",
+        icon: Users,
+        permissionKey: "members.view",
+      },
+      {
+        key: "organization",
+        label: "Cơ cấu tổ chức",
+        to: "/organization",
+        icon: Building2,
+        permissionKey: "organization.view",
+      },
+    ],
+  },
+
   {
     key: "account",
     label: "Tài khoản",

@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
+import { Route as AuthenticatedOrganizationRouteImport } from './routes/_authenticated/organization'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
 
@@ -29,6 +31,17 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrganizationRoute =
+  AuthenticatedOrganizationRouteImport.update({
+    id: '/organization',
+    path: '/organization',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -44,11 +57,15 @@ const AuthenticatedThemePreviewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/members': typeof AuthenticatedMembersRoute
+  '/organization': typeof AuthenticatedOrganizationRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/members': typeof AuthenticatedMembersRoute
+  '/organization': typeof AuthenticatedOrganizationRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/': typeof AuthenticatedIndexRoute
@@ -57,19 +74,35 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/members': typeof AuthenticatedMembersRoute
+  '/_authenticated/organization': typeof AuthenticatedOrganizationRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/settings' | '/theme-preview'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/members'
+    | '/organization'
+    | '/settings'
+    | '/theme-preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/settings' | '/theme-preview' | '/'
+  to:
+    | '/login'
+    | '/members'
+    | '/organization'
+    | '/settings'
+    | '/theme-preview'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/members'
+    | '/_authenticated/organization'
     | '/_authenticated/settings'
     | '/_authenticated/theme-preview'
     | '/_authenticated/'
@@ -103,6 +136,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/members': {
+      id: '/_authenticated/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedMembersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organization': {
+      id: '/_authenticated/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof AuthenticatedOrganizationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -121,12 +168,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
+  AuthenticatedOrganizationRoute: typeof AuthenticatedOrganizationRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedMembersRoute: AuthenticatedMembersRoute,
+  AuthenticatedOrganizationRoute: AuthenticatedOrganizationRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedThemePreviewRoute: AuthenticatedThemePreviewRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
