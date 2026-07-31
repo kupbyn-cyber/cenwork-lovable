@@ -51,36 +51,27 @@ export const createProject = createServerFn({ method: "POST" })
 
     const projectId = created.id as string;
 
-    const links: Array<Promise<{ error: { message: string } | null }>> = [];
-    if (data.teamIds.length > 0) {
-      links.push(
-        context.supabase
-          .from("project_teams")
-          .insert(data.teamIds.map((teamId) => ({ project_id: projectId, team_id: teamId }))),
-      );
+    async function insertLinks(
+      table: "project_teams" | "project_members" | "project_facilities",
+      rows: Record<string, string>[],
+    ) {
+      if (rows.length === 0) return;
+      const { error: linkError } = await context.supabase.from(table).insert(rows);
+      if (linkError) throw new Error(linkError.message);
     }
-    if (data.memberIds.length > 0) {
-      links.push(
-        context.supabase
-          .from("project_members")
-          .insert(data.memberIds.map((userId) => ({ project_id: projectId, user_id: userId }))),
-      );
-    }
-    if (data.facilityIds.length > 0) {
-      links.push(
-        context.supabase
-          .from("project_facilities")
-          .insert(
-            data.facilityIds.map((facilityId) => ({
-              project_id: projectId,
-              facility_id: facilityId,
-            })),
-          ),
-      );
-    }
-    const results = await Promise.all(links);
-    const linkError = results.find((result) => result.error);
-    if (linkError?.error) throw new Error(linkError.error.message);
+
+    await insertLinks(
+      "project_teams",
+      data.teamIds.map((teamId) => ({ project_id: projectId, team_id: teamId })),
+    );
+    await insertLinks(
+      "project_members",
+      data.memberIds.map((userId) => ({ project_id: projectId, user_id: userId })),
+    );
+    await insertLinks(
+      "project_facilities",
+      data.facilityIds.map((facilityId) => ({ project_id: projectId, facility_id: facilityId })),
+    );
 
     return { projectId };
   });
