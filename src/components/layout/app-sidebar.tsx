@@ -43,7 +43,7 @@ function NavLinkItem({
   item: NavItem;
   collapsed: boolean;
   active: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
 }) {
   const Icon = item.icon;
   const base = cn(
@@ -99,7 +99,7 @@ export function SidebarNav({
   onNavigate,
 }: {
   collapsed?: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
