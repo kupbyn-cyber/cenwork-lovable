@@ -11,13 +11,13 @@ import { cn } from "@/lib/utils";
  * Không tự fetch lại, chỉ phát callback `onRetry`. Không hiển thị stack trace.
  */
 export interface ErrorStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon?: LucideIcon | null;
-  title?: string;
-  description?: React.ReactNode;
-  onRetry?: () => void;
-  retryLabel?: string;
-  action?: React.ReactNode;
-  variant?: "full" | "compact";
+  icon?: LucideIcon | null | undefined;
+  title?: string | undefined;
+  description?: React.ReactNode | undefined;
+  onRetry?: (() => void) | undefined;
+  retryLabel?: string | undefined;
+  action?: React.ReactNode | undefined;
+  variant?: "full" | "compact" | undefined;
 }
 
 export function ErrorState({

@@ -66,9 +66,9 @@ function SkeletonCard({
   withAvatar = false,
   className,
 }: {
-  lines?: number;
-  withAvatar?: boolean;
-  className?: string;
+  lines?: number | undefined;
+  withAvatar?: boolean | undefined;
+  className?: string | undefined;
 }) {
   return (
     <div className={cn("space-y-4", className)}>

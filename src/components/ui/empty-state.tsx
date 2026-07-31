@@ -10,11 +10,11 @@ import { cn } from "@/lib/utils";
  * Action luôn truyền từ ngoài vào, component không tự gọi nghiệp vụ.
  */
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon?: LucideIcon | null;
+  icon?: LucideIcon | null | undefined;
   title: string;
-  description?: React.ReactNode;
-  action?: React.ReactNode;
-  variant?: "full" | "compact";
+  description?: React.ReactNode | undefined;
+  action?: React.ReactNode | undefined;
+  variant?: "full" | "compact" | undefined;
 }
 
 export function EmptyState({

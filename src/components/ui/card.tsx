@@ -115,15 +115,15 @@ CardFooter.displayName = "CardFooter";
 export interface CardStateProps {
   state: "loading" | "empty" | "error";
   /** Loading */
-  lines?: number;
-  withAvatar?: boolean;
+  lines?: number | undefined;
+  withAvatar?: boolean | undefined;
   /** Empty / Error */
-  title?: string;
-  description?: React.ReactNode;
-  action?: React.ReactNode;
-  onRetry?: () => void;
-  icon?: LucideIcon | null;
-  compact?: boolean;
+  title?: string | undefined;
+  description?: React.ReactNode | undefined;
+  action?: React.ReactNode | undefined;
+  onRetry?: (() => void) | undefined;
+  icon?: LucideIcon | null | undefined;
+  compact?: boolean | undefined;
 }
 
 function CardState({
@@ -152,7 +152,7 @@ function CardState({
         description={description}
         onRetry={onRetry}
         action={action}
-        icon={icon ?? undefined}
+        icon={icon}
       />
     );
   }
@@ -162,7 +162,7 @@ function CardState({
       title={title ?? "Chưa có dữ liệu"}
       description={description}
       action={action}
-      icon={icon ?? undefined}
+      icon={icon}
     />
   );
 }
