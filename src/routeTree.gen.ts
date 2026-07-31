@@ -9,24 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
 
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedThemePreviewRoute =
   AuthenticatedThemePreviewRouteImport.update({
-    id: '/_authenticated/theme-preview',
+    id: '/theme-preview',
     path: '/theme-preview',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/': typeof AuthenticatedIndexRoute
+  '/theme-preview': typeof AuthenticatedThemePreviewRoute
 }
 export interface FileRoutesByTo {
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
@@ -34,44 +39,67 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/theme-preview' | '/'
+  fullPaths: '/' | '/theme-preview'
   fileRoutesByTo: FileRoutesByTo
   to: '/theme-preview' | '/'
-  id: '__root__' | '/_authenticated/theme-preview' | '/_authenticated/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/_authenticated/theme-preview'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/theme-preview': {
       id: '/_authenticated/theme-preview'
       path: '/theme-preview'
       fullPath: '/theme-preview'
       preLoaderRoute: typeof AuthenticatedThemePreviewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedThemePreviewRoute: AuthenticatedThemePreviewRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
