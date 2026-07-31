@@ -1,6 +1,11 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
+import type { LucideIcon } from "lucide-react";
+
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -103,8 +108,68 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = "CardFooter";
 
+/**
+ * M1.1D — trạng thái dùng chung cho Card. Card không tự quản lý state,
+ * chỉ nhận `state` từ ngoài và render component chung tương ứng.
+ */
+export interface CardStateProps {
+  state: "loading" | "empty" | "error";
+  /** Loading */
+  lines?: number;
+  withAvatar?: boolean;
+  /** Empty / Error */
+  title?: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  onRetry?: () => void;
+  icon?: LucideIcon | null;
+  compact?: boolean;
+}
+
+function CardState({
+  state,
+  lines = 3,
+  withAvatar,
+  title,
+  description,
+  action,
+  onRetry,
+  icon,
+  compact = true,
+}: CardStateProps) {
+  if (state === "loading") {
+    return (
+      <CardContent>
+        <SkeletonCard lines={lines} withAvatar={withAvatar} />
+      </CardContent>
+    );
+  }
+  if (state === "error") {
+    return (
+      <ErrorState
+        variant={compact ? "compact" : "full"}
+        title={title}
+        description={description}
+        onRetry={onRetry}
+        action={action}
+        icon={icon ?? undefined}
+      />
+    );
+  }
+  return (
+    <EmptyState
+      variant={compact ? "compact" : "full"}
+      title={title ?? "Chưa có dữ liệu"}
+      description={description}
+      action={action}
+      icon={icon ?? undefined}
+    />
+  );
+}
+
 export {
   Card,
+  CardState,
   CardHeader,
   CardAction,
   CardFooter,

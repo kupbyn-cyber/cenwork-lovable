@@ -1,6 +1,9 @@
 import * as React from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { SkeletonTableRows } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -39,6 +42,18 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   density?: "compact" | "default";
   /** Slot for shared Loading / Empty / Error state (M1.1D). Replaces body rows. */
   stateSlot?: React.ReactNode;
+  /** M1.1D: dùng Skeleton row dùng chung. */
+  loading?: boolean;
+  skeletonRows?: number;
+  /** M1.1D: có lỗi → Error State compact. Table không tự fetch lại. */
+  error?: boolean;
+  onRetry?: () => void;
+  errorTitle?: string;
+  errorDescription?: React.ReactNode;
+  /** M1.1D: không có dữ liệu → Empty State compact. */
+  emptyTitle?: string;
+  emptyDescription?: React.ReactNode;
+  emptyAction?: React.ReactNode;
   caption?: string;
 }
 
@@ -59,6 +74,15 @@ function DataTableInner<T>(
     onRowClick,
     density = "default",
     stateSlot,
+    loading = false,
+    skeletonRows = 5,
+    error = false,
+    onRetry,
+    errorTitle,
+    errorDescription,
+    emptyTitle = "Chưa có dữ liệu",
+    emptyDescription = "Nội dung sẽ hiển thị tại đây khi có dữ liệu.",
+    emptyAction,
     caption,
     className,
     ...props
@@ -71,6 +95,30 @@ function DataTableInner<T>(
   const someSelected = rowIds.some((id) => selected.has(id));
   const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
   const colCount = columns.length + (selectable ? 1 : 0);
+
+  const resolvedState: React.ReactNode = stateSlot
+    ? stateSlot
+    : error
+      ? (
+          <ErrorState
+            variant="compact"
+            title={errorTitle}
+            description={errorDescription}
+            onRetry={onRetry}
+          />
+        )
+      : loading
+        ? <SkeletonTableRows rows={skeletonRows} columns={colCount} />
+        : data.length === 0
+          ? (
+              <EmptyState
+                variant="compact"
+                title={emptyTitle}
+                description={emptyDescription}
+                action={emptyAction}
+              />
+            )
+          : null;
 
   const toggleAll = () => {
     if (!onSelectedIdsChange) return;
@@ -97,7 +145,7 @@ function DataTableInner<T>(
                   checked={allSelected ? true : someSelected ? "indeterminate" : false}
                   onCheckedChange={toggleAll}
                   aria-label="Chọn tất cả dòng"
-                  disabled={!onSelectedIdsChange}
+                  disabled={!onSelectedIdsChange || Boolean(resolvedState)}
                 />
               </TableHead>
             ) : null}
@@ -112,10 +160,10 @@ function DataTableInner<T>(
           </TableRow>
         </TableHeader>
         <TableBody>
-          {stateSlot ? (
+          {resolvedState ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={colCount} className="p-0">
-                {stateSlot}
+                {resolvedState}
               </TableCell>
             </TableRow>
           ) : (
