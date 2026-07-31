@@ -15,9 +15,9 @@ export interface FormFieldProps {
   /** Render control với các props accessibility đã được nối sẵn. */
   children: (controlProps: {
     id: string;
-    "aria-describedby"?: string;
-    "aria-invalid"?: true;
-    "aria-required"?: true;
+    "aria-describedby"?: string | undefined;
+    "aria-invalid"?: true | undefined;
+    "aria-required"?: true | undefined;
   }) => React.ReactNode;
 }
 
