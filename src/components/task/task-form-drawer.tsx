@@ -438,7 +438,9 @@ export function TaskFormDrawer({
                   ))
               )}
             </div>
+            )}
           </FormField>
+
         ) : null}
       </form>
     </DrawerPanel>
