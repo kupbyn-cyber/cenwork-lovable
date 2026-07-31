@@ -15,6 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
+import {
+  hanoiStartOfDayMs,
+  hanoiToUtcISO,
+  utcToHanoiInputs,
+} from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import type { PersonOption, ProjectRow } from "@/lib/project-data";
 import {
@@ -379,7 +384,7 @@ export function TaskFormDrawer({
             id="task-deadline"
             label="Deadline"
             required
-            error={errors.deadline}
+            error={errors.deadlineDate}
             helperText="Theo giờ Hà Nội (GMT+7), gồm ngày và giờ."
           >
             {(control) => (
