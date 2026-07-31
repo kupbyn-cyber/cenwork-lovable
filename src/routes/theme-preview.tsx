@@ -238,17 +238,24 @@ function ThemePreview() {
             <div className="rounded-card border border-border-default bg-surface p-4 shadow-level-1">
               <p className="text-label text-text-muted">Hành động</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="cen-transition h-control-md rounded-control bg-brand-primary px-3 text-label font-semibold text-brand-foreground hover:bg-brand-primary-hover">
-                  Chính
-                </button>
-                <button className="cen-transition h-control-md rounded-control border border-border-strong bg-surface-subtle px-3 text-label font-medium text-text-secondary hover:text-text-primary">
+                <Button size="sm">Chính</Button>
+                <Button size="sm" variant="secondary">
                   Phụ
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </Section>
+
+        <Section title="Button component" hint="M1.1B · variant, size, icon, loading, disabled.">
+          <ButtonPreview />
+        </Section>
+
+        <Section title="Form component" hint="M1.1B · label, helper text, required, error, disabled, read-only.">
+          <FormPreview />
+        </Section>
       </div>
+
     </main>
   );
 }
