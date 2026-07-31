@@ -42,6 +42,27 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    key: "organization",
+    label: "Tổ chức",
+    items: [
+      {
+        key: "members",
+        label: "Thành viên",
+        to: "/members",
+        icon: Users,
+        permissionKey: "members.view",
+      },
+      {
+        key: "organization",
+        label: "Cơ cấu tổ chức",
+        to: "/organization",
+        icon: Building2,
+        permissionKey: "organization.view",
+      },
+    ],
+  },
+
+  {
     key: "account",
     label: "Tài khoản",
     items: [
