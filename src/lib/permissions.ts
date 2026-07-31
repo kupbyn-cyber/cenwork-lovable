@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   AUDIT_VIEW: "audit.view",
   PROJECTS_VIEW: "projects.view",
   PROJECTS_CREATE: "projects.create",
+  PROJECTS_CREATE_OFFICIAL: "projects.create_official",
   TASKS_VIEW: "tasks.view",
   TASKS_CREATE: "tasks.create",
 } as const;
@@ -42,6 +43,7 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "audit.view": "Xem nhật ký hoạt động",
   "projects.view": "Xem dự án trong phạm vi",
   "projects.create": "Gửi ý tưởng dự án",
+  "projects.create_official": "Tạo dự án",
   "tasks.view": "Xem công việc trong phạm vi",
   "tasks.create": "Tạo công việc",
 };
@@ -59,6 +61,7 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "audit.view": "Hệ thống",
   "projects.view": "Dự án",
   "projects.create": "Dự án",
+  "projects.create_official": "Dự án",
   "tasks.view": "Công việc",
   "tasks.create": "Công việc",
 };
@@ -78,6 +81,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "audit.view",
     "projects.view",
     "projects.create",
+    "projects.create_official",
     "tasks.view",
     "tasks.create",
   ],

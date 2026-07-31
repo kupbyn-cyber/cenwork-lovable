@@ -68,6 +68,7 @@ function ProjectsPage() {
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [facilityFilter, setFacilityFilter] = React.useState(ALL);
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
 
   const teams = teamsResult.data ?? [];
   const facilities = facilitiesResult.data ?? [];
@@ -154,12 +155,20 @@ function ProjectsPage() {
         title="Dự án"
         description="Ý tưởng, quy trình duyệt và dự án chính thức trong phạm vi bạn được xem."
         actions={
-          access.can("projects.create") ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus />
-              Gửi ý tưởng
-            </Button>
-          ) : null
+          <div className="flex flex-wrap gap-2">
+            {access.can("projects.create") ? (
+              <Button variant="secondary" onClick={() => setCreateOpen(true)}>
+                <Plus />
+                Gửi ý tưởng
+              </Button>
+            ) : null}
+            {access.can("projects.create_official") ? (
+              <Button onClick={() => setCreateProjectOpen(true)}>
+                <Plus />
+                Tạo dự án
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -245,6 +254,23 @@ function ProjectsPage() {
           onOpenChange={setCreateOpen}
           project={null}
           fullEdit={false}
+          currentUserId={access.userId}
+          teams={teams}
+          facilities={facilities}
+          people={people}
+          onCreated={(projectId) =>
+            void navigate({ to: "/projects/$projectId", params: { projectId } })
+          }
+        />
+      ) : null}
+
+      {access.userId && access.can("projects.create_official") ? (
+        <ProjectFormDrawer
+          open={createProjectOpen}
+          onOpenChange={setCreateProjectOpen}
+          project={null}
+          fullEdit={false}
+          createMode="official"
           currentUserId={access.userId}
           teams={teams}
           facilities={facilities}
