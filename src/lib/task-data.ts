@@ -224,20 +224,23 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
   return data!.id;
 }
 
+type TaskUpdate = Database["public"]["Tables"]["tasks"]["Update"];
+
 export async function updateTask(id: string, input: Partial<TaskInput>) {
-  const payload: Record<string, unknown> = {};
-  if (input.name !== undefined) payload["name"] = input.name;
-  if (input.description !== undefined) payload["description"] = input.description;
-  if (input.projectId !== undefined) payload["project_id"] = input.projectId;
-  if (input.assigneeId !== undefined) payload["assignee_id"] = input.assigneeId;
-  if (input.teamId !== undefined) payload["team_id"] = input.teamId;
-  if (input.startDate !== undefined) payload["start_date"] = input.startDate;
-  if (input.deadline !== undefined) payload["deadline"] = input.deadline;
-  if (input.priority !== undefined) payload["priority"] = input.priority;
-  if (input.status !== undefined) payload["status"] = input.status;
+  const payload: TaskUpdate = {};
+  if (input.name !== undefined) payload.name = input.name;
+  if (input.description !== undefined) payload.description = input.description;
+  if (input.projectId !== undefined) payload.project_id = input.projectId;
+  if (input.assigneeId !== undefined) payload.assignee_id = input.assigneeId;
+  if (input.teamId !== undefined) payload.team_id = input.teamId;
+  if (input.startDate !== undefined) payload.start_date = input.startDate;
+  if (input.deadline !== undefined) payload.deadline = input.deadline;
+  if (input.priority !== undefined) payload.priority = input.priority;
+  if (input.status !== undefined) payload.status = input.status;
   const { error } = await supabase.from("tasks").update(payload).eq("id", id);
   fail(error);
 }
+
 
 export async function setTaskStatus(id: string, status: TaskStatus) {
   const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
