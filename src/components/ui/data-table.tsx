@@ -41,19 +41,19 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   onRowClick?: (row: T) => void;
   density?: "compact" | "default";
   /** Slot for shared Loading / Empty / Error state (M1.1D). Replaces body rows. */
-  stateSlot?: React.ReactNode;
+  stateSlot?: React.ReactNode | undefined;
   /** M1.1D: dùng Skeleton row dùng chung. */
-  loading?: boolean;
-  skeletonRows?: number;
+  loading?: boolean | undefined;
+  skeletonRows?: number | undefined;
   /** M1.1D: có lỗi → Error State compact. Table không tự fetch lại. */
-  error?: boolean;
-  onRetry?: () => void;
-  errorTitle?: string;
-  errorDescription?: React.ReactNode;
+  error?: boolean | undefined;
+  onRetry?: (() => void) | undefined;
+  errorTitle?: string | undefined;
+  errorDescription?: React.ReactNode | undefined;
   /** M1.1D: không có dữ liệu → Empty State compact. */
-  emptyTitle?: string;
-  emptyDescription?: React.ReactNode;
-  emptyAction?: React.ReactNode;
+  emptyTitle?: string | undefined;
+  emptyDescription?: React.ReactNode | undefined;
+  emptyAction?: React.ReactNode | undefined;
   caption?: string;
 }
 
