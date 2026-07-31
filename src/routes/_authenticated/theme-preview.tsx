@@ -10,7 +10,7 @@ import {
   TablePreview,
 } from "@/components/preview/data-display-preview";
 
-export const Route = createFileRoute("/theme-preview")({
+export const Route = createFileRoute("/_authenticated/theme-preview")({
   head: () => ({
     meta: [
       { title: "Theme Preview — CEN 1.0 Design Tokens" },
