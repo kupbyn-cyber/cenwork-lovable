@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * CEN 1.0 — PageHeader (M1.1C)
  * Structure only: no app shell, no hardcoded actions, no permission logic.
  */
-export interface PageHeaderProps extends React.HTMLAttributes<HTMLElement> {
+export interface PageHeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
   title: React.ReactNode;
   description?: React.ReactNode;
   /** Breadcrumb node passed in from outside (e.g. <BreadcrumbNav />). */

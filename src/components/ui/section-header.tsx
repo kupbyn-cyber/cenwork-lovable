@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * CEN 1.0 — SectionHeader (M1.1C)
  * Structure only. `compact` is used inside cards.
  */
-export interface SectionHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface SectionHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
