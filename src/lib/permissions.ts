@@ -21,6 +21,8 @@ export const PERMISSIONS = {
   ORG_MANAGE: "organization.manage",
   SETTINGS_ADMIN: "settings.admin",
   AUDIT_VIEW: "audit.view",
+  PROJECTS_VIEW: "projects.view",
+  PROJECTS_CREATE: "projects.create",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -36,6 +38,8 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "organization.manage": "Tạo / sửa Team và Cơ sở",
   "settings.admin": "Cấu hình quản trị hệ thống",
   "audit.view": "Xem nhật ký hoạt động",
+  "projects.view": "Xem dự án trong phạm vi",
+  "projects.create": "Gửi ý tưởng dự án",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -49,6 +53,8 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "organization.manage": "Tổ chức",
   "settings.admin": "Hệ thống",
   "audit.view": "Hệ thống",
+  "projects.view": "Dự án",
+  "projects.create": "Dự án",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
@@ -64,6 +70,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "organization.manage",
     "settings.admin",
     "audit.view",
+    "projects.view",
+    "projects.create",
   ],
   cmo: [
     "members.view",
@@ -73,9 +81,18 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "roles.assign",
     "organization.view",
     "audit.view",
+    "projects.view",
+    "projects.create",
   ],
-  leader: ["members.view", "members.edit_scoped", "roles.view", "organization.view"],
-  member: ["organization.view"],
+  leader: [
+    "members.view",
+    "members.edit_scoped",
+    "roles.view",
+    "organization.view",
+    "projects.view",
+    "projects.create",
+  ],
+  member: ["organization.view", "projects.view", "projects.create"],
 };
 
 export function hasPermission(role: AppRoleKey | null, permission: PermissionKey): boolean {

@@ -9,8 +9,8 @@ export interface FormFieldProps {
   id: string;
   label: string;
   required?: boolean;
-  helperText?: string;
-  error?: string;
+  helperText?: string | undefined;
+  error?: string | undefined;
   className?: string;
   /** Render control với các props accessibility đã được nối sẵn. */
   children: (controlProps: {

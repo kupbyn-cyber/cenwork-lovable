@@ -3,6 +3,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import { hasPermission, type AppRoleKey, type PermissionKey } from "@/lib/permissions";
 import {
   Building2,
+  FolderKanban,
   LayoutDashboard,
   Palette,
   ScrollText,
@@ -50,6 +51,13 @@ export const navGroups: NavGroup[] = [
         to: "/",
         icon: LayoutDashboard,
         exact: true,
+      },
+      {
+        key: "projects",
+        label: "Dự án",
+        to: "/projects",
+        icon: FolderKanban,
+        permissionKey: "projects.view",
       },
     ],
   },
