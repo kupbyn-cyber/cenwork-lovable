@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { ButtonPreview, FormPreview } from "@/components/preview/component-preview";
+import { OverlayPreview, StatePreview } from "@/components/preview/overlay-preview";
 import {
   BadgeAvatarPreview,
   CardPreview,
@@ -278,6 +279,20 @@ function ThemePreview() {
 
         <Section title="Structure component" hint="M1.1C · page header, section header, tabs, breadcrumb, divider.">
           <StructurePreview />
+        </Section>
+
+        <Section
+          title="Overlay và feedback"
+          hint="M1.1D · modal, confirmation, drawer, dropdown, tooltip, toast."
+        >
+          <OverlayPreview />
+        </Section>
+
+        <Section
+          title="System state"
+          hint="M1.1D · spinner, skeleton, empty, error và tích hợp vào Table/Card."
+        >
+          <StatePreview />
         </Section>
       </div>
 
