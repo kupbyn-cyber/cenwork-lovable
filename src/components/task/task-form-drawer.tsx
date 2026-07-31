@@ -191,12 +191,24 @@ export function TaskFormDrawer({
     else if (state.name.trim().length > 160) next.name = "Tên công việc tối đa 160 ký tự.";
     if (state.description.length > 4000) next.description = "Mô tả tối đa 4000 ký tự.";
     if (!state.assigneeId) next.assigneeId = "Chọn người phụ trách.";
-    if (!state.deadline) next.deadline = "Chọn deadline.";
-    if (state.startDate && state.deadline && state.deadline < state.startDate) {
-      next.deadline = "Deadline không được trước ngày bắt đầu.";
+    if (!state.deadlineDate || !state.deadlineTime) {
+      next.deadlineDate = "Chọn đầy đủ ngày và giờ deadline.";
+      return next;
+    }
+    const deadlineIso = hanoiToUtcISO(state.deadlineDate, state.deadlineTime);
+    if (!deadlineIso) {
+      next.deadlineDate = "Deadline không hợp lệ.";
+      return next;
+    }
+    if (state.startDate) {
+      const start = hanoiStartOfDayMs(state.startDate);
+      if (start !== null && new Date(deadlineIso).getTime() < start) {
+        next.deadlineDate = "Deadline không được trước ngày/giờ bắt đầu.";
+      }
     }
     return next;
   }
+
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
