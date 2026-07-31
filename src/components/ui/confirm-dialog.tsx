@@ -59,7 +59,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-md gap-0 p-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-md gap-0 p-0 [&>[data-slot=dialog-close]]:hidden">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4">
           <div className="flex min-w-0 gap-3">
             {Icon ? (

@@ -41,7 +41,7 @@ export function DrawerPanel({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className={cn("flex flex-col gap-0 overflow-hidden p-0", sideClass[side])}
+        className={cn("flex flex-col gap-0 overflow-hidden p-0 [&>[data-slot=dialog-close]]:hidden", sideClass[side])}
       >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-border-default p-4">
           <div className="min-w-0">
