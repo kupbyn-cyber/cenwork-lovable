@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { AppShell } from "@/components/layout/app-shell";
+import { AuthProvider } from "@/hooks/use-auth";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -132,13 +132,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider delayDuration={200} skipDelayDuration={300}>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <AppShell>
+      <AuthProvider>
+        <TooltipProvider delayDuration={200} skipDelayDuration={300}>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
-        </AppShell>
-        <Toaster />
-      </TooltipProvider>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
+

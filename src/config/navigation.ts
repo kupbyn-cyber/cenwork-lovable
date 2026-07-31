@@ -1,5 +1,5 @@
 import type { LinkProps } from "@tanstack/react-router";
-import { LayoutDashboard, Palette, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Palette, UserCog, type LucideIcon } from "lucide-react";
 
 /**
  * CEN 1.0 — Navigation config (M1.2)
@@ -42,6 +42,18 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    key: "account",
+    label: "Tài khoản",
+    items: [
+      {
+        key: "settings",
+        label: "Hồ sơ cá nhân",
+        to: "/settings",
+        icon: UserCog,
+      },
+    ],
+  },
+  {
     key: "system",
     label: "Hệ thống",
     items: [
@@ -54,6 +66,7 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
+
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   const to = String(item.to ?? "/");
