@@ -15,6 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
+import {
+  hanoiStartOfDayMs,
+  hanoiToUtcISO,
+  utcToHanoiInputs,
+} from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import type { PersonOption, ProjectRow } from "@/lib/project-data";
 import {
@@ -62,7 +67,10 @@ interface FormState {
   assigneeId: string;
   teamId: string;
   startDate: string;
-  deadline: string;
+  /** Ngày deadline theo giờ Hà Nội (yyyy-MM-dd). */
+  deadlineDate: string;
+  /** Giờ deadline theo giờ Hà Nội (HH:mm). */
+  deadlineTime: string;
   priority: TaskPriority;
   status: TaskStatus;
   participantIds: string[];
@@ -73,6 +81,7 @@ function initialState(
   ctx: TaskAccessContext,
   lockedProjectId?: string | null,
 ): FormState {
+  const deadline = utcToHanoiInputs(task?.deadline ?? null);
   return {
     name: task?.name ?? "",
     description: task?.description ?? "",
@@ -80,12 +89,14 @@ function initialState(
     assigneeId: task?.assignee_id ?? ctx.userId ?? "",
     teamId: task?.team_id ?? NONE,
     startDate: task?.start_date ?? "",
-    deadline: task?.deadline ?? "",
+    deadlineDate: deadline.date,
+    deadlineTime: deadline.time || (task ? "" : "17:00"),
     priority: task?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
   };
 }
+
 
 function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
@@ -136,7 +147,7 @@ export function TaskFormDrawer({
         assigneeId: state.assigneeId,
         teamId: state.teamId === NONE ? null : state.teamId,
         startDate: state.startDate || null,
-        deadline: state.deadline,
+        deadline: hanoiToUtcISO(state.deadlineDate, state.deadlineTime)!,
         priority: state.priority,
         status: state.status,
       };
@@ -185,12 +196,24 @@ export function TaskFormDrawer({
     else if (state.name.trim().length > 160) next.name = "Tên công việc tối đa 160 ký tự.";
     if (state.description.length > 4000) next.description = "Mô tả tối đa 4000 ký tự.";
     if (!state.assigneeId) next.assigneeId = "Chọn người phụ trách.";
-    if (!state.deadline) next.deadline = "Chọn deadline.";
-    if (state.startDate && state.deadline && state.deadline < state.startDate) {
-      next.deadline = "Deadline không được trước ngày bắt đầu.";
+    if (!state.deadlineDate || !state.deadlineTime) {
+      next.deadlineDate = "Chọn đầy đủ ngày và giờ deadline.";
+      return next;
+    }
+    const deadlineIso = hanoiToUtcISO(state.deadlineDate, state.deadlineTime);
+    if (!deadlineIso) {
+      next.deadlineDate = "Deadline không hợp lệ.";
+      return next;
+    }
+    if (state.startDate) {
+      const start = hanoiStartOfDayMs(state.startDate);
+      if (start !== null && new Date(deadlineIso).getTime() < start) {
+        next.deadlineDate = "Deadline không được trước ngày/giờ bắt đầu.";
+      }
     }
     return next;
   }
+
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -357,16 +380,34 @@ export function TaskFormDrawer({
               />
             )}
           </FormField>
-          <FormField id="task-deadline" label="Deadline" required error={errors.deadline}>
+          <FormField
+            id="task-deadline"
+            label="Deadline"
+            required
+            error={errors.deadlineDate}
+            helperText="Theo giờ Hà Nội (GMT+7), gồm ngày và giờ."
+          >
             {(control) => (
-              <Input
-                {...control}
-                type="date"
-                value={form.deadline}
-                onChange={(event) => setForm({ ...form, deadline: event.target.value })}
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  {...control}
+                  type="date"
+                  className="w-full sm:flex-1 sm:min-w-0"
+                  value={form.deadlineDate}
+                  onChange={(event) => setForm({ ...form, deadlineDate: event.target.value })}
+                />
+                <Input
+                  type="time"
+                  aria-label="Giờ deadline"
+                  step={60}
+                  className="w-full sm:w-[120px] sm:shrink-0"
+                  value={form.deadlineTime}
+                  onChange={(event) => setForm({ ...form, deadlineTime: event.target.value })}
+                />
+              </div>
             )}
           </FormField>
+
           <FormField id="task-priority" label="Mức ưu tiên">
             {(control) => (
               <Select

@@ -35,6 +35,7 @@ import {
   canChangeTaskStatus,
   canEditTask,
   formatDate,
+  formatDateTime,
   isTaskOverdue,
   setTaskArchived,
   setTaskStatus,
@@ -237,7 +238,7 @@ function TaskDetailPage() {
               label="Deadline"
               value={
                 <span className={isTaskOverdue(task) ? "text-state-danger" : undefined}>
-                  {formatDate(task.deadline)}
+                  {formatDateTime(task.deadline)}
                   {isTaskOverdue(task) ? " · Quá hạn" : ""}
                 </span>
               }

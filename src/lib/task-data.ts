@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
+import {
+  formatHanoiDate,
+  formatHanoiDateTime,
+  hanoiStartOfDayMs,
+  isPastInstant,
+} from "@/lib/datetime";
 
 /**
  * CEN 1.0 — M3.1 Task data layer.
@@ -275,25 +281,32 @@ export async function syncTaskParticipants(taskId: string, current: string[], ne
 
 /* ================= Tiện ích hiển thị ================= */
 
+/** Ngày `dd/MM/yyyy` theo giờ Hà Nội. */
 export function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString("vi-VN");
+  return formatHanoiDate(value);
+}
+
+/** Deadline `dd/MM/yyyy HH:mm` theo giờ Hà Nội. */
+export function formatDateTime(value: string | null) {
+  return formatHanoiDateTime(value);
 }
 
 export function isTaskOverdue(task: TaskRow) {
   if (task.status === "done" || task.is_archived) return false;
-  return new Date(task.deadline).getTime() < Date.now();
+  return isPastInstant(task.deadline);
 }
 
 /** Tiến độ thời gian theo mốc bắt đầu → deadline (0–100). */
 export function taskTimeProgress(task: TaskRow): number | null {
   if (!task.start_date) return null;
-  const start = new Date(task.start_date).getTime();
+  const start = hanoiStartOfDayMs(task.start_date);
   const end = new Date(task.deadline).getTime();
+  if (start === null || Number.isNaN(end)) return null;
   if (end <= start) return 100;
   const ratio = ((Date.now() - start) / (end - start)) * 100;
   return Math.max(0, Math.min(100, Math.round(ratio)));
 }
+
 
 /* ================= Lịch sử ================= */
 
