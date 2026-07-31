@@ -239,161 +239,182 @@ export function TaskFormDrawer({
           </p>
         ) : null}
 
-        <FormField label="Tên công việc" required error={errors.name} htmlFor="task-name">
-          <Input
-            id="task-name"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            placeholder="Ví dụ: Chuẩn bị nội dung truyền thông tuần 1"
-          />
+        <FormField id="task-name" label="Tên công việc" required error={errors.name}>
+          {(control) => (
+            <Input
+              {...control}
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              placeholder="Ví dụ: Chuẩn bị nội dung truyền thông tuần 1"
+            />
+          )}
         </FormField>
 
-        <FormField label="Mô tả" error={errors.description} htmlFor="task-description">
-          <Textarea
-            id="task-description"
-            rows={4}
-            value={form.description}
-            onChange={(event) => setForm({ ...form, description: event.target.value })}
-            placeholder="Mô tả phạm vi, yêu cầu hoặc kết quả cần đạt."
-          />
+        <FormField id="task-description" label="Mô tả" error={errors.description}>
+          {(control) => (
+            <Textarea
+              {...control}
+              rows={4}
+              value={form.description}
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
+              placeholder="Mô tả phạm vi, yêu cầu hoặc kết quả cần đạt."
+            />
+          )}
         </FormField>
 
         {canScope ? (
           <FormField
+            id="task-project"
             label="Dự án"
             helperText={
               allowProject
                 ? "Để trống nếu đây là công việc độc lập."
                 : "Bạn chỉ tạo được công việc độc lập."
             }
-            htmlFor="task-project"
           >
-            <Select
-              value={form.projectId}
-              onValueChange={(value) => setForm({ ...form, projectId: value })}
-              disabled={!allowProject || Boolean(lockedProjectId)}
-            >
-              <SelectTrigger id="task-project" aria-label="Dự án">
-                <SelectValue placeholder="Công việc độc lập" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>Công việc độc lập</SelectItem>
-                {selectableProjects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {(control) => (
+              <Select
+                value={form.projectId}
+                onValueChange={(value) => setForm({ ...form, projectId: value })}
+                disabled={!allowProject || Boolean(lockedProjectId)}
+              >
+                <SelectTrigger {...control} aria-label="Dự án">
+                  <SelectValue placeholder="Công việc độc lập" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>Công việc độc lập</SelectItem>
+                  {selectableProjects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </FormField>
         ) : null}
 
         {canScope ? (
           <FormField
+            id="task-assignee"
             label="Người phụ trách"
             required
             error={errors.assigneeId}
             helperText={allowOthers ? undefined : "Bạn chỉ được tự nhận việc."}
-            htmlFor="task-assignee"
           >
-            <Select
-              value={form.assigneeId}
-              onValueChange={(value) => setForm({ ...form, assigneeId: value })}
-              disabled={!allowOthers}
-            >
-              <SelectTrigger id="task-assignee" aria-label="Người phụ trách">
-                <SelectValue placeholder="Chọn người phụ trách" />
-              </SelectTrigger>
-              <SelectContent>
-                {assigneeOptions.map((person) => (
-                  <SelectItem key={person.id} value={person.id}>
-                    {person.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {(control) => (
+              <Select
+                value={form.assigneeId}
+                onValueChange={(value) => setForm({ ...form, assigneeId: value })}
+                disabled={!allowOthers}
+              >
+                <SelectTrigger {...control} aria-label="Người phụ trách">
+                  <SelectValue placeholder="Chọn người phụ trách" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assigneeOptions.map((person) => (
+                    <SelectItem key={person.id} value={person.id}>
+                      {person.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </FormField>
         ) : null}
 
         {canScope ? (
-          <FormField label="Team phụ trách" htmlFor="task-team">
-            <Select
-              value={form.teamId}
-              onValueChange={(value) => setForm({ ...form, teamId: value })}
-            >
-              <SelectTrigger id="task-team" aria-label="Team phụ trách">
-                <SelectValue placeholder="Không gắn Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>Không gắn Team</SelectItem>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <FormField id="task-team" label="Team phụ trách">
+            {(control) => (
+              <Select
+                value={form.teamId}
+                onValueChange={(value) => setForm({ ...form, teamId: value })}
+              >
+                <SelectTrigger {...control} aria-label="Team phụ trách">
+                  <SelectValue placeholder="Không gắn Team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>Không gắn Team</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </FormField>
         ) : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Ngày bắt đầu" htmlFor="task-start">
-            <Input
-              id="task-start"
-              type="date"
-              value={form.startDate}
-              onChange={(event) => setForm({ ...form, startDate: event.target.value })}
-            />
+          <FormField id="task-start" label="Ngày bắt đầu">
+            {(control) => (
+              <Input
+                {...control}
+                type="date"
+                value={form.startDate}
+                onChange={(event) => setForm({ ...form, startDate: event.target.value })}
+              />
+            )}
           </FormField>
-          <FormField label="Deadline" required error={errors.deadline} htmlFor="task-deadline">
-            <Input
-              id="task-deadline"
-              type="date"
-              value={form.deadline}
-              onChange={(event) => setForm({ ...form, deadline: event.target.value })}
-            />
+          <FormField id="task-deadline" label="Deadline" required error={errors.deadline}>
+            {(control) => (
+              <Input
+                {...control}
+                type="date"
+                value={form.deadline}
+                onChange={(event) => setForm({ ...form, deadline: event.target.value })}
+              />
+            )}
           </FormField>
-          <FormField label="Mức ưu tiên" htmlFor="task-priority">
-            <Select
-              value={form.priority}
-              onValueChange={(value) => setForm({ ...form, priority: value as TaskPriority })}
-            >
-              <SelectTrigger id="task-priority" aria-label="Mức ưu tiên">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASK_PRIORITY_ORDER.map((priority) => (
-                  <SelectItem key={priority} value={priority}>
-                    {TASK_PRIORITY_LABEL[priority]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <FormField id="task-priority" label="Mức ưu tiên">
+            {(control) => (
+              <Select
+                value={form.priority}
+                onValueChange={(value) => setForm({ ...form, priority: value as TaskPriority })}
+              >
+                <SelectTrigger {...control} aria-label="Mức ưu tiên">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TASK_PRIORITY_ORDER.map((priority) => (
+                    <SelectItem key={priority} value={priority}>
+                      {TASK_PRIORITY_LABEL[priority]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </FormField>
-          <FormField label="Trạng thái" htmlFor="task-status">
-            <Select
-              value={form.status}
-              onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
-            >
-              <SelectTrigger id="task-status" aria-label="Trạng thái">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASK_STATUS_ORDER.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {TASK_STATUS_LABEL[status]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <FormField id="task-status" label="Trạng thái">
+            {(control) => (
+              <Select
+                value={form.status}
+                onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
+              >
+                <SelectTrigger {...control} aria-label="Trạng thái">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TASK_STATUS_ORDER.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {TASK_STATUS_LABEL[status]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </FormField>
         </div>
 
         {canScope ? (
           <FormField
+            id="task-participants"
             label="Người tham gia"
             helperText="Người tham gia xem được công việc nhưng không phải người phụ trách."
           >
+            {() => (
+
             <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
               {people.length === 0 ? (
                 <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
