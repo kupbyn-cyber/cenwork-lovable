@@ -80,13 +80,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CEN 1.0 — Hệ điều hành vận hành doanh nghiệp" },
+      { title: "CEN 1.0 — Theme Foundation" },
       {
         name: "description",
-        content: "CEN 1.0 — nền tảng vận hành doanh nghiệp với giao diện Forest Command.",
+        content: "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "CEN 1.0 — Theme Foundation" },
+      { name: "twitter:title", content: "CEN 1.0 — Theme Foundation" },
+      { property: "og:description", content: "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung." },
+      { name: "twitter:description", content: "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ddff4671-603a-4f94-98aa-c60fff2cafe9" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ddff4671-603a-4f94-98aa-c60fff2cafe9" },
     ],
     links: [
       {
@@ -99,7 +105,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,

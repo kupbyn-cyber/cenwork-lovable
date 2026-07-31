@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "CEN 1.0 — Theme Foundation" },
       {
         property: "og:description",
-        content: "Design token tập trung và dark theme Forest Command cho CEN 1.0.",
+        content: "Nền giao diện CEN 1.0 theo phong cách Forest Command: dark mode duy nhất, design token tập trung.",
       },
     ],
   }),
