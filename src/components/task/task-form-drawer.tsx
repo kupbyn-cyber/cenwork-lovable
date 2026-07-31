@@ -385,7 +385,6 @@ export function TaskFormDrawer({
             label="Deadline"
             required
             error={errors.deadlineDate}
-            helperText="Theo giờ Hà Nội (GMT+7), gồm ngày và giờ."
           >
             {(control) => (
               <div className="flex flex-col gap-2 sm:flex-row">
