@@ -193,7 +193,7 @@
     background-color: var(--background);
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: var(--text-body);
+    font-size: 0.875rem;
     line-height: 1.375rem;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
@@ -223,7 +223,7 @@
 }
 
 @utility cen-kpi {
-  font-size: var(--text-kpi);
+  font-size: 2.25rem;
   line-height: 2.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
