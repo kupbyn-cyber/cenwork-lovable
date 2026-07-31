@@ -55,6 +55,18 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "project.member_unlinked": "Gỡ thành viên tham gia",
   "project.facility_linked": "Thêm Cơ sở liên quan",
   "project.facility_unlinked": "Gỡ Cơ sở liên quan",
+  "task.created": "Tạo công việc",
+  "task.updated": "Cập nhật thông tin công việc",
+  "task.status_changed": "Đổi trạng thái công việc",
+  "task.priority_changed": "Đổi mức ưu tiên công việc",
+  "task.deadline_changed": "Đổi mốc thời gian công việc",
+  "task.assignee_changed": "Đổi người phụ trách",
+  "task.project_changed": "Đổi dự án của công việc",
+  "task.team_changed": "Đổi Team phụ trách",
+  "task.archived": "Lưu trữ công việc",
+  "task.restored": "Khôi phục công việc",
+  "task.participant_linked": "Thêm người tham gia công việc",
+  "task.participant_unlinked": "Gỡ người tham gia công việc",
 };
 
 export const AUDIT_ENTITY_LABEL: Record<string, string> = {
@@ -64,6 +76,7 @@ export const AUDIT_ENTITY_LABEL: Record<string, string> = {
   facility: "Cơ sở",
   app_setting: "Cấu hình",
   project: "Dự án",
+  task: "Công việc",
 };
 
 export function auditActionLabel(action: string) {

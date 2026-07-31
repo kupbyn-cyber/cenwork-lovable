@@ -322,6 +322,122 @@ export type Database = {
           },
         ]
       }
+      task_participants: {
+        Row: {
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_participants_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assignee_id: string
+          created_at: string
+          created_by: string
+          deadline: string
+          description: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignee_id: string
+          created_at?: string
+          created_by: string
+          deadline: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string
+          created_at?: string
+          created_by?: string
+          deadline?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_collaborators: {
         Row: {
           created_at: string
@@ -416,10 +532,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_assign_task: {
+        Args: { _person: string; _project: string; _team: string }
+        Returns: boolean
+      }
+      can_create_task: { Args: { _project: string }; Returns: boolean }
       can_edit_project_row: { Args: { _project: string }; Returns: boolean }
+      can_edit_task_row: { Args: { _task: string }; Returns: boolean }
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
+      can_manage_task: { Args: { _task: string }; Returns: boolean }
       can_view_project: { Args: { _project: string }; Returns: boolean }
+      can_view_task: { Args: { _task: string }; Returns: boolean }
       current_app_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -429,6 +553,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_in_project_scope: {
+        Args: { _person: string; _project: string }
         Returns: boolean
       }
       is_project_person: { Args: { _person: string }; Returns: boolean }
@@ -460,6 +588,8 @@ export type Database = {
         | "pending_acceptance"
         | "completed"
         | "archived"
+      task_priority: "low" | "medium" | "high"
+      task_status: "not_started" | "in_progress" | "review" | "done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -599,6 +729,8 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      task_priority: ["low", "medium", "high"],
+      task_status: ["not_started", "in_progress", "review", "done"],
     },
   },
 } as const
