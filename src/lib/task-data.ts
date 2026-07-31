@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
+import {
+  formatHanoiDate,
+  formatHanoiDateTime,
+  hanoiStartOfDayMs,
+  isPastInstant,
+} from "@/lib/datetime";
 
 /**
  * CEN 1.0 — M3.1 Task data layer.
