@@ -14,27 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
+          actor_email: string | null
+          after_data: Json | null
+          before_data: Json | null
           created_at: string
+          entity_id: string | null
+          entity_type: string | null
           id: string
           metadata: Json
-          user_id: string
+          result: string
+          user_id: string | null
         }
         Insert: {
           action: string
+          actor_email?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           metadata?: Json
-          user_id: string
+          result?: string
+          user_id?: string | null
         }
         Update: {
           action?: string
+          actor_email?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           metadata?: Json
-          user_id?: string
+          result?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -213,6 +258,17 @@ export type Database = {
       }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
       my_primary_team_id: { Args: never; Returns: string }
+      write_audit: {
+        Args: {
+          _action: string
+          _after: Json
+          _before: Json
+          _entity_id: string
+          _entity_type: string
+          _metadata?: Json
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_status: "active" | "locked"

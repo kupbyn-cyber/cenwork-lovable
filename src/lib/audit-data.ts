@@ -1,0 +1,131 @@
+import { queryOptions } from "@tanstack/react-query";
+
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * CEN 1.0 — M1.5 Audit Log data layer (chỉ đọc).
+ * Ghi log do trigger phía database đảm nhiệm; UI không thể sửa hoặc xóa.
+ */
+export interface AuditLogRow {
+  id: string;
+  user_id: string | null;
+  actor_email: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  before_data: unknown;
+  after_data: unknown;
+  metadata: unknown;
+  result: string;
+  created_at: string;
+}
+
+export const AUDIT_ACTION_LABEL: Record<string, string> = {
+  "account.created": "Tạo tài khoản",
+  "account.locked": "Khóa tài khoản",
+  "account.unlocked": "Mở khóa tài khoản",
+  "account.password_changed": "Đổi mật khẩu",
+  "account.signed_out_all": "Đăng xuất toàn bộ thiết bị",
+  "member.profile_updated": "Cập nhật hồ sơ thành viên",
+  "member.primary_team_changed": "Đổi Team chính",
+  "role.granted": "Gán vai trò",
+  "role.revoked": "Thu hồi vai trò",
+  "team.created": "Tạo Team",
+  "team.updated": "Cập nhật Team",
+  "team.collaborator_added": "Thêm Team phối hợp",
+  "team.collaborator_removed": "Gỡ Team phối hợp",
+  "facility.created": "Tạo Cơ sở",
+  "facility.updated": "Cập nhật Cơ sở",
+  "facility.deactivated": "Ngừng hoạt động Cơ sở",
+  "setting.updated": "Thay đổi cấu hình hệ thống",
+};
+
+export const AUDIT_ENTITY_LABEL: Record<string, string> = {
+  profile: "Tài khoản",
+  user_role: "Vai trò",
+  team: "Team",
+  facility: "Cơ sở",
+  app_setting: "Cấu hình",
+};
+
+export function auditActionLabel(action: string) {
+  return AUDIT_ACTION_LABEL[action] ?? action;
+}
+
+export interface AuditFilters {
+  actor?: string;
+  action?: string;
+  entityType?: string;
+  from?: string;
+  to?: string;
+}
+
+export async function fetchAuditLogs(filters: AuditFilters): Promise<AuditLogRow[]> {
+  let query = supabase
+    .from("audit_logs")
+    .select(
+      "id,user_id,actor_email,action,entity_type,entity_id,before_data,after_data,metadata,result,created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (filters.action) query = query.eq("action", filters.action);
+  if (filters.entityType) query = query.eq("entity_type", filters.entityType);
+  if (filters.actor) query = query.ilike("actor_email", `%${filters.actor}%`);
+  if (filters.from) query = query.gte("created_at", new Date(filters.from).toISOString());
+  if (filters.to) {
+    const to = new Date(filters.to);
+    to.setHours(23, 59, 59, 999);
+    query = query.lte("created_at", to.toISOString());
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AuditLogRow[];
+}
+
+export const auditLogsQuery = (filters: AuditFilters) =>
+  queryOptions({
+    queryKey: ["audit-logs", filters],
+    queryFn: () => fetchAuditLogs(filters),
+  });
+
+export function formatAuditTime(value: string) {
+  return new Date(value).toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Rút gọn dữ liệu trước/sau để hiển thị — không chứa mật khẩu, token hay secret. */
+export function summarizeChange(value: unknown): string {
+  if (!value || typeof value !== "object") return "—";
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([key]) => !/password|token|secret|key$/i.test(key),
+  );
+  if (entries.length === 0) return "—";
+  return entries
+    .map(([key, val]) => `${key}: ${val === null || val === "" ? "—" : String(val)}`)
+    .join(" · ");
+}
+
+/**
+ * Ghi audit cho sự kiện phía Auth mà database không quan sát được
+ * (đổi mật khẩu tự phục vụ, đăng xuất toàn bộ thiết bị).
+ * Chỉ ghi metadata an toàn — không bao giờ ghi mật khẩu hay token.
+ */
+export async function logSelfAuditEvent(
+  userId: string,
+  action: "account.password_changed" | "account.signed_out_all",
+) {
+  await supabase.from("audit_logs").insert({
+    user_id: userId,
+    action,
+    entity_type: "profile",
+    entity_id: userId,
+    metadata: {},
+  });
+}

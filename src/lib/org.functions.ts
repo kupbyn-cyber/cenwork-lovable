@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PERMISSIONS } from "@/lib/permissions";
+import { requirePermission } from "@/lib/permission-guard";
 
 /**
  * CEN 1.0 — M1.4 server functions
@@ -25,29 +27,11 @@ const createMemberSchema = z.object({
 
 
 
-async function assertCanCreate(
-  supabase: {
-    rpc: (
-      fn: "has_role",
-      args: { _user_id: string; _role: "admin" | "cmo" | "leader" | "member" },
-    ) => PromiseLike<{ data: boolean | null }>;
-  },
-  userId: string,
-) {
-  const [{ data: isAdmin }, { data: isCmo }] = await Promise.all([
-    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-    supabase.rpc("has_role", { _user_id: userId, _role: "cmo" }),
-  ]);
-  if (!isAdmin && !isCmo) throw new Error("Bạn không có quyền thực hiện thao tác này.");
-  return { isAdmin: Boolean(isAdmin) };
-}
-
-
 export const createMemberAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createMemberSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertCanCreate(context.supabase, context.userId);
+    await requirePermission(context.supabase, context.userId, PERMISSIONS.MEMBERS_CREATE);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -98,7 +82,15 @@ export const setMemberRole = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), role: roleEnum }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertCanCreate(context.supabase, context.userId);
+    await requirePermission(
+      context.supabase,
+      context.userId,
+      PERMISSIONS.ROLES_ASSIGN,
+      "Bạn không có quyền thay đổi vai trò hệ thống.",
+    );
+    if (data.userId === context.userId) {
+      throw new Error("Không thể tự thay đổi vai trò của chính mình.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
@@ -115,11 +107,12 @@ export const setMemberStatus = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), status: z.enum(["active", "locked"]) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Chỉ Admin được khóa hoặc mở khóa tài khoản.");
+    await requirePermission(
+      context.supabase,
+      context.userId,
+      PERMISSIONS.MEMBERS_LOCK,
+      "Chỉ Admin được khóa hoặc mở khóa tài khoản.",
+    );
     if (data.userId === context.userId) {
       throw new Error("Không thể tự khóa tài khoản của chính mình.");
     }
