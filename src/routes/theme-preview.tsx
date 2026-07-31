@@ -257,6 +257,22 @@ function ThemePreview() {
         <Section title="Form component" hint="M1.1B · label, helper text, required, error, disabled, read-only.">
           <FormPreview />
         </Section>
+
+        <Section title="Badge và Avatar" hint="M1.1C · badge variant, status badge, avatar và fallback.">
+          <BadgeAvatarPreview />
+        </Section>
+
+        <Section title="Card" hint="M1.1C · header, action, footer, density, hover.">
+          <CardPreview />
+        </Section>
+
+        <Section title="Table nền" hint="M1.1C · header, row, cell, hover, selected, action column.">
+          <TablePreview />
+        </Section>
+
+        <Section title="Structure component" hint="M1.1C · page header, section header, tabs, breadcrumb, divider.">
+          <StructurePreview />
+        </Section>
       </div>
 
     </main>
