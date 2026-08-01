@@ -28,6 +28,8 @@ export interface TeamRow {
   id: string;
   name: string;
   leader_id: string | null;
+  telegram_topic_id: string | null;
+  telegram_enabled: boolean;
 }
 
 export interface MemberRow {
@@ -37,9 +39,12 @@ export interface MemberRow {
   job_title: string | null;
   status: AccountStatus;
   primary_team_id: string | null;
+  telegram_user_id: string | null;
+  telegram_enabled: boolean;
   role: AppRole | null;
   collaboratorTeamIds: string[];
 }
+
 
 export interface FacilityRow {
   id: string;
@@ -54,7 +59,10 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 }
 
 export async function fetchTeams(): Promise<TeamRow[]> {
-  return unwrap(await supabase.from("teams").select("id,name,leader_id").order("name"));
+  return unwrap(await supabase
+      .from("teams")
+      .select("id,name,leader_id,telegram_topic_id,telegram_enabled")
+      .order("name"));
 }
 
 export async function fetchFacilities(): Promise<FacilityRow[]> {
@@ -67,7 +75,7 @@ export async function fetchMembers(): Promise<MemberRow[]> {
   const profiles = unwrap(
     await supabase
       .from("profiles")
-      .select("id,email,display_name,job_title,status,primary_team_id")
+      .select("id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled")
       .order("display_name"),
   ) as Omit<MemberRow, "role" | "collaboratorTeamIds">[];
 
@@ -123,11 +131,15 @@ export async function updateMemberProfile(input: {
   job_title: string | null;
   primary_team_id: string | null;
   canChangePrimaryTeam: boolean;
+  telegram_user_id?: string | null;
+  telegram_enabled?: boolean;
 }) {
   const payload: Database["public"]["Tables"]["profiles"]["Update"] = {
     display_name: input.display_name,
     job_title: input.job_title,
     ...(input.canChangePrimaryTeam ? { primary_team_id: input.primary_team_id } : {}),
+    ...(input.telegram_user_id !== undefined ? { telegram_user_id: input.telegram_user_id } : {}),
+    ...(input.telegram_enabled !== undefined ? { telegram_enabled: input.telegram_enabled } : {}),
   };
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", input.id);
@@ -148,18 +160,40 @@ export async function replaceCollaboratorTeams(userId: string, teamIds: string[]
   if (error) throw new Error(error.message);
 }
 
-export async function saveTeam(input: { id?: string; name: string; leader_id: string | null }) {
+export async function saveTeam(input: {
+  id?: string;
+  name: string;
+  leader_id: string | null;
+  telegram_topic_id?: string | null;
+  telegram_enabled?: boolean;
+}) {
   if (input.id) {
     const { error } = await supabase
       .from("teams")
-      .update({ name: input.name, leader_id: input.leader_id })
+      .update({
+        name: input.name,
+        leader_id: input.leader_id,
+        ...(input.telegram_topic_id !== undefined
+          ? { telegram_topic_id: input.telegram_topic_id }
+          : {}),
+        ...(input.telegram_enabled !== undefined
+          ? { telegram_enabled: input.telegram_enabled }
+          : {}),
+      })
       .eq("id", input.id);
     if (error) throw new Error(error.message);
     return;
   }
   const { error } = await supabase
     .from("teams")
-    .insert({ name: input.name, leader_id: input.leader_id });
+    .insert({
+      name: input.name,
+      leader_id: input.leader_id,
+      ...(input.telegram_topic_id !== undefined
+        ? { telegram_topic_id: input.telegram_topic_id }
+        : {}),
+      ...(input.telegram_enabled !== undefined ? { telegram_enabled: input.telegram_enabled } : {}),
+    });
   if (error) throw new Error(error.message);
 }
 

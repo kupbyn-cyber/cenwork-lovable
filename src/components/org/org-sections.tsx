@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
 import { FormField } from "@/components/ui/form-field";
@@ -42,6 +43,8 @@ export function TeamsSection() {
   const [editing, setEditing] = React.useState<TeamRow | null>(null);
   const [name, setName] = React.useState("");
   const [leaderId, setLeaderId] = React.useState(NO_LEADER);
+  const [topicId, setTopicId] = React.useState("");
+  const [telegramEnabled, setTelegramEnabled] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const teams = teamsResult.data ?? [];
@@ -51,6 +54,8 @@ export function TeamsSection() {
     setEditing(team);
     setName(team?.name ?? "");
     setLeaderId(team?.leader_id ?? NO_LEADER);
+    setTopicId(team?.telegram_topic_id ?? "");
+    setTelegramEnabled(team?.telegram_enabled ?? false);
     setError(null);
     setOpen(true);
   }
@@ -68,10 +73,13 @@ export function TeamsSection() {
         ...(editing ? { id: editing.id } : {}),
         name: name.trim(),
         leader_id: leaderId === NO_LEADER ? null : leaderId,
+        telegram_topic_id: topicId.trim() || null,
+        telegram_enabled: telegramEnabled,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["teams"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: ["telegram-teams"] });
       cenToast.success(editing ? "Đã cập nhật Team." : "Đã tạo Team mới.");
       setOpen(false);
     },
@@ -192,6 +200,10 @@ export function TeamsSection() {
               setError("Vui lòng nhập tên Team.");
               return;
             }
+            if (telegramEnabled && !topicId.trim()) {
+              setError("Cần nhập Telegram Topic Thread ID trước khi bật gửi Telegram.");
+              return;
+            }
             setError(null);
             mutation.mutate();
           }}
@@ -227,6 +239,28 @@ export function TeamsSection() {
               </Select>
             )}
           </FormField>
+          <FormField
+            id="team-telegram-topic"
+            label="Telegram Topic Thread ID"
+            helperText="Topic riêng của Team trong Group Chat chung. Bắt buộc nếu bật gửi Telegram."
+          >
+            {(controlProps) => (
+              <Input
+                {...controlProps}
+                value={topicId}
+                maxLength={32}
+                placeholder="Ví dụ: 12"
+                onChange={(e) => setTopicId(e.target.value)}
+              />
+            )}
+          </FormField>
+          <label className="flex min-w-0 items-center gap-2.5 text-label text-text-primary">
+            <Checkbox
+              checked={telegramEnabled}
+              onCheckedChange={(value) => setTelegramEnabled(value === true)}
+            />
+            <span className="min-w-0">Bật gửi Telegram cho Team này</span>
+          </label>
           {error ? (
             <p
               role="alert"

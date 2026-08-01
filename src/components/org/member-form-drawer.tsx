@@ -45,6 +45,8 @@ interface FormState {
   primaryTeamId: string;
   collaboratorTeamIds: string[];
   password: string;
+  telegramUserId: string;
+  telegramEnabled: boolean;
 }
 
 function initialState(member: MemberRow | null): FormState {
@@ -56,6 +58,8 @@ function initialState(member: MemberRow | null): FormState {
     primaryTeamId: member?.primary_team_id ?? NO_TEAM,
     collaboratorTeamIds: member?.collaboratorTeamIds ?? [],
     password: "",
+    telegramUserId: member?.telegram_user_id ?? "",
+    telegramEnabled: member?.telegram_enabled ?? true,
   };
 }
 
@@ -104,6 +108,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         job_title: values.jobTitle.trim() || null,
         primary_team_id: primaryTeamId,
         canChangePrimaryTeam: canEditRoleTeam,
+        telegram_user_id: values.telegramUserId.trim() || null,
+        telegram_enabled: values.telegramEnabled,
       });
       if (canEditRoleTeam && values.role !== member.role) {
         await setMemberRole({ data: { userId: member.id, role: values.role } });
@@ -296,6 +302,35 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             </Select>
           )}
         </FormField>
+
+        {!isCreate ? (
+          <>
+            <FormField
+              id="member-telegram-id"
+              label="Telegram User ID"
+              helperText="Không bắt buộc. Dùng để gửi thông báo Telegram cá nhân."
+            >
+              {(controlProps) => (
+                <Input
+                  {...controlProps}
+                  value={form.telegramUserId}
+                  maxLength={32}
+                  placeholder="Ví dụ: 123456789"
+                  onChange={(e) => setForm((s) => ({ ...s, telegramUserId: e.target.value }))}
+                />
+              )}
+            </FormField>
+            <label className="flex min-w-0 items-center gap-2.5 text-label text-text-primary">
+              <Checkbox
+                checked={form.telegramEnabled}
+                onCheckedChange={(value) =>
+                  setForm((s) => ({ ...s, telegramEnabled: value === true }))
+                }
+              />
+              <span className="min-w-0">Nhận thông báo Telegram cá nhân</span>
+            </label>
+          </>
+        ) : null}
 
         <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="text-label font-medium text-text-secondary">Team phối hợp</legend>

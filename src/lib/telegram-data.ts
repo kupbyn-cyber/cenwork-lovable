@@ -3,26 +3,12 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * CEN 1.0 — M5 mapping Telegram và hàng đợi gửi (chỉ Admin, RLS chốt phạm vi).
- * Bot Token không bao giờ xuất hiện ở client: việc gửi thực hiện ở server function.
+ * CEN WORK — M5 ánh xạ Telegram.
+ * Mô hình chuẩn: một Bot chung, một Group Chat chung, mỗi Team một Topic Thread ID,
+ * mỗi thành viên một Telegram User ID.
+ * Nguồn dữ liệu duy nhất: profiles (cá nhân), teams (topic), telegram_config (bot + group).
+ * Bot Token không bao giờ xuất hiện ở client: đọc/ghi qua server function.
  */
-export interface TelegramUserLinkRow {
-  id: string;
-  user_id: string;
-  chat_id: string;
-  is_active: boolean;
-  updated_at: string;
-}
-
-export interface TelegramTeamLinkRow {
-  id: string;
-  team_id: string;
-  chat_id: string;
-  topic_id: string | null;
-  is_active: boolean;
-  updated_at: string;
-}
-
 export type DeliveryStatus = "pending" | "sent" | "failed";
 
 export const DELIVERY_STATUS_LABEL: Record<DeliveryStatus, string> = {
@@ -51,6 +37,21 @@ export interface TelegramOutboxRow {
   created_at: string;
 }
 
+export interface TelegramMemberRow {
+  id: string;
+  display_name: string;
+  email: string;
+  telegram_user_id: string | null;
+  telegram_enabled: boolean;
+}
+
+export interface TelegramTeamRow {
+  id: string;
+  name: string;
+  telegram_topic_id: string | null;
+  telegram_enabled: boolean;
+}
+
 function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
@@ -61,22 +62,22 @@ export function maskChatId(chatId: string): string {
   return `${chatId.slice(0, 2)}••••${chatId.slice(-3)}`;
 }
 
-export async function fetchUserLinks(): Promise<TelegramUserLinkRow[]> {
+export async function fetchTelegramMembers(): Promise<TelegramMemberRow[]> {
   const { data, error } = await supabase
-    .from("telegram_user_links")
-    .select("id,user_id,chat_id,is_active,updated_at")
-    .order("updated_at", { ascending: false });
+    .from("profiles")
+    .select("id,display_name,email,telegram_user_id,telegram_enabled")
+    .order("display_name");
   fail(error);
-  return (data ?? []) as TelegramUserLinkRow[];
+  return (data ?? []) as TelegramMemberRow[];
 }
 
-export async function fetchTeamLinks(): Promise<TelegramTeamLinkRow[]> {
+export async function fetchTelegramTeams(): Promise<TelegramTeamRow[]> {
   const { data, error } = await supabase
-    .from("telegram_team_links")
-    .select("id,team_id,chat_id,topic_id,is_active,updated_at")
-    .order("updated_at", { ascending: false });
+    .from("teams")
+    .select("id,name,telegram_topic_id,telegram_enabled")
+    .order("name");
   fail(error);
-  return (data ?? []) as TelegramTeamLinkRow[];
+  return (data ?? []) as TelegramTeamRow[];
 }
 
 export async function fetchOutbox(limit = 50): Promise<TelegramOutboxRow[]> {
@@ -91,62 +92,50 @@ export async function fetchOutbox(limit = 50): Promise<TelegramOutboxRow[]> {
   return (data ?? []) as TelegramOutboxRow[];
 }
 
-export async function upsertUserLink(input: {
+/** Cập nhật ánh xạ Telegram cá nhân (RLS quyết định ai được sửa hồ sơ nào). */
+export async function saveMemberTelegram(input: {
   userId: string;
-  chatId: string;
-  isActive: boolean;
+  telegramUserId: string | null;
+  enabled: boolean;
 }) {
-  const { error } = await supabase.from("telegram_user_links").upsert(
-    {
-      user_id: input.userId,
-      chat_id: input.chatId.trim(),
-      is_active: input.isActive,
-    },
-    { onConflict: "user_id" },
-  );
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      telegram_user_id: input.telegramUserId?.trim() || null,
+      telegram_enabled: input.enabled,
+    })
+    .eq("id", input.userId);
   fail(error);
 }
 
-export async function upsertTeamLink(input: {
+/** Cập nhật Topic Thread ID của Team (RLS: chỉ Admin). */
+export async function saveTeamTelegram(input: {
   teamId: string;
-  chatId: string;
   topicId: string | null;
-  isActive: boolean;
+  enabled: boolean;
 }) {
-  const { error } = await supabase.from("telegram_team_links").upsert(
-    {
-      team_id: input.teamId,
-      chat_id: input.chatId.trim(),
-      topic_id: input.topicId,
-      is_active: input.isActive,
-    },
-    { onConflict: "team_id" },
-  );
+  const { error } = await supabase
+    .from("teams")
+    .update({
+      telegram_topic_id: input.topicId?.trim() || null,
+      telegram_enabled: input.enabled,
+    })
+    .eq("id", input.teamId);
   fail(error);
 }
 
-export async function deleteUserLink(id: string) {
-  const { error } = await supabase.from("telegram_user_links").delete().eq("id", id);
-  fail(error);
-}
-
-export async function deleteTeamLink(id: string) {
-  const { error } = await supabase.from("telegram_team_links").delete().eq("id", id);
-  fail(error);
-}
-
-export function telegramUserLinksQuery(enabled: boolean) {
+export function telegramMembersQuery(enabled: boolean) {
   return queryOptions({
-    queryKey: ["telegram-user-links"],
-    queryFn: fetchUserLinks,
+    queryKey: ["telegram-members"],
+    queryFn: fetchTelegramMembers,
     enabled,
   });
 }
 
-export function telegramTeamLinksQuery(enabled: boolean) {
+export function telegramTeamsQuery(enabled: boolean) {
   return queryOptions({
-    queryKey: ["telegram-team-links"],
-    queryFn: fetchTeamLinks,
+    queryKey: ["telegram-teams"],
+    queryFn: fetchTelegramTeams,
     enabled,
   });
 }

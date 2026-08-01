@@ -1468,6 +1468,8 @@ export type Database = {
           must_change_password: boolean
           primary_team_id: string | null
           status: Database["public"]["Enums"]["account_status"]
+          telegram_enabled: boolean
+          telegram_user_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1479,6 +1481,8 @@ export type Database = {
           must_change_password?: boolean
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
+          telegram_enabled?: boolean
+          telegram_user_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1490,6 +1494,8 @@ export type Database = {
           must_change_password?: boolean
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
+          telegram_enabled?: boolean
+          telegram_user_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1828,6 +1834,8 @@ export type Database = {
           id: string
           leader_id: string | null
           name: string
+          telegram_enabled: boolean
+          telegram_topic_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1835,6 +1843,8 @@ export type Database = {
           id?: string
           leader_id?: string | null
           name: string
+          telegram_enabled?: boolean
+          telegram_topic_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1842,12 +1852,49 @@ export type Database = {
           id?: string
           leader_id?: string | null
           name?: string
+          telegram_enabled?: boolean
+          telegram_topic_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "teams_leader_fk"
             columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_config: {
+        Row: {
+          bot_token: string | null
+          created_at: string
+          group_chat_id: string
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bot_token?: string | null
+          created_at?: string
+          group_chat_id?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bot_token?: string | null
+          created_at?: string
+          group_chat_id?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_config_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
