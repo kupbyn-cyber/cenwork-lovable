@@ -557,7 +557,8 @@ function ProjectDetailPage() {
             </Button>
             <Button
               variant="destructive"
-              loading={busy}
+              loading={decideMutation.isPending && decideMutation.variables?.approve === false}
+              disabled={busy}
               onClick={() => {
                 if (!rejectNote.trim()) {
                   setRejectError("Phải nhập lý do từ chối.");
