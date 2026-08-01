@@ -236,6 +236,30 @@ function ProjectsPage() {
         </Select>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-md border border-border-subtle p-1" role="tablist">
+          <Button
+            role="tab"
+            aria-selected={view === "active"}
+            variant={view === "active" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("active")}
+          >
+            Đang hoạt động
+          </Button>
+          <Button
+            role="tab"
+            aria-selected={view === "archived"}
+            variant={view === "archived" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("archived")}
+          >
+            Lưu trữ
+          </Button>
+        </div>
+        <span className="text-caption text-text-muted">{rows.length} dự án</span>
+      </div>
+
       <DataTable
         columns={columns}
         data={rows}
@@ -244,12 +268,17 @@ function ProjectsPage() {
         error={projectsResult.isError}
         onRetry={() => void projectsResult.refetch()}
         errorTitle="Không tải được danh sách dự án"
-        emptyTitle="Chưa có dự án nào"
-        emptyDescription="Gửi ý tưởng đầu tiên để bắt đầu quy trình duyệt."
+        emptyTitle={view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
+        emptyDescription={
+          view === "archived"
+            ? "Dự án sẽ xuất hiện ở đây sau khi hoàn thành chính thức."
+            : "Gửi ý tưởng đầu tiên để bắt đầu quy trình duyệt."
+        }
         onRowClick={(row) =>
           void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
         }
       />
+
 
       {access.userId ? (
         <ProjectFormDrawer
