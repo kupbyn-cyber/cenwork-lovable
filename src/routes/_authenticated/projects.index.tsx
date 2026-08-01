@@ -67,6 +67,7 @@ function ProjectsPage() {
   const [ownerFilter, setOwnerFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [facilityFilter, setFacilityFilter] = React.useState(ALL);
+  const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
 
@@ -78,6 +79,7 @@ function ProjectsPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (projectsResult.data ?? []).filter((project) => {
+      if (isProjectArchived(project) !== (view === "archived")) return false;
       if (keyword && !project.name.toLowerCase().includes(keyword)) return false;
       if (statusFilter !== ALL && project.status !== statusFilter) return false;
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
@@ -85,7 +87,7 @@ function ProjectsPage() {
       if (facilityFilter !== ALL && !project.facilityIds.includes(facilityFilter)) return false;
       return true;
     });
-  }, [projectsResult.data, search, statusFilter, ownerFilter, teamFilter, facilityFilter]);
+  }, [projectsResult.data, search, statusFilter, ownerFilter, teamFilter, facilityFilter, view]);
 
   const columns = [
     {
