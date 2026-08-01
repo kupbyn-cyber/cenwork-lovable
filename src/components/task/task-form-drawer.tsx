@@ -134,8 +134,11 @@ export function TaskFormDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task, lockedProjectId]);
 
+  /** Dự án chưa duyệt không được tạo Task (ràng buộc thật ở database). */
   const selectableProjects = projects.filter(
-    (project) => project.status !== "archived" || project.id === form.projectId,
+    (project) =>
+      (isProjectApproved(project) && project.status !== "archived") ||
+      project.id === form.projectId,
   );
 
   const mutation = useMutation({
