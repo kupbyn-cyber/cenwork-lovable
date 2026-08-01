@@ -1,9 +1,10 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Archive, ArchiveRestore, CalendarClock, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable, TableCellStack } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,9 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { cenToast } from "@/components/ui/toast";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { RowActionsCell } from "@/components/common/row-actions-cell";
+import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
+import type { RowAction } from "@/components/common/row-actions-menu";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
+import { setManualArchive } from "@/lib/deadline-data";
+import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
   TASK_PRIORITY_LABEL,
@@ -26,9 +33,15 @@ import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
+  canChangeTaskStatus,
+  canEditTask,
+  canManuallyArchiveTask,
+  canRequestTaskDeadline,
+  canRestoreTask,
   formatDateTime,
   isTaskArchived,
   isTaskOverdue,
+  setTaskStatus,
   tasksQuery,
   type TaskAccessContext,
   type TaskRow,
