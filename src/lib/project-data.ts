@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
+import {
+  canCreateProjectTask,
+  isTaskManuallyArchived,
+  isTaskOverdue,
+  type TaskRow,
+} from "@/lib/task-data";
 
 /**
  * CEN 1.0 — M2 Project data layer.
@@ -552,3 +558,109 @@ export const projectHistoryQuery = (projectId: string) =>
     queryKey: ["project-history", projectId],
     queryFn: () => fetchProjectHistory(projectId),
   });
+
+/* ================= KPI Task theo Dự án (gộp 1 query, không N+1) ================= */
+
+export interface ProjectTaskStats {
+  /** Tổng Task gắn project_id, chưa xóa mềm (gồm cả Task đã lưu trữ). */
+  total: number;
+  /** Task chưa hoàn thành cuối cùng và còn trong phạm vi vận hành. */
+  active: number;
+  /** Task chưa hoàn thành và đã quá deadline. */
+  overdue: number;
+  /** Task hoàn thành cuối cùng (status = done). */
+  done: number;
+  /** done / total, làm tròn; 0 khi chưa có Task (không NaN). */
+  progress: number;
+}
+
+export const EMPTY_TASK_STATS: ProjectTaskStats = {
+  total: 0,
+  active: 0,
+  overdue: 0,
+  done: 0,
+  progress: 0,
+};
+
+/**
+ * Gom KPI Task cho toàn bộ dự án từ MỘT danh sách Task đã tải sẵn (tasksQuery).
+ * Không query riêng theo từng dự án. Task độc lập không được tính.
+ */
+export function buildProjectTaskStats(tasks: TaskRow[]): Record<string, ProjectTaskStats> {
+  const map: Record<string, ProjectTaskStats> = {};
+  for (const task of tasks) {
+    const projectId = task.project_id;
+    if (!projectId) continue;
+    const stats = (map[projectId] ??= { ...EMPTY_TASK_STATS });
+    stats.total += 1;
+    if (task.status === "done") {
+      stats.done += 1;
+    } else {
+      // Task chờ kiểm tra chưa được coi là hoàn thành.
+      if (!task.is_archived && !isTaskManuallyArchived(task)) stats.active += 1;
+      if (isTaskOverdue(task)) stats.overdue += 1;
+    }
+  }
+  for (const stats of Object.values(map)) {
+    stats.progress = stats.total === 0 ? 0 : Math.round((stats.done / stats.total) * 100);
+  }
+  return map;
+}
+
+/** Gom Task theo project_id để đổ vào accordion (một nguồn dữ liệu duy nhất). */
+export function groupTasksByProject(tasks: TaskRow[]): Record<string, TaskRow[]> {
+  const map: Record<string, TaskRow[]> = {};
+  for (const task of tasks) {
+    if (!task.project_id) continue;
+    (map[task.project_id] ??= []).push(task);
+  }
+  return map;
+}
+
+/**
+ * Lịch sử phê duyệt của mọi dự án người dùng được xem — một query duy nhất.
+ * Dùng cho tab Chờ duyệt / Bị từ chối, tránh N+1 theo từng dự án.
+ */
+export async function fetchAllProjectApprovals(): Promise<Record<string, ProjectApprovalEntry[]>> {
+  const { data, error } = await supabase
+    .from("project_approvals")
+    .select(
+      "id,project_id,round,stage,action,actor_role,from_status,to_status,reason,created_at,actor:profiles(display_name)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) throw new Error(error.message);
+  const map: Record<string, ProjectApprovalEntry[]> = {};
+  for (const row of data ?? []) {
+    const raw = row as RawProject;
+    const actor = raw["actor"] as { display_name: string } | null;
+    const projectId = raw["project_id"] as string;
+    (map[projectId] ??= []).push({
+      id: raw["id"] as string,
+      round: (raw["round"] as number | null) ?? 1,
+      stage: raw["stage"] as string,
+      action: raw["action"] as string,
+      actorName: actor?.display_name ?? null,
+      actor_role: (raw["actor_role"] as string | null) ?? null,
+      from_status: (raw["from_status"] as ProjectStatus | null) ?? null,
+      to_status: (raw["to_status"] as ProjectStatus | null) ?? null,
+      reason: (raw["reason"] as string | null) ?? null,
+      created_at: raw["created_at"] as string,
+    });
+  }
+  return map;
+}
+
+export const allProjectApprovalsQuery = () =>
+  queryOptions({ queryKey: ["project-approvals-all"], queryFn: fetchAllProjectApprovals });
+
+/** Dự án đang cho phép tạo Task: đã duyệt, chưa hoàn thành cuối cùng, chưa lưu trữ. */
+export function canAddTaskToProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  if (!isProjectApproved(project)) return false;
+  if (isProjectArchived(project)) return false;
+  return canCreateProjectTask({
+    userId: ctx.userId,
+    role: ctx.role,
+    leaderTeamId: ctx.leaderTeamId,
+  });
+}
