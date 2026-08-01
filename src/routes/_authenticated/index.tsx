@@ -316,26 +316,30 @@ function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric
-          label="Dự án đang chạy"
+          label="Dự án đang triển khai"
           value={activeProjects.length}
           hint={`${approvedProjects.length} dự án đã duyệt trong phạm vi`}
         />
         <Metric
-          label="Công việc của tôi"
-          value={myTasks.length}
-          hint={`${myTasks.filter(isTaskOverdue).length} quá hạn`}
+          label="Công việc cần xử lý"
+          value={myTasks.filter((task) => task.status !== "done").length}
+          tone="yellow"
+          hint={`${dueToday.length} việc đến hạn hôm nay`}
         />
         <Metric
-          label="Đến hạn hôm nay"
-          value={dueToday.length}
-          hint={`${overdue.length} việc quá hạn`}
+          label={`Đến hạn · ${rangeMeta.label}`}
+          value={dueInRange.length}
+          tone="orange"
+          hint="Theo bộ lọc thời gian đang chọn"
         />
         <Metric
-          label="Chờ kiểm tra"
-          value={inReview.length}
-          hint="Công việc ở trạng thái chờ kiểm tra"
+          label="Công việc quá hạn"
+          value={overdue.length}
+          tone="danger"
+          hint={`${inReview.length} nội dung chờ duyệt`}
         />
       </div>
+
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
