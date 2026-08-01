@@ -53,6 +53,7 @@ export interface TelegramMemberRow {
   email: string;
   telegram_user_id: string | null;
   telegram_enabled: boolean;
+  primary_team_id: string | null;
 }
 
 export interface TelegramTeamRow {
@@ -75,7 +76,7 @@ export function maskChatId(chatId: string): string {
 export async function fetchTelegramMembers(): Promise<TelegramMemberRow[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,display_name,email,telegram_user_id,telegram_enabled")
+    .select("id,display_name,email,telegram_user_id,telegram_enabled,primary_team_id")
     .order("display_name");
   fail(error);
   return (data ?? []) as TelegramMemberRow[];
