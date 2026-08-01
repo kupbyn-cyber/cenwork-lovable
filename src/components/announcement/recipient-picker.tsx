@@ -54,11 +54,21 @@ export function useRecipientScope(): RecipientScope {
   }, [allMembers, allTeams, leaderTeamId, members.isError, members.isLoading, role, teams.isError, teams.isLoading, userId]);
 }
 
+interface BulkState {
+  allUsers: boolean;
+  allTeams: boolean;
+  includeSelf: boolean;
+}
+
 interface PickerProps {
   scope: RecipientScope;
   userIds: string[];
   teamIds: string[];
+  bulk: BulkState;
+  estimatedCount: number | null;
+  estimating?: boolean;
   onChange: (next: { userIds: string[]; teamIds: string[] }) => void;
+  onBulkChange: (next: BulkState) => void;
   disabled?: boolean;
 }
 
@@ -66,7 +76,20 @@ function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((value) => value !== id) : [...list, id];
 }
 
-export function RecipientPicker({ scope, userIds, teamIds, onChange, disabled }: PickerProps) {
+export function RecipientPicker({
+  scope,
+  userIds,
+  teamIds,
+  bulk,
+  estimatedCount,
+  estimating,
+  onChange,
+  onBulkChange,
+  disabled,
+}: PickerProps) {
+  const { role } = useOrgAccess();
+  const canBulk = role === "admin" || role === "cmo" || role === "leader";
+  const wide = role === "admin" || role === "cmo";
   const [search, setSearch] = React.useState("");
 
   const filteredUsers = scope.users.filter((user) =>
@@ -75,6 +98,56 @@ export function RecipientPicker({ scope, userIds, teamIds, onChange, disabled }:
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {canBulk ? (
+        <div className="flex min-w-0 flex-col gap-2 rounded-control border border-border-default p-3">
+          <Label className="text-label font-medium text-text-secondary">Chọn nhanh</Label>
+          <label className="flex min-w-0 items-center gap-2 text-body-sm">
+            <Checkbox
+              checked={bulk.allUsers}
+              disabled={disabled}
+              onCheckedChange={(checked) =>
+                onBulkChange({ ...bulk, allUsers: checked === true })
+              }
+            />
+            <span className="min-w-0 break-words">
+              {wide ? "Tất cả mọi người" : "Tất cả người tôi có quyền gửi"}
+            </span>
+          </label>
+          <label className="flex min-w-0 items-center gap-2 text-body-sm">
+            <Checkbox
+              checked={bulk.allTeams}
+              disabled={disabled}
+              onCheckedChange={(checked) =>
+                onBulkChange({ ...bulk, allTeams: checked === true })
+              }
+            />
+            <span className="min-w-0 break-words">
+              {wide ? "Tất cả các Team" : "Tất cả Team tôi có quyền gửi"}
+            </span>
+          </label>
+          <label className="flex min-w-0 items-center gap-2 text-body-sm">
+            <Checkbox
+              checked={bulk.includeSelf}
+              disabled={disabled}
+              onCheckedChange={(checked) =>
+                onBulkChange({ ...bulk, includeSelf: checked === true })
+              }
+            />
+            <span className="min-w-0 break-words">Bao gồm tôi</span>
+          </label>
+          <p className="text-body-sm text-text-muted">
+            {estimating
+              ? "Đang tính số người nhận dự kiến…"
+              : estimatedCount === null
+                ? "Chưa xác định số người nhận dự kiến."
+                : `Dự kiến ${estimatedCount} người nhận.`}{" "}
+            Với lịch phát hành hoặc chuỗi lặp, số người nhận có thể thay đổi đến thời điểm phát
+            hành thực tế.
+          </p>
+        </div>
+      ) : null}
+
+
       <div className="flex min-w-0 flex-col gap-2">
         <Label className="text-label font-medium text-text-secondary">Team nhận thông báo</Label>
         {scope.loading ? (
