@@ -131,6 +131,7 @@ export const MVP_CRITERIA = {
   COMPLETION: "completion",
   ON_TIME: "on_time",
   REPORTING: "reporting",
+  ANNOUNCEMENT: "announcement",
   VOTE: "vote",
   QUALITY: "quality",
   PROACTIVE: "proactive",
@@ -142,7 +143,8 @@ export type MvpCriterion = (typeof MVP_CRITERIA)[keyof typeof MVP_CRITERIA];
 export const MVP_CRITERION_MAX: Record<MvpCriterion, number> = {
   completion: 30,
   on_time: 20,
-  reporting: 15,
+  reporting: 13,
+  announcement: 2,
   vote: 10,
   quality: 10,
   proactive: 10,
@@ -153,14 +155,33 @@ export const MVP_CRITERION_LABEL: Record<MvpCriterion, string> = {
   completion: "Khối lượng hoàn thành",
   on_time: "Hoàn thành đúng hạn",
   reporting: "Kỷ luật báo cáo",
+  announcement: "Xác nhận thông báo đúng hạn",
   vote: "Phiếu bầu đồng đội",
   quality: "Chất lượng công việc",
   proactive: "Tinh thần chủ động",
   teamwork: "Phối hợp đồng đội",
 };
 
-export const MVP_AUTO_CRITERIA: MvpCriterion[] = ["completion", "on_time", "reporting", "vote"];
+/**
+ * Nhóm Kỷ luật: báo cáo + xác nhận thông báo, tổng 15 điểm.
+ * Khi một chỉ số trong nhóm không áp dụng, điểm tối đa của nó được phân bổ lại
+ * theo tỷ lệ cho các chỉ số còn lại — không chấm 0 cho người không có dữ liệu.
+ */
+export const MVP_DISCIPLINE_CRITERIA: MvpCriterion[] = ["reporting", "announcement"];
+export const MVP_DISCIPLINE_MAX = MVP_DISCIPLINE_CRITERIA.reduce(
+  (sum, c) => sum + MVP_CRITERION_MAX[c],
+  0,
+);
+
+export const MVP_AUTO_CRITERIA: MvpCriterion[] = [
+  "completion",
+  "on_time",
+  "reporting",
+  "announcement",
+  "vote",
+];
 export const MVP_REVIEW_CRITERIA: MvpCriterion[] = ["quality", "proactive", "teamwork"];
+
 
 export const MVP_AUTO_MAX = MVP_AUTO_CRITERIA.reduce((sum, c) => sum + MVP_CRITERION_MAX[c], 0);
 export const MVP_REVIEW_MAX = MVP_REVIEW_CRITERIA.reduce((sum, c) => sum + MVP_CRITERION_MAX[c], 0);
