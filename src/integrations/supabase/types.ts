@@ -2079,10 +2079,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      announcement_acknowledge: {
+        Args: { _a: string; _answers: Json }
+        Returns: undefined
+      }
       announcement_author: { Args: { _announcement: string }; Returns: string }
       announcement_comments_open: { Args: { _a: string }; Returns: boolean }
       announcement_current_version: { Args: { _a: string }; Returns: number }
+      announcement_duplicate: { Args: { _a: string }; Returns: string }
+      announcement_enqueue_reminders: { Args: never; Returns: number }
       announcement_is_active: { Args: { _a: string }; Returns: boolean }
+      announcement_minor_revision: {
+        Args: { _a: string; _body: string; _reason: string; _title: string }
+        Returns: undefined
+      }
+      announcement_new_version: {
+        Args: {
+          _a: string
+          _body: string
+          _change_summary: string
+          _comments_enabled: boolean
+          _due_at: string
+          _questions: Json
+          _reason: string
+          _result_visibility: string
+          _title: string
+        }
+        Returns: number
+      }
+      announcement_revoke: {
+        Args: { _a: string; _reason: string }
+        Returns: undefined
+      }
+      announcement_set_archived: {
+        Args: { _a: string; _archived: boolean }
+        Returns: undefined
+      }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_assign_task: {
