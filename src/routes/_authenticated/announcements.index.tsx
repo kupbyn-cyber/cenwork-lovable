@@ -160,66 +160,34 @@ function AnnouncementsPage() {
 
 
             <TabsContent value="inbox" className="mt-4">
-              <DataTable<InboxRow>
-                data={inboxRows}
-                getRowId={(row) => row.id}
-                loading={inbox.isLoading}
-                error={inbox.isError}
-                onRetry={() => void inbox.refetch()}
-                emptyTitle="Chưa có thông báo"
-                emptyDescription="Thông báo gửi tới bạn sẽ xuất hiện tại đây."
-                columns={[
-                  {
-                    id: "title",
-                    header: "Tiêu đề",
-                    className: "min-w-[220px]",
-                    cell: (row) => (
-                      <Link
-                        to="/announcements/$announcementId"
-                        params={{ announcementId: row.announcement_id }}
-                        className="break-words font-medium text-text-primary underline-offset-2 hover:underline"
-                      >
-                        {row.announcement.title}
-                      </Link>
-                    ),
-                  },
-                  {
-                    id: "status",
-                    header: "Trạng thái",
-                    className: "min-w-[140px]",
-                    cell: (row) => {
-                      const value = effectiveRecipientStatus(row);
-                      return (
-                        <StatusBadge
-                          tone={RECIPIENT_STATUS_TONE[value]}
-                          label={RECIPIENT_STATUS_LABEL[value]}
-                        />
-                      );
-                    },
-                  },
-                  {
-                    id: "sender",
-                    header: "Người gửi",
-                    className: "min-w-[160px]",
-                    cell: (row) =>
-                      nameById.get(row.announcement.created_by) ?? "—",
-                  },
-                  {
-                    id: "due",
-                    header: "Hạn xác nhận",
-                    className: "min-w-[160px]",
-                    cell: (row) => formatHanoiDateTime(row.due_at),
-                  },
-                  {
-                    id: "published",
-                    header: "Phát hành",
-                    className: "min-w-[160px]",
-                    cell: (row) => formatHanoiDateTime(row.announcement.published_at),
-                  },
-
-                ]}
-              />
+              {inbox.isLoading ? (
+                <SkeletonCard lines={3} />
+              ) : inbox.isError ? (
+                <ErrorState
+                  title="Không tải được thông báo"
+                  description="Thử lại để tải danh sách thông báo của bạn."
+                  onRetry={() => void inbox.refetch()}
+                />
+              ) : inboxRows.length === 0 ? (
+                <EmptyState
+                  title="Chưa có thông báo"
+                  description="Thông báo gửi tới bạn sẽ xuất hiện tại đây."
+                />
+              ) : (
+                <div className="flex min-w-0 flex-col gap-3">
+                  {inboxRows.map((row) => (
+                    <AnnouncementAckCard
+                      key={row.id}
+                      row={row}
+                      senderName={nameById.get(row.announcement.created_by) ?? "—"}
+                      open={openCardId === row.id}
+                      onOpenChange={(next) => setOpenCardId(next ? row.id : null)}
+                    />
+                  ))}
+                </div>
+              )}
             </TabsContent>
+
 
             <TabsContent value="created" className="mt-4">
               <DataTable<AnnouncementRow>
