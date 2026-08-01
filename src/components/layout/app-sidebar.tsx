@@ -166,8 +166,8 @@ export function AppSidebar({
 
       <div
         className={cn(
-          "flex shrink-0 items-center border-t border-border-default p-2.5",
-          collapsed ? "justify-center" : "justify-end",
+          "flex shrink-0 flex-col border-t border-border-default p-2.5",
+          collapsed ? "items-center" : "items-end",
         )}
       >
         <Tooltip>
@@ -187,6 +187,12 @@ export function AppSidebar({
             {collapsed ? "Mở rộng" : "Thu gọn"}
           </TooltipContent>
         </Tooltip>
+
+        {!collapsed ? (
+          <p className="mt-2 w-full text-center text-caption text-text-muted">
+            Product Owner: Đức Bùi — CMO
+          </p>
+        ) : null}
       </div>
     </aside>
   );
