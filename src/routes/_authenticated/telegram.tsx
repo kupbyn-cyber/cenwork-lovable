@@ -224,6 +224,23 @@ function TelegramPage() {
   const [userForm, setUserForm] = React.useState({ userId: "", chatId: "", active: true });
   const [teamForm, setTeamForm] = React.useState({ teamId: "", topicId: "", active: true });
   const [confirm, setConfirm] = React.useState<null | "reminders" | "dispatch">(null);
+  const [typeFilter, setTypeFilter] = React.useState<string>("all");
+  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [retryId, setRetryId] = React.useState<string | null>(null);
+
+  const retry = useMutation({
+    mutationFn: (id: string) => retryTelegramOutboxItem({ data: { id } }),
+    onSuccess: (result) => {
+      setRetryId(null);
+      if (result.sent > 0) cenToast.success("Đã gửi lại thành công.");
+      else cenToast.error("Gửi lại vẫn thất bại, xem lỗi trong hàng đợi.");
+      void queryClient.invalidateQueries({ queryKey: ["telegram-outbox"] });
+    },
+    onError: (error: Error) => {
+      setRetryId(null);
+      cenToast.error(error.message);
+    },
+  });
 
   const saveUser = useMutation({
     mutationFn: () =>
