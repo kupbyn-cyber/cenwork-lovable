@@ -497,7 +497,7 @@ export async function decideExemption(id: string, approve: boolean, note: string
   const { error } = await supabase.rpc("report_decide_exemption", {
     _request: id,
     _approve: approve,
-    _note: note,
+    ...(note ? { _note: note } : {}),
   });
   fail(error);
 }
@@ -505,13 +505,17 @@ export async function decideExemption(id: string, approve: boolean, note: string
 /* ================= Tạo kỳ thủ công (idempotent) ================= */
 
 export async function generateDailyPeriods(day: string | null) {
-  const { data, error } = await supabase.rpc("report_generate_daily", { _day: day });
+  const { data, error } = await supabase.rpc("report_generate_daily", day ? { _day: day } : {});
   fail(error);
   return data as { day: string; periods_created: number; obligations_created: number };
 }
 
 export async function generateWeeklyPeriods(weekStart: string | null) {
-  const { data, error } = await supabase.rpc("report_generate_weekly", { _week_start: weekStart });
+  const { data, error } = await supabase.rpc(
+    "report_generate_weekly",
+    weekStart ? { _week_start: weekStart } : {},
+  );
+
   fail(error);
   return data as { week_start: string; periods_created: number; obligations_created: number };
 }
