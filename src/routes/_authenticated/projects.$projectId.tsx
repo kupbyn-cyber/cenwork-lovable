@@ -401,7 +401,7 @@ function ProjectDetailPage() {
               <div className="sm:col-span-2">
                 <InfoRow
                   label="Trạng thái lưu trữ"
-                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatAuditTime(detail.manually_archived_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatAuditTime(detail.manually_archived_at ?? detail.updated_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
                 />
               </div>
             ) : null}
