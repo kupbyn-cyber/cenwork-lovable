@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Send } from "lucide-react";
+import { Bell, PlugZap, RefreshCw, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import {
   DELIVERY_STATUS_LABEL,
   DELIVERY_STATUS_TONE,
+  MESSAGE_TYPE_LABEL,
   maskChatId,
   saveMemberTelegram,
   saveTeamTelegram,
@@ -41,7 +42,13 @@ import {
   type TelegramOutboxRow,
   type TelegramTeamRow,
 } from "@/lib/telegram-data";
-import { dispatchTelegramQueue, getTelegramConfig, saveTelegramConfig } from "@/lib/telegram.functions";
+import {
+  dispatchTelegramQueue,
+  getTelegramConfig,
+  retryTelegramOutboxItem,
+  saveTelegramConfig,
+  testTelegramConnection,
+} from "@/lib/telegram.functions";
 import { enqueueAnnouncementReminders } from "@/lib/announcement.functions";
 
 const TITLE = "Kết nối Telegram — CEN WORK";
