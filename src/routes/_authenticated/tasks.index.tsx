@@ -426,6 +426,90 @@ function TasksPage() {
           onCreated={(taskId) => void navigate({ to: "/tasks/$taskId", params: { taskId } })}
         />
       ) : null}
+
+      {access.userId && editTarget ? (
+        <TaskFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+          task={editTarget}
+          ctx={ctx}
+          projects={projects}
+          teams={teams}
+          people={people}
+        />
+      ) : null}
+
+      {deadlineTarget ? (
+        <DeadlineRequestModal
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeadlineTarget(null);
+          }}
+          entityType="task"
+          entityId={deadlineTarget.id}
+          entityName={deadlineTarget.name}
+          currentDeadline={deadlineTarget.deadline}
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={completeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !completeMutation.isPending) setCompleteTarget(null);
+        }}
+        title="Xác nhận hoàn thành công việc?"
+        description={`Công việc "${completeTarget?.name ?? ""}" sẽ chuyển sang trạng thái Hoàn thành và vào khu vực Lưu trữ.`}
+        confirmLabel="Hoàn thành"
+        loading={completeMutation.isPending}
+        onConfirm={() => {
+          if (completeTarget) completeMutation.mutate(completeTarget);
+        }}
+      />
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setArchiveTarget(null);
+        }}
+        title="Đưa công việc vào Lưu trữ?"
+        description={`Công việc "${archiveTarget?.name ?? ""}" sẽ được ẩn khỏi danh sách đang hoạt động, trạng thái giữ nguyên.`}
+        confirmLabel="Lưu trữ"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (archiveTarget) archiveMutation.mutate({ id: archiveTarget.id, archived: true });
+        }}
+      />
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setRestoreTarget(null);
+        }}
+        title="Khôi phục công việc?"
+        description={`Công việc "${restoreTarget?.name ?? ""}" sẽ quay lại danh sách đang hoạt động.`}
+        confirmLabel="Khôi phục"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (restoreTarget) archiveMutation.mutate({ id: restoreTarget.id, archived: false });
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+        tone="destructive"
+        title="Xóa công việc?"
+        description={`Công việc "${deleteTarget?.name ?? ""}" sẽ bị ẩn khỏi toàn bộ danh sách vận hành. Hành động này chỉ Admin thực hiện và được ghi Audit Log.`}
+        confirmLabel="Xóa"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget);
+        }}
+      />
     </div>
   );
 }
