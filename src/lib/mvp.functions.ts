@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
+import { MVP_ANNOUNCEMENT_FORMULA_VERSION } from "@/lib/mvp-scoring";
 import { computeCycleScores, refreshAwardProposals, snapshotCycleTasks } from "@/lib/mvp.server";
 import { canTransitionCycle, MVP_CYCLE_STATUS_LABEL } from "@/lib/mvp-scoring";
 
@@ -58,8 +59,18 @@ export const recomputeCycleScores = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_MANAGE);
     const result = await computeCycleScores(context.supabase, data.cycleId);
+    // Ghi nhận mọi lần tính lại điểm tự động để truy vết điều chỉnh.
+    await context.supabase.rpc("write_audit", {
+      _action: "mvp.recompute_scores",
+      _entity_type: "mvp_cycle",
+      _entity_id: data.cycleId,
+      _before: null,
+      _after: { scored: result.scored },
+      _metadata: { scoring_version: MVP_ANNOUNCEMENT_FORMULA_VERSION },
+    });
     return { scored: result.scored };
   });
+
 
 export const generateAwardProposals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

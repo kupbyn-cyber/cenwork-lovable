@@ -2,6 +2,7 @@ import {
   computeMvpScore,
   proposeMvpAwards,
   MVP_CRITERION_MAX,
+  type MvpAnnouncementInput,
   type MvpAwardCandidate,
   type MvpCriterion,
   type MvpTaskInput,
@@ -79,7 +80,7 @@ interface ComputeContext {
 export async function computeCycleScores(supabase: Db, cycleId: string) {
   const { data: cycle, error: cycleError } = await supabase
     .from("mvp_cycles")
-    .select("id,week_start,week_end,status")
+    .select("id,week_start,week_end,status,data_locked_at")
     .eq("id", cycleId)
     .single();
   if (cycleError || !cycle) throw new Error(cycleError?.message ?? "Không tìm thấy kỳ MVP.");
@@ -90,8 +91,21 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     weekEnd: cycle.week_end as string,
   };
 
-  const [cycleTasks, profiles, leaderRoles, teams, dailyReports, weeklyReports, votes, reviews] =
-    await Promise.all([
+  const weekFrom = hanoiDayBoundary(ctx.weekStart, false);
+  const weekTo = hanoiDayBoundary(ctx.weekEnd, true);
+
+  const [
+    cycleTasks,
+    profiles,
+    leaderRoles,
+    teams,
+    dailyReports,
+    weeklyReports,
+    votes,
+    reviews,
+    announcementRecipients,
+  ] = await Promise.all([
+
       supabase
         .from("mvp_cycle_tasks")
         .select("task_id,user_id,weight,is_committed,tasks(status,deadline,updated_at)")
@@ -116,11 +130,32 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         .select("subject_id,quality_score,proactive_score,teamwork_score")
         .eq("cycle_id", cycleId)
         .eq("status", "submitted"),
+      // Thông báo bắt buộc xác nhận có hạn rơi trong kỳ — tái dùng dữ liệu M6.1/M6.2.
+      supabase
+        .from("announcement_recipients")
+        .select(
+          "announcement_id,user_id,status,due_at,acknowledged_at,exempt_reason,created_at," +
+            "announcement:announcements(id,title,status,due_at,revoked_at)",
+        )
+        .gte("due_at", weekFrom)
+        .lte("due_at", weekTo),
+
     ]);
 
-  for (const result of [cycleTasks, profiles, leaderRoles, teams, dailyReports, weeklyReports, votes, reviews]) {
+  for (const result of [
+    cycleTasks,
+    profiles,
+    leaderRoles,
+    teams,
+    dailyReports,
+    weeklyReports,
+    votes,
+    reviews,
+    announcementRecipients,
+  ]) {
     if (result.error) throw new Error(result.error.message);
   }
+
 
   const tasksByUser = new Map<string, MvpTaskInput[]>();
   for (const raw of (cycleTasks.data ?? []) as Record<string, unknown>[]) {
@@ -170,6 +205,37 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     });
   }
 
+  /**
+   * Thông báo bắt buộc xác nhận theo từng nhân sự.
+   * Bắt buộc xác nhận = thông báo đã phát hành và có hạn xác nhận (due_at).
+   * Chỉ đọc dữ liệu M6 đang có, không sinh bảng hay trường mới.
+   */
+  const announcementsByUser = new Map<string, MvpAnnouncementInput[]>();
+  for (const raw of (announcementRecipients.data ?? []) as Record<string, unknown>[]) {
+    const announcement = raw["announcement"] as Record<string, unknown> | null;
+    if (!announcement) continue;
+    if (announcement["status"] !== "published") continue;
+    if (!announcement["due_at"]) continue;
+    const userId = raw["user_id"] as string;
+    const list = announcementsByUser.get(userId) ?? [];
+    list.push({
+      announcementId: announcement["id"] as string,
+      title: (announcement["title"] as string) ?? "",
+      dueAt: (raw["due_at"] as string | null) ?? null,
+      receivedAt: (raw["created_at"] as string | null) ?? null,
+      acknowledgedAt: (raw["acknowledged_at"] as string | null) ?? null,
+      isRevoked: Boolean(announcement["revoked_at"]),
+      isExempt: raw["status"] === "exempt",
+      exemptReason: (raw["exempt_reason"] as string | null) ?? null,
+    });
+    announcementsByUser.set(userId, list);
+  }
+  // Mốc khóa kỳ: thời điểm chốt dữ liệu của kỳ, nếu chưa có thì lấy hiện tại.
+  const announcementLockAt =
+    ((cycle as Record<string, unknown>)["data_locked_at"] as string | null) ??
+    new Date().toISOString();
+
+
   // Kỳ liền trước để xét danh hiệu Tiến bộ vượt bậc.
   const { data: previousCycle } = await supabase
     .from("mvp_cycles")
@@ -207,6 +273,8 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
+      announcements: announcementsByUser.get(profile.id) ?? [],
+      announcementLockAt,
     });
 
     scorecardRows.push({
