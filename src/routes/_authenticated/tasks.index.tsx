@@ -298,7 +298,7 @@ function TasksPage() {
     {
       id: "name",
       header: "Công việc",
-      className: "min-w-[240px]",
+      className: "min-w-[180px]",
       cell: (row: TaskRow) => <TableCellStack primary={row.name} />,
     },
     ...(show("project")
@@ -306,7 +306,7 @@ function TasksPage() {
           {
             id: "project",
             header: "Dự án",
-            className: "min-w-[180px]",
+            className: "min-w-[110px]",
             cell: (row: TaskRow) =>
               row.projectName ? (
                 <span className="text-text-secondary">{row.projectName}</span>
@@ -323,7 +323,7 @@ function TasksPage() {
           {
             id: "assignee",
             header: "Người phụ trách",
-            className: "min-w-[150px]",
+            className: "min-w-[120px]",
             cell: (row: TaskRow) => (
               <span className="text-text-secondary">{row.assigneeName ?? "—"}</span>
             ),
@@ -335,7 +335,7 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            className: "min-w-[130px]",
+            className: "min-w-[100px]",
             cell: (row: TaskRow) => (
               <span className="text-text-secondary">{row.teamName ?? "—"}</span>
             ),
@@ -347,7 +347,7 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            className: "min-w-[160px]",
+            className: "min-w-[120px] whitespace-nowrap",
             cell: (row: TaskRow) => (
               <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
                 {formatDateTime(row.deadline)}
@@ -361,7 +361,7 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            className: "min-w-[110px]",
+            className: "min-w-[90px]",
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_PRIORITY_LABEL[row.priority]}
