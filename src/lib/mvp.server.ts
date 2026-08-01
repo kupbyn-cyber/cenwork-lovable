@@ -90,8 +90,21 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     weekEnd: cycle.week_end as string,
   };
 
-  const [cycleTasks, profiles, leaderRoles, teams, dailyReports, weeklyReports, votes, reviews] =
-    await Promise.all([
+  const weekFrom = hanoiDayBoundary(ctx.weekStart, false);
+  const weekTo = hanoiDayBoundary(ctx.weekEnd, true);
+
+  const [
+    cycleTasks,
+    profiles,
+    leaderRoles,
+    teams,
+    dailyReports,
+    weeklyReports,
+    votes,
+    reviews,
+    announcementRecipients,
+  ] = await Promise.all([
+
       supabase
         .from("mvp_cycle_tasks")
         .select("task_id,user_id,weight,is_committed,tasks(status,deadline,updated_at)")
