@@ -150,10 +150,7 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         next.email = "Email không đúng định dạng.";
       if (form.password.length < 8) next.password = "Mật khẩu khởi tạo tối thiểu 8 ký tự.";
     }
-    if (
-      form.jobTitle &&
-      !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number])
-    )
+    if (form.jobTitle && !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]))
       next.jobTitle = "Chức danh cũ không hợp lệ, vui lòng chọn lại.";
     if (form.phoneNumber.trim() && !/^[0-9+][0-9 .()-]{7,19}$/.test(form.phoneNumber.trim()))
       next.phoneNumber = "Số điện thoại không hợp lệ (8–20 ký tự số).";
@@ -218,7 +215,9 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           id="member-email"
           label="Email"
           required
-          helperText={isCreate ? "Email dùng để đăng nhập, không được trùng." : "Email không thể thay đổi."}
+          helperText={
+            isCreate ? "Email dùng để đăng nhập, không được trùng." : "Email không thể thay đổi."
+          }
           {...(errors.email ? { error: errors.email } : {})}
         >
           {(controlProps) => (
@@ -264,7 +263,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                 setForm((s) => ({ ...s, jobTitle: value === NO_JOB_TITLE ? "" : value }))
               }
             >
-              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
                 <SelectValue placeholder="Chọn chức danh" />
               </SelectTrigger>
               <SelectContent>
@@ -275,14 +277,14 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                   </SelectItem>
                 ))}
                 {/* Giá trị cũ ngoài danh sách: giữ nguyên để không mất dữ liệu, Admin/CMO chọn lại khi sửa. */}
-                {form.jobTitle && !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]) ? (
+                {form.jobTitle &&
+                !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]) ? (
                   <SelectItem value={form.jobTitle}>{form.jobTitle} (giá trị cũ)</SelectItem>
                 ) : null}
               </SelectContent>
             </Select>
           )}
         </FormField>
-
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -332,7 +334,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
               disabled={!canEditRoleTeam}
               onValueChange={(value) => setForm((s) => ({ ...s, role: value as AppRole }))}
             >
-              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -376,7 +381,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                 }))
               }
             >
-              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
                 <SelectValue placeholder="Chọn Team chính" />
               </SelectTrigger>
               <SelectContent>

@@ -43,12 +43,14 @@ export const Route = createFileRoute("/_authenticated/members")({
       { title: "Thành viên — CEN WORK" },
       {
         name: "description",
-        content: "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
+        content:
+          "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
       },
       { property: "og:title", content: "Thành viên — CEN WORK" },
       {
         property: "og:description",
-        content: "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
+        content:
+          "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
       },
     ],
   }),
@@ -124,7 +126,8 @@ function MembersPage() {
     const keyword = search.trim().toLowerCase();
     return (membersResult.data ?? []).filter((member) => {
       if (keyword) {
-        const haystack = `${member.display_name} ${member.email} ${member.job_title ?? ""}`.toLowerCase();
+        const haystack =
+          `${member.display_name} ${member.email} ${member.job_title ?? ""}`.toLowerCase();
         if (!haystack.includes(keyword)) return false;
       }
       if (teamFilter !== ALL && member.primary_team_id !== teamFilter) return false;
@@ -322,7 +325,6 @@ function MembersPage() {
         </TableRowActions>
       ),
     },
-
   ];
 
   return (
