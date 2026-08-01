@@ -39,6 +39,8 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   selectedIds?: string[];
   onSelectedIdsChange?: (ids: string[]) => void;
   onRowClick?: (row: T) => void;
+  /** Lớp CSS bổ sung theo từng dòng (ví dụ: highlight sinh nhật trong tháng). */
+  rowClassName?: (row: T) => string | undefined;
   density?: "compact" | "default";
   /** Slot for shared Loading / Empty / Error state (M1.1D). Replaces body rows. */
   stateSlot?: React.ReactNode | undefined;
@@ -74,6 +76,7 @@ function DataTableInner<T>(
     selectedIds,
     onSelectedIdsChange,
     onRowClick,
+    rowClassName,
     density = "default",
     stateSlot,
     loading = false,
@@ -179,7 +182,7 @@ function DataTableInner<T>(
                   key={id}
                   data-state={isSelected ? "selected" : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(onRowClick && "cursor-pointer")}
+                  className={cn(onRowClick && "cursor-pointer", rowClassName?.(row))}
                 >
                   {selectable ? (
                     <TableCell
