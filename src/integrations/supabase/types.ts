@@ -183,6 +183,528 @@ export type Database = {
         }
         Relationships: []
       }
+      mvp_award_results: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          award_score: number | null
+          award_type: Database["public"]["Enums"]["mvp_award_type"]
+          created_at: string
+          cycle_id: string
+          evidence: Json
+          id: string
+          published_at: string | null
+          reason: string | null
+          recipient_id: string | null
+          status: Database["public"]["Enums"]["mvp_award_status"]
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          award_score?: number | null
+          award_type: Database["public"]["Enums"]["mvp_award_type"]
+          created_at?: string
+          cycle_id: string
+          evidence?: Json
+          id?: string
+          published_at?: string | null
+          reason?: string | null
+          recipient_id?: string | null
+          status?: Database["public"]["Enums"]["mvp_award_status"]
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          award_score?: number | null
+          award_type?: Database["public"]["Enums"]["mvp_award_type"]
+          created_at?: string
+          cycle_id?: string
+          evidence?: Json
+          id?: string
+          published_at?: string | null
+          reason?: string | null
+          recipient_id?: string | null
+          status?: Database["public"]["Enums"]["mvp_award_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_award_results_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_award_results_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_award_results_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_cycle_tasks: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          final_status: Database["public"]["Enums"]["task_status"] | null
+          id: string
+          is_committed: boolean
+          is_locked: boolean
+          original_deadline: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+          weight: number
+          weight_confirmed_at: string | null
+          weight_confirmed_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          final_status?: Database["public"]["Enums"]["task_status"] | null
+          id?: string
+          is_committed?: boolean
+          is_locked?: boolean
+          original_deadline?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+          weight?: number
+          weight_confirmed_at?: string | null
+          weight_confirmed_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          final_status?: Database["public"]["Enums"]["task_status"] | null
+          id?: string
+          is_committed?: boolean
+          is_locked?: boolean
+          original_deadline?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number
+          weight_confirmed_at?: string | null
+          weight_confirmed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_cycle_tasks_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_cycle_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_cycle_tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_cycle_tasks_weight_confirmed_by_fkey"
+            columns: ["weight_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_cycles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_locked_at: string | null
+          id: string
+          published_at: string | null
+          published_by: string | null
+          status: Database["public"]["Enums"]["mvp_cycle_status"]
+          updated_at: string
+          vote_closes_at: string | null
+          vote_opens_at: string | null
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_locked_at?: string | null
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: Database["public"]["Enums"]["mvp_cycle_status"]
+          updated_at?: string
+          vote_closes_at?: string | null
+          vote_opens_at?: string | null
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_locked_at?: string | null
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: Database["public"]["Enums"]["mvp_cycle_status"]
+          updated_at?: string
+          vote_closes_at?: string | null
+          vote_opens_at?: string | null
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_cycles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_cycles_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_data_adjustments: {
+        Row: {
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          created_by: string
+          cycle_id: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          created_by: string
+          cycle_id?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          reason: string
+        }
+        Update: {
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          created_by?: string
+          cycle_id?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_data_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_data_adjustments_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_manual_reviews: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          evidence: string | null
+          id: string
+          proactive_score: number
+          quality_score: number
+          reason: string | null
+          reviewer_id: string
+          status: Database["public"]["Enums"]["mvp_review_status"]
+          subject_id: string
+          submitted_at: string | null
+          teamwork_score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          evidence?: string | null
+          id?: string
+          proactive_score?: number
+          quality_score?: number
+          reason?: string | null
+          reviewer_id: string
+          status?: Database["public"]["Enums"]["mvp_review_status"]
+          subject_id: string
+          submitted_at?: string | null
+          teamwork_score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          evidence?: string | null
+          id?: string
+          proactive_score?: number
+          quality_score?: number
+          reason?: string | null
+          reviewer_id?: string
+          status?: Database["public"]["Enums"]["mvp_review_status"]
+          subject_id?: string
+          submitted_at?: string | null
+          teamwork_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_manual_reviews_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_manual_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_manual_reviews_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_score_components: {
+        Row: {
+          created_at: string
+          criterion: string
+          cycle_id: string
+          earned_points: number
+          formula: string | null
+          id: string
+          is_applicable: boolean
+          max_points: number
+          not_applicable_reason: string | null
+          source_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          criterion: string
+          cycle_id: string
+          earned_points?: number
+          formula?: string | null
+          id?: string
+          is_applicable?: boolean
+          max_points: number
+          not_applicable_reason?: string | null
+          source_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          criterion?: string
+          cycle_id?: string
+          earned_points?: number
+          formula?: string | null
+          id?: string
+          is_applicable?: boolean
+          max_points?: number
+          not_applicable_reason?: string | null
+          source_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_score_components_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_score_components_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_scorecards: {
+        Row: {
+          auto_score: number
+          computed_at: string | null
+          created_at: string
+          cycle_id: string
+          data_completeness: number
+          id: string
+          ineligible_reason: string | null
+          is_eligible: boolean
+          penalty_score: number
+          review_score: number
+          status: Database["public"]["Enums"]["mvp_scorecard_status"]
+          team_id: string | null
+          total_score: number
+          updated_at: string
+          user_id: string
+          vote_score: number
+        }
+        Insert: {
+          auto_score?: number
+          computed_at?: string | null
+          created_at?: string
+          cycle_id: string
+          data_completeness?: number
+          id?: string
+          ineligible_reason?: string | null
+          is_eligible?: boolean
+          penalty_score?: number
+          review_score?: number
+          status?: Database["public"]["Enums"]["mvp_scorecard_status"]
+          team_id?: string | null
+          total_score?: number
+          updated_at?: string
+          user_id: string
+          vote_score?: number
+        }
+        Update: {
+          auto_score?: number
+          computed_at?: string | null
+          created_at?: string
+          cycle_id?: string
+          data_completeness?: number
+          id?: string
+          ineligible_reason?: string | null
+          is_eligible?: boolean
+          penalty_score?: number
+          review_score?: number
+          status?: Database["public"]["Enums"]["mvp_scorecard_status"]
+          team_id?: string | null
+          total_score?: number
+          updated_at?: string
+          user_id?: string
+          vote_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_scorecards_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_scorecards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_scorecards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mvp_votes: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          id: string
+          invalid_reason: string | null
+          is_valid: boolean
+          reason: string
+          votee_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          id?: string
+          invalid_reason?: string | null
+          is_valid?: boolean
+          reason: string
+          votee_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          id?: string
+          invalid_reason?: string | null
+          is_valid?: boolean
+          reason?: string
+          votee_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_votes_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_votes_votee_id_fkey"
+            columns: ["votee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -862,13 +1384,19 @@ export type Database = {
       can_create_task: { Args: { _project: string }; Returns: boolean }
       can_edit_project_row: { Args: { _project: string }; Returns: boolean }
       can_edit_task_row: { Args: { _task: string }; Returns: boolean }
+      can_manage_mvp_cycle: { Args: never; Returns: boolean }
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
       can_review_daily_report: { Args: { _author: string }; Returns: boolean }
+      can_review_mvp: { Args: { _subject: string }; Returns: boolean }
       can_review_weekly_report: { Args: never; Returns: boolean }
       can_view_daily_report: {
         Args: { _author: string; _team: string }
+        Returns: boolean
+      }
+      can_view_mvp_scorecard: {
+        Args: { _cycle: string; _subject: string }
         Returns: boolean
       }
       can_view_project: { Args: { _project: string }; Returns: boolean }
@@ -898,9 +1426,15 @@ export type Database = {
         Args: { _person: string; _project: string }
         Returns: boolean
       }
+      is_mvp_admin: { Args: never; Returns: boolean }
+      is_mvp_cycle_published: { Args: { _cycle: string }; Returns: boolean }
       is_project_person: { Args: { _person: string }; Returns: boolean }
       is_project_team: { Args: { _team: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
+      mvp_cycle_status_of: {
+        Args: { _cycle: string }
+        Returns: Database["public"]["Enums"]["mvp_cycle_status"]
+      }
       my_primary_team_id: { Args: never; Returns: string }
       my_team_ids: { Args: never; Returns: string[] }
       notify_team_telegram: {
@@ -936,6 +1470,27 @@ export type Database = {
       account_status: "active" | "locked"
       app_role: "admin" | "cmo" | "leader" | "member"
       delivery_status: "pending" | "sent" | "failed"
+      mvp_award_status: "proposed" | "approved" | "not_awarded" | "published"
+      mvp_award_type:
+        | "mvp"
+        | "effective"
+        | "proactive"
+        | "teamwork"
+        | "progress"
+        | "creative"
+      mvp_cycle_status:
+        | "collecting"
+        | "voting"
+        | "reviewing"
+        | "pending_publish"
+        | "published"
+      mvp_review_status: "draft" | "submitted"
+      mvp_scorecard_status:
+        | "draft"
+        | "computed"
+        | "reviewed"
+        | "final"
+        | "disqualified"
       project_status:
         | "idea"
         | "leader_review"
@@ -1078,6 +1633,30 @@ export const Constants = {
       account_status: ["active", "locked"],
       app_role: ["admin", "cmo", "leader", "member"],
       delivery_status: ["pending", "sent", "failed"],
+      mvp_award_status: ["proposed", "approved", "not_awarded", "published"],
+      mvp_award_type: [
+        "mvp",
+        "effective",
+        "proactive",
+        "teamwork",
+        "progress",
+        "creative",
+      ],
+      mvp_cycle_status: [
+        "collecting",
+        "voting",
+        "reviewing",
+        "pending_publish",
+        "published",
+      ],
+      mvp_review_status: ["draft", "submitted"],
+      mvp_scorecard_status: [
+        "draft",
+        "computed",
+        "reviewed",
+        "final",
+        "disqualified",
+      ],
       project_status: [
         "idea",
         "leader_review",
