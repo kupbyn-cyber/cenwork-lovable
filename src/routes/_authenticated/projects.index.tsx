@@ -232,7 +232,8 @@ function ProjectsPage() {
     {
       id: "status",
       header: "Trạng thái",
-      className: "w-[120px]",
+      className: "w-[112px]",
+      headerClassName: "w-[112px]",
       cell: (row: ProjectRow) => (
         <StatusBadge label={PROJECT_STATUS_LABEL[row.status]} tone={PROJECT_STATUS_TONE[row.status]} />
       ),
@@ -240,7 +241,8 @@ function ProjectsPage() {
     {
       id: "owner",
       header: "Phụ trách",
-      className: "w-[130px]",
+      className: "hidden w-[130px] lg:table-cell",
+      headerClassName: "hidden w-[130px] lg:table-cell",
       cell: (row: ProjectRow) => (
         <div
           className="truncate text-text-secondary"
@@ -253,8 +255,8 @@ function ProjectsPage() {
     {
       id: "teams",
       header: "Team",
-      className: "hidden w-[130px] lg:table-cell",
-      headerClassName: "hidden lg:table-cell",
+      className: "hidden w-[130px] xl:table-cell",
+      headerClassName: "hidden w-[130px] xl:table-cell",
       cell: (row: ProjectRow) => {
         const label = row.teamIds.length === 0 ? "—" : row.teamIds.map(teamName).join(", ");
         return (
@@ -268,7 +270,7 @@ function ProjectsPage() {
       id: "progress",
       header: "Tiến độ",
       className: "hidden w-[110px] lg:table-cell",
-      headerClassName: "hidden lg:table-cell",
+      headerClassName: "hidden w-[110px] lg:table-cell",
       cell: (row: ProjectRow) => {
         const value = timeProgress(row);
         if (value === null) return <span className="text-text-muted">—</span>;
@@ -283,7 +285,8 @@ function ProjectsPage() {
     {
       id: "deadline",
       header: "Deadline",
-      className: "w-[100px] whitespace-nowrap",
+      className: "w-[96px] whitespace-nowrap",
+      headerClassName: "w-[96px]",
       cell: (row: ProjectRow) => (
         <span className={isOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
           {formatDate(row.deadline)}
@@ -294,8 +297,8 @@ function ProjectsPage() {
       id: "task-count",
       header: "Số CV",
       align: "right" as const,
-      className: "w-[64px] tabular-nums",
-      headerClassName: "text-right",
+      className: "hidden w-[64px] tabular-nums lg:table-cell",
+      headerClassName: "hidden w-[64px] text-right lg:table-cell",
       cell: (row: ProjectRow) => (
         <span className="text-text-secondary">{taskCounts[row.id] ?? 0}</span>
       ),
@@ -304,8 +307,8 @@ function ProjectsPage() {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
-      className: "w-[150px] whitespace-nowrap",
-      headerClassName: "text-right",
+      className: "w-[140px] whitespace-nowrap",
+      headerClassName: "w-[140px] text-right",
       cell: (row: ProjectRow) => rowActions(row),
     },
   ];
