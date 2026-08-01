@@ -50,6 +50,12 @@ const ACTIONS: QuickAction[] = [
     permission: PERMISSIONS.ANNOUNCEMENTS_CREATE,
   },
   {
+    key: "recognition",
+    label: "Ghi nhận đồng đội",
+    icon: Sparkles,
+    to: "/recognitions",
+  },
+  {
     key: "members",
     label: "Thành viên",
     icon: Users,
