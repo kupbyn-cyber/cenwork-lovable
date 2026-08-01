@@ -182,7 +182,7 @@ export function canArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
   return !task.is_archived && task.status === "done" && canManageTask(task, ctx);
 }
 
-/** Task thuộc khu vực Lưu trữ: đã hoàn thành cuối cùng hoặc đã lưu trữ. */
+/** Task thuộc khu vực Lưu trữ: chỉ khi đã hoàn thành cuối cùng (đã xác nhận). */
 export function isTaskArchived(task: TaskRow) {
   return task.status === "done";
 }
