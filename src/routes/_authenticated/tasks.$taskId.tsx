@@ -33,6 +33,7 @@ import {
   DeadlineRequestModal,
 } from "@/components/common/deadline-request-modal";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { useFlashHighlight } from "@/hooks/use-flash-highlight";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
 import {
@@ -132,10 +133,13 @@ function TaskDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
+  const { flash, isFlashing, flashKey } = useFlashHighlight();
+
   const statusMutation = useMutation({
     mutationFn: (status: TaskStatus) => setTaskStatus(taskId, status),
     onSuccess: (_data, status) => {
       invalidate();
+      flash("status");
       cenToast.success(`Đã chuyển trạng thái: ${TASK_STATUS_LABEL[status]}.`);
     },
     onError: (error: Error) => cenToast.error(error.message),
@@ -291,10 +295,18 @@ function TaskDetailPage() {
             <InfoRow
               label="Trạng thái"
               value={
-                <StatusBadge
-                  label={TASK_STATUS_LABEL[task.status]}
-                  tone={TASK_STATUS_TONE[task.status]}
-                />
+                <span
+                  key={`status-${flashKey("status")}`}
+                  className={cn(
+                    "inline-flex rounded-badge",
+                    isFlashing("status") && "cen-flash",
+                  )}
+                >
+                  <StatusBadge
+                    label={TASK_STATUS_LABEL[task.status]}
+                    tone={TASK_STATUS_TONE[task.status]}
+                  />
+                </span>
               }
             />
             <InfoRow
