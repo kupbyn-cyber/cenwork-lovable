@@ -99,6 +99,7 @@ function TasksPage() {
   const [createOpen, setCreateOpen] = React.useState(false);
   /** Dự án được khóa sẵn khi thêm nhanh từ header nhóm (null = công việc độc lập). */
   const [quickAddProjectId, setQuickAddProjectId] = React.useState<string | null>(null);
+  const [quickAdd, setQuickAdd] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<TaskRow | null>(null);
   const [completeTarget, setCompleteTarget] = React.useState<TaskRow | null>(null);
   const [deadlineTarget, setDeadlineTarget] = React.useState<TaskRow | null>(null);
@@ -429,7 +430,13 @@ function TasksPage() {
         description="Công việc thuộc dự án hoặc độc lập, trong phạm vi bạn được xem."
         actions={
           access.can("tasks.create") ? (
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button
+              onClick={() => {
+                setQuickAddProjectId(null);
+                setQuickAdd(false);
+                setCreateOpen(true);
+              }}
+            >
               <Plus />
               Tạo công việc
             </Button>
@@ -561,6 +568,8 @@ function TasksPage() {
           onToggle={toggleGroup}
           onAdd={(group) => {
             setQuickAddProjectId(group.projectId);
+            setQuickAdd(true);
+            setExpandedKeys((keys) => (keys.includes(group.key) ? keys : [...keys, group.key]));
             setCreateOpen(true);
           }}
           onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
@@ -573,7 +582,10 @@ function TasksPage() {
           open={createOpen}
           onOpenChange={(open) => {
             setCreateOpen(open);
-            if (!open) setQuickAddProjectId(null);
+            if (!open) {
+              setQuickAddProjectId(null);
+              setQuickAdd(false);
+            }
           }}
           task={null}
           ctx={ctx}
@@ -581,7 +593,11 @@ function TasksPage() {
           projects={projects}
           teams={teams}
           people={people}
-          onCreated={(taskId) => void navigate({ to: "/tasks/$taskId", params: { taskId } })}
+          onCreated={(taskId) => {
+            // Thêm nhanh: giữ nguyên danh sách nhóm, chỉ làm mới dữ liệu.
+            if (quickAdd) return;
+            void navigate({ to: "/tasks/$taskId", params: { taskId } });
+          }}
         />
       ) : null}
 
