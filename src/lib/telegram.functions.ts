@@ -253,3 +253,83 @@ export const retryTelegramOutboxItem = createServerFn({ method: "POST" })
     );
     return { sent, failed };
   });
+
+/**
+ * Kiểm tra Telegram CÁ NHÂN của một thành viên.
+ * Gửi thẳng tới chat cá nhân (telegram_user_id), không dùng Group/Topic, không đi qua luồng Báo cáo ngày.
+ * Quyền: đúng phạm vi quản lý thành viên hiện hành (can_manage_profile) hoặc chính mình.
+ */
+export const testPersonalTelegram = createServerFn({ method: "POST" })
+  .inputValidator((input: { userId: string }) => {
+    if (!input?.userId) throw new Error("Thiếu mã thành viên.");
+    return { userId: input.userId };
+  })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    if (data.userId !== context.userId) {
+      const { data: allowed, error } = await (context.supabase.rpc as any)("can_manage_profile", {
+        _target: data.userId,
+      });
+      if (error) throw new Error((error as { message: string }).message);
+      if (!allowed) throw new Error("Bạn không có quyền kiểm tra Telegram của thành viên này.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("telegram_user_id,telegram_enabled,display_name")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+    if (!profile) throw new Error("Không tìm thấy thành viên.");
+
+    const chatId = (profile.telegram_user_id ?? "").trim();
+    const nowIso = new Date().toISOString();
+
+    async function record(status: "success" | "failed", errorText: string | null) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({
+          telegram_test_status: status,
+          telegram_tested_at: nowIso,
+          telegram_test_error: errorText,
+        })
+        .eq("id", data.userId);
+      await supabaseAdmin.from("audit_logs").insert({
+        user_id: context.userId,
+        action: "telegram.personal_tested",
+        entity_type: "profiles",
+        entity_id: data.userId,
+        result: status === "success" ? "success" : "failure",
+        metadata: errorText ? { error: errorText } : {},
+      });
+    }
+
+    if (!chatId) {
+      await record("failed", "Thành viên chưa có Telegram User ID.");
+      throw new Error("Thành viên chưa có Telegram User ID.");
+    }
+    if (!profile.telegram_enabled) {
+      await record("failed", "Thành viên đã tắt nhận Telegram cá nhân.");
+      throw new Error("Thành viên đã tắt nhận Telegram cá nhân.");
+    }
+
+    const { readTelegramConfig, sendTelegramMessage, TELEGRAM_TOKEN_MISSING } = await import(
+      "@/lib/telegram.server"
+    );
+    const config = await readTelegramConfig();
+    if (!config.botToken) {
+      await record("failed", TELEGRAM_TOKEN_MISSING);
+      throw new Error(TELEGRAM_TOKEN_MISSING);
+    }
+
+    const result = await sendTelegramMessage(config.botToken, {
+      chatId,
+      topicId: null,
+      message: "CEN test Telegram cá nhân thành công.",
+    });
+
+    await record(result.ok ? "success" : "failed", result.ok ? null : result.error);
+    if (!result.ok) throw new Error(result.error);
+    return { ok: true as const, testedAt: nowIso };
+  });
