@@ -31,7 +31,10 @@ import {
   surveyQuery,
   type QuestionDraft,
 } from "@/lib/announcement-interaction";
-import { publishAnnouncement } from "@/lib/announcement.functions";
+import {
+  estimateAnnouncementRecipients,
+  publishAnnouncement,
+} from "@/lib/announcement.functions";
 import { hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 
 /**
@@ -56,6 +59,9 @@ interface FormState {
   commentsEnabled: boolean;
   resultVisibility: ResultVisibility;
   questions: QuestionDraft[];
+  allUsers: boolean;
+  allTeams: boolean;
+  includeSelf: boolean;
 }
 
 const EMPTY: FormState = {
@@ -68,6 +74,9 @@ const EMPTY: FormState = {
   commentsEnabled: true,
   resultVisibility: "none",
   questions: [],
+  allUsers: false,
+  allTeams: false,
+  includeSelf: false,
 };
 
 const VISIBILITY_OPTIONS: ResultVisibility[] = ["none", "after_submit", "after_due"];
@@ -88,6 +97,30 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
   const survey = useQuery({
     ...surveyQuery(announcement?.id ?? "", 1),
     enabled: open && Boolean(announcement?.id),
+  });
+
+  // Số người nhận dự kiến được tính ở server theo quyền thật; không tải toàn bộ User về client.
+  const estimate = useQuery({
+    queryKey: [
+      "announcement-recipient-estimate",
+      state.userIds,
+      state.teamIds,
+      state.allUsers,
+      state.allTeams,
+      state.includeSelf,
+    ],
+    queryFn: () =>
+      estimateAnnouncementRecipients({
+        data: {
+          userIds: state.userIds,
+          teamIds: state.teamIds,
+          allUsers: state.allUsers,
+          allTeams: state.allTeams,
+          includeSelf: state.includeSelf,
+        },
+      }),
+    enabled: open,
+    staleTime: 15_000,
   });
 
   React.useEffect(() => {
@@ -112,6 +145,9 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
       commentsEnabled: announcement?.comments_enabled ?? true,
       resultVisibility: announcement?.result_visibility ?? "none",
       questions,
+      allUsers: announcement?.audience_all_users ?? false,
+      allTeams: announcement?.audience_all_teams ?? false,
+      includeSelf: announcement?.include_self ?? false,
       userIds: (targets.data ?? [])
         .filter((row) => row.target_type === "user")
         .map((row) => row.target_id),
@@ -145,6 +181,9 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
         teamIds: state.teamIds,
         commentsEnabled: state.commentsEnabled,
         resultVisibility: state.resultVisibility,
+        allUsers: state.allUsers,
+        allTeams: state.allTeams,
+        includeSelf: state.includeSelf,
       },
       user!.id,
     );
@@ -181,7 +220,13 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
   function validatePublish(): string | null {
     if (!state.title.trim()) return "Phải nhập tiêu đề.";
     if (!state.body.trim()) return "Phải nhập nội dung.";
-    if (state.userIds.length === 0 && state.teamIds.length === 0) {
+    if (
+      state.userIds.length === 0 &&
+      state.teamIds.length === 0 &&
+      !state.allUsers &&
+      !state.allTeams &&
+      !state.includeSelf
+    ) {
       return "Phải chọn ít nhất một người nhận.";
     }
     if (!dueAt) return "Phải đặt hạn xác nhận.";
@@ -346,8 +391,16 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
           scope={scope}
           userIds={state.userIds}
           teamIds={state.teamIds}
+          bulk={{
+            allUsers: state.allUsers,
+            allTeams: state.allTeams,
+            includeSelf: state.includeSelf,
+          }}
+          estimatedCount={estimate.data?.count ?? null}
+          estimating={estimate.isFetching}
           disabled={busy}
           onChange={(next) => setState((prev) => ({ ...prev, ...next }))}
+          onBulkChange={(next) => setState((prev) => ({ ...prev, ...next }))}
         />
       </div>
     </DrawerPanel>
