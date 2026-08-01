@@ -204,6 +204,37 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     });
   }
 
+  /**
+   * Thông báo bắt buộc xác nhận theo từng nhân sự.
+   * Bắt buộc xác nhận = thông báo đã phát hành và có hạn xác nhận (due_at).
+   * Chỉ đọc dữ liệu M6 đang có, không sinh bảng hay trường mới.
+   */
+  const announcementsByUser = new Map<string, MvpAnnouncementInput[]>();
+  for (const raw of (announcementRecipients.data ?? []) as Record<string, unknown>[]) {
+    const announcement = raw["announcement"] as Record<string, unknown> | null;
+    if (!announcement) continue;
+    if (announcement["status"] !== "published") continue;
+    if (!announcement["due_at"]) continue;
+    const userId = raw["user_id"] as string;
+    const list = announcementsByUser.get(userId) ?? [];
+    list.push({
+      announcementId: announcement["id"] as string,
+      title: (announcement["title"] as string) ?? "",
+      dueAt: (raw["due_at"] as string | null) ?? null,
+      receivedAt: (raw["created_at"] as string | null) ?? null,
+      acknowledgedAt: (raw["acknowledged_at"] as string | null) ?? null,
+      isRevoked: Boolean(announcement["revoked_at"]),
+      isExempt: raw["status"] === "exempt",
+      exemptReason: (raw["exempt_reason"] as string | null) ?? null,
+    });
+    announcementsByUser.set(userId, list);
+  }
+  // Mốc khóa kỳ: thời điểm chốt dữ liệu của kỳ, nếu chưa có thì lấy hiện tại.
+  const announcementLockAt =
+    ((cycle as Record<string, unknown>)["data_locked_at"] as string | null) ??
+    new Date().toISOString();
+
+
   // Kỳ liền trước để xét danh hiệu Tiến bộ vượt bậc.
   const { data: previousCycle } = await supabase
     .from("mvp_cycles")
