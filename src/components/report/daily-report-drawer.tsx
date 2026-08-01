@@ -229,5 +229,22 @@ export function DailyReportDrawer({
         </FormField>
       </div>
     </DrawerPanel>
+
+    <Modal
+      open={thanksReportId !== null}
+      onOpenChange={(next) => {
+        if (!next) closeThanks();
+      }}
+      size="sm"
+      title="Cảm ơn bạn vì một ngày làm việc!"
+      footer={<Button onClick={closeThanks}>Hoàn tất</Button>}
+    >
+      <p className="text-body text-text-secondary">
+        Báo cáo ngày của bạn đã được gửi thành công. Chúc bạn có những phút giây thư giãn và tái
+        tạo năng lượng sau giờ làm.
+      </p>
+    </Modal>
+    </>
   );
 }
+
