@@ -290,8 +290,12 @@ function TasksPage() {
         error={tasksResult.isError}
         onRetry={() => void tasksResult.refetch()}
         errorTitle="Không tải được danh sách công việc"
-        emptyTitle="Chưa có công việc nào"
-        emptyDescription="Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
+        emptyTitle={view === "archived" ? "Chưa có công việc lưu trữ" : "Chưa có công việc nào"}
+        emptyDescription={
+          view === "archived"
+            ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành."
+            : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
+        }
         onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
       />
 
