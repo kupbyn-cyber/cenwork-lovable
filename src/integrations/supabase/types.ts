@@ -1688,6 +1688,8 @@ export type Database = {
           created_at: string
           created_by: string
           deadline: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           last_decision_note: string | null
@@ -1705,6 +1707,8 @@ export type Database = {
           created_at?: string
           created_by: string
           deadline?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           last_decision_note?: string | null
@@ -1722,6 +1726,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           deadline?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           last_decision_note?: string | null
@@ -1738,6 +1744,13 @@ export type Database = {
           {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1801,6 +1814,8 @@ export type Database = {
           created_at: string
           created_by: string
           deadline: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           is_archived: boolean
@@ -1820,6 +1835,8 @@ export type Database = {
           created_at?: string
           created_by: string
           deadline: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           is_archived?: boolean
@@ -1839,6 +1856,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           deadline?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           is_archived?: boolean
@@ -1863,6 +1882,13 @@ export type Database = {
           {
             foreignKeyName: "tasks_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2398,6 +2424,10 @@ export type Database = {
       }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
+        Returns: undefined
+      }
+      soft_delete_entity: {
+        Args: { _entity_id: string; _entity_type: string }
         Returns: undefined
       }
       write_audit: {
