@@ -1516,6 +1516,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      announcement_author: { Args: { _announcement: string }; Returns: string }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_assign_task: {
@@ -1562,6 +1563,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_announcement_recipient: {
+        Args: { _announcement: string; _user: string }
         Returns: boolean
       }
       is_in_project_scope: {
