@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
+import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
-import { membersQuery } from "@/lib/org-data";
+import { membersQuery, teamsQuery } from "@/lib/org-data";
 
 import {
   PROJECT_STATUS_LABEL,
