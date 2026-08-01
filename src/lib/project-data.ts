@@ -14,6 +14,7 @@ export type ProjectStatus = Database["public"]["Enums"]["project_status"];
 
 export const PROJECT_STATUS_ORDER: ProjectStatus[] = [
   "idea",
+  "rejected",
   "leader_review",
   "proposal",
   "planning",
@@ -24,10 +25,11 @@ export const PROJECT_STATUS_ORDER: ProjectStatus[] = [
 ];
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
-  idea: "Ý tưởng",
-  leader_review: "Leader xem xét",
+  idea: "Bản nháp",
+  rejected: "Bị từ chối",
+  leader_review: "Chờ Leader duyệt",
   proposal: "Chờ CMO duyệt",
-  planning: "Lập kế hoạch",
+  planning: "Đã duyệt",
   in_progress: "Đang thực hiện",
   pending_acceptance: "Chờ nghiệm thu",
   completed: "Hoàn thành",
@@ -36,6 +38,7 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
 
 export const PROJECT_STATUS_TONE: Record<ProjectStatus, StatusTone> = {
   idea: "neutral",
+  rejected: "error",
   leader_review: "warning",
   proposal: "warning",
   planning: "progress",
@@ -61,6 +64,12 @@ export interface ProjectRow {
   completed_at: string | null;
   manually_archived_at: string | null;
   manually_archived_by: string | null;
+  responsible_team_id: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  approval_round: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -73,6 +82,7 @@ export interface ProjectRow {
 const SELECT = `
   id,name,objective,description,owner_id,start_date,deadline,status,last_decision_note,
   completed_at,manually_archived_at,manually_archived_by,
+  responsible_team_id,submitted_at,approved_at,rejected_at,rejection_reason,approval_round,
   created_by,created_at,updated_at,
   owner:profiles!projects_owner_id_fkey(id,display_name),
   creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
@@ -111,6 +121,12 @@ function mapProject(raw: RawProject): ProjectRow {
     completed_at: (raw["completed_at"] as string | null) ?? null,
     manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
     manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
+    responsible_team_id: (raw["responsible_team_id"] as string | null) ?? null,
+    submitted_at: (raw["submitted_at"] as string | null) ?? null,
+    approved_at: (raw["approved_at"] as string | null) ?? null,
+    rejected_at: (raw["rejected_at"] as string | null) ?? null,
+    rejection_reason: (raw["rejection_reason"] as string | null) ?? null,
+    approval_round: (raw["approval_round"] as number | null) ?? 0,
     created_by: raw["created_by"] as string,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
@@ -205,35 +221,73 @@ export function isProjectOwner(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(ctx.userId && project.owner_id === ctx.userId);
 }
 
-export function isIdeaAuthor(project: ProjectRow, ctx: ProjectAccessContext) {
+export function isProjectCreator(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(ctx.userId && project.created_by === ctx.userId);
 }
 
-/** Leader của Team chính người gửi — người duy nhất (ngoài Admin) được duyệt ý tưởng. */
-export function isReviewLeader(project: ProjectRow, ctx: ProjectAccessContext) {
+/** Trạng thái chưa được duyệt: bản nháp, đang chờ duyệt hoặc bị từ chối. */
+export const PROJECT_UNAPPROVED_STATUSES: ProjectStatus[] = [
+  "idea",
+  "leader_review",
+  "proposal",
+  "rejected",
+];
+
+export function isProjectApproved(project: ProjectRow) {
+  return !PROJECT_UNAPPROVED_STATUSES.includes(project.status);
+}
+
+export function isProjectPendingApproval(project: ProjectRow) {
+  return project.status === "leader_review" || project.status === "proposal";
+}
+
+export function isProjectDraft(project: ProjectRow) {
+  return project.status === "idea";
+}
+
+export function isProjectRejected(project: ProjectRow) {
+  return project.status === "rejected";
+}
+
+/** Leader của Team phụ trách — người duyệt bước đầu khi Member tạo dự án. */
+export function isResponsibleLeader(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(
-    ctx.leaderTeamId && project.creatorTeamId && ctx.leaderTeamId === project.creatorTeamId,
+    ctx.leaderTeamId &&
+      project.responsible_team_id &&
+      ctx.leaderTeamId === project.responsible_team_id,
   );
 }
 
 /** Sửa nội dung dự án (không gồm chuyển trạng thái). */
 export function canEditProject(project: ProjectRow, ctx: ProjectAccessContext) {
   if (project.status === "archived") return ctx.role === "admin";
-  if (project.status === "idea") return isIdeaAuthor(project, ctx) || ctx.role === "admin";
-  if (project.status === "leader_review" || project.status === "proposal") return privileged(ctx);
+  if (project.status === "idea" || project.status === "rejected") {
+    return isProjectCreator(project, ctx) || ctx.role === "admin";
+  }
+  if (isProjectPendingApproval(project)) return privileged(ctx);
   return privileged(ctx) || isProjectOwner(project, ctx);
 }
 
-export function canSubmitIdea(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "idea" && (isIdeaAuthor(project, ctx) || ctx.role === "admin");
+/** Gửi duyệt / gửi lại sau khi bị từ chối. */
+export function canSubmitProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  if (project.status !== "idea" && project.status !== "rejected") return false;
+  return isProjectCreator(project, ctx) || ctx.role === "admin";
 }
 
-export function canLeaderDecide(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "leader_review" && (isReviewLeader(project, ctx) || ctx.role === "admin");
+/** Bước duyệt hiện tại của dự án, nếu có. */
+export function approvalStage(project: ProjectRow): "leader" | "cmo" | null {
+  if (project.status === "leader_review") return "leader";
+  if (project.status === "proposal") return "cmo";
+  return null;
 }
 
-export function canCmoDecide(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "proposal" && (ctx.role === "cmo" || ctx.role === "admin");
+/** Người dùng hiện tại được quyết định duyệt / từ chối ở bước đang chờ. */
+export function canDecideProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  const stage = approvalStage(project);
+  if (!stage) return false;
+  if (ctx.role === "admin") return true;
+  if (stage === "cmo") return ctx.role === "cmo";
+  return isResponsibleLeader(project, ctx);
 }
 
 /** Lưu trữ thủ công: chỉ Admin và CMO, không đổi trạng thái nghiệp vụ. */
