@@ -1956,9 +1956,11 @@ export type Database = {
           id: string
           message: string
           receiver_id: string
+          receiver_team_id: string | null
           relation_type: string
           revoked_at: string | null
           sender_id: string
+          sender_team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1967,9 +1969,11 @@ export type Database = {
           id?: string
           message: string
           receiver_id: string
+          receiver_team_id?: string | null
           relation_type?: string
           revoked_at?: string | null
           sender_id: string
+          sender_team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1978,9 +1982,11 @@ export type Database = {
           id?: string
           message?: string
           receiver_id?: string
+          receiver_team_id?: string | null
           relation_type?: string
           revoked_at?: string | null
           sender_id?: string
+          sender_team_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1992,10 +1998,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "recognitions_receiver_team_id_fkey"
+            columns: ["receiver_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "recognitions_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recognitions_sender_team_id_fkey"
+            columns: ["sender_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2707,6 +2727,27 @@ export type Database = {
         Returns: Database["public"]["Enums"]["project_status"]
       }
       recognition_quota_left: { Args: never; Returns: number }
+      recognition_stats: {
+        Args: {
+          _category?: Database["public"]["Enums"]["recognition_category"]
+          _from: string
+          _team?: string
+          _to: string
+          _user?: string
+        }
+        Returns: {
+          display_name: string
+          initiative_count: number
+          quality_count: number
+          receiver_id: string
+          speed_count: number
+          support_count: number
+          team_id: string
+          team_name: string
+          teamwork_count: number
+          total_count: number
+        }[]
+      }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
         Returns: undefined
