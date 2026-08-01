@@ -3,6 +3,7 @@ import { createFileRoute, redirect, useNavigate, useSearch } from "@tanstack/rea
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
