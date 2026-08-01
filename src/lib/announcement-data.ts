@@ -37,6 +37,14 @@ export const RECIPIENT_STATUS_TONE: Record<
   exempt: "warning",
 };
 
+export type ResultVisibility = "none" | "after_submit" | "after_due";
+
+export const RESULT_VISIBILITY_LABEL: Record<ResultVisibility, string> = {
+  none: "Không công khai cho người nhận",
+  after_submit: "Công khai sau khi người nhận gửi câu trả lời",
+  after_due: "Công khai sau khi hết hạn",
+};
+
 export interface AnnouncementRow {
   id: string;
   created_by: string;
@@ -47,7 +55,15 @@ export interface AnnouncementRow {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  comments_enabled: boolean;
+  result_visibility: ResultVisibility;
+  current_version: number;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  archived_at: string | null;
+  last_minor_edit_at: string | null;
 }
+
 
 export interface RecipientRow {
   id: string;
