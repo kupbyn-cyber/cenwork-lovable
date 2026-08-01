@@ -39,15 +39,15 @@ import {
 export const Route = createFileRoute("/_authenticated/roles")({
   head: () => ({
     meta: [
-      { title: "Vai trò và quyền — CEN 1.0" },
+      { title: "Vai trò và quyền — CEN WORK" },
       {
         name: "description",
-        content: "Ma trận vai trò và quyền hệ thống CEN 1.0, kèm gán vai trò cho từng thành viên.",
+        content: "Ma trận vai trò và quyền hệ thống CEN WORK, kèm gán vai trò cho từng thành viên.",
       },
-      { property: "og:title", content: "Vai trò và quyền — CEN 1.0" },
+      { property: "og:title", content: "Vai trò và quyền — CEN WORK" },
       {
         property: "og:description",
-        content: "Ma trận vai trò và quyền hệ thống CEN 1.0, kèm gán vai trò cho từng thành viên.",
+        content: "Ma trận vai trò và quyền hệ thống CEN WORK, kèm gán vai trò cho từng thành viên.",
       },
     ],
   }),

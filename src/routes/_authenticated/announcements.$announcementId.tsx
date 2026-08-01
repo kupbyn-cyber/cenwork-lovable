@@ -39,9 +39,9 @@ import {
 } from "@/lib/announcement-interaction";
 import { formatHanoiDateTime } from "@/lib/datetime";
 
-const TITLE = "Chi tiết thông báo nội bộ — CEN 1.0";
+const TITLE = "Chi tiết thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
-  "Đọc toàn bộ nội dung thông báo nội bộ, trả lời khảo sát, bình luận và xác nhận trước hạn trong CEN 1.0.";
+  "Đọc toàn bộ nội dung thông báo nội bộ, trả lời khảo sát, bình luận và xác nhận trước hạn trong CEN WORK.";
 
 export const Route = createFileRoute("/_authenticated/announcements/$announcementId")({
   head: () => ({

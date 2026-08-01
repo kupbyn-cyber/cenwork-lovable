@@ -34,15 +34,15 @@ import {
 export const Route = createFileRoute("/_authenticated/members")({
   head: () => ({
     meta: [
-      { title: "Thành viên — CEN 1.0" },
+      { title: "Thành viên — CEN WORK" },
       {
         name: "description",
-        content: "Danh sách thành viên CEN 1.0: vai trò hệ thống, Team chính và trạng thái tài khoản.",
+        content: "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
       },
-      { property: "og:title", content: "Thành viên — CEN 1.0" },
+      { property: "og:title", content: "Thành viên — CEN WORK" },
       {
         property: "og:description",
-        content: "Danh sách thành viên CEN 1.0: vai trò hệ thống, Team chính và trạng thái tài khoản.",
+        content: "Danh sách thành viên CEN WORK: vai trò hệ thống, Team chính và trạng thái tài khoản.",
       },
     ],
   }),

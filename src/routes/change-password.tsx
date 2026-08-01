@@ -8,7 +8,7 @@ import { cenToast } from "@/components/ui/toast";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * CEN 1.0 — Đổi mật khẩu bắt buộc sau lần đăng nhập đầu tiên.
+ * CEN WORK — Đổi mật khẩu bắt buộc sau lần đăng nhập đầu tiên.
  * Không hiển thị/ghi log giá trị mật khẩu ở bất kỳ đâu.
  */
 export const Route = createFileRoute("/change-password")({
@@ -26,15 +26,15 @@ export const Route = createFileRoute("/change-password")({
   },
   head: () => ({
     meta: [
-      { title: "Đổi mật khẩu bắt buộc — CEN 1.0" },
+      { title: "Đổi mật khẩu bắt buộc — CEN WORK" },
       {
         name: "description",
-        content: "Đặt mật khẩu mới cho tài khoản CEN 1.0 trước khi sử dụng hệ thống.",
+        content: "Đặt mật khẩu mới cho tài khoản CEN WORK trước khi sử dụng hệ thống.",
       },
-      { property: "og:title", content: "Đổi mật khẩu bắt buộc — CEN 1.0" },
+      { property: "og:title", content: "Đổi mật khẩu bắt buộc — CEN WORK" },
       {
         property: "og:description",
-        content: "Đặt mật khẩu mới cho tài khoản CEN 1.0 trước khi sử dụng hệ thống.",
+        content: "Đặt mật khẩu mới cho tài khoản CEN WORK trước khi sử dụng hệ thống.",
       },
     ],
   }),
@@ -95,7 +95,7 @@ function ChangePasswordPage() {
       .insert({ user_id: userId, action: "password.first_change", metadata: {} });
 
     setSaving(false);
-    cenToast.success("Đã đổi mật khẩu. Chào mừng bạn đến với CEN 1.0.");
+    cenToast.success("Đã đổi mật khẩu. Chào mừng bạn đến với CEN WORK.");
     await navigate({ to: "/", replace: true });
   }
 

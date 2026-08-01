@@ -29,17 +29,17 @@ import {
 export const Route = createFileRoute("/_authenticated/audit-logs")({
   head: () => ({
     meta: [
-      { title: "Nhật ký hoạt động — CEN 1.0" },
+      { title: "Nhật ký hoạt động — CEN WORK" },
       {
         name: "description",
         content:
-          "Nhật ký hoạt động quản trị CEN 1.0: tài khoản, vai trò, Team, Cơ sở và cấu hình hệ thống.",
+          "Nhật ký hoạt động quản trị CEN WORK: tài khoản, vai trò, Team, Cơ sở và cấu hình hệ thống.",
       },
-      { property: "og:title", content: "Nhật ký hoạt động — CEN 1.0" },
+      { property: "og:title", content: "Nhật ký hoạt động — CEN WORK" },
       {
         property: "og:description",
         content:
-          "Nhật ký hoạt động quản trị CEN 1.0: tài khoản, vai trò, Team, Cơ sở và cấu hình hệ thống.",
+          "Nhật ký hoạt động quản trị CEN WORK: tài khoản, vai trò, Team, Cơ sở và cấu hình hệ thống.",
       },
     ],
   }),

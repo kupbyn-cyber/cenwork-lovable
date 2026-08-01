@@ -29,17 +29,17 @@ import { PERMISSIONS } from "@/lib/permissions";
 export const Route = createFileRoute("/_authenticated/mvp/")({
   head: () => ({
     meta: [
-      { title: "MVP và danh hiệu — CEN 1.0" },
+      { title: "MVP và danh hiệu — CEN WORK" },
       {
         name: "description",
         content:
-          "Ghi nhận thành tích hằng tuần của CEN 1.0: bảng điểm minh bạch, phiếu bầu đồng đội và sáu danh hiệu.",
+          "Ghi nhận thành tích hằng tuần của CEN WORK: bảng điểm minh bạch, phiếu bầu đồng đội và sáu danh hiệu.",
       },
-      { property: "og:title", content: "MVP và danh hiệu — CEN 1.0" },
+      { property: "og:title", content: "MVP và danh hiệu — CEN WORK" },
       {
         property: "og:description",
         content:
-          "Ghi nhận thành tích hằng tuần của CEN 1.0: bảng điểm minh bạch, phiếu bầu đồng đội và sáu danh hiệu.",
+          "Ghi nhận thành tích hằng tuần của CEN WORK: bảng điểm minh bạch, phiếu bầu đồng đội và sáu danh hiệu.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

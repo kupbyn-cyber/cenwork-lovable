@@ -38,17 +38,17 @@ import {
 export const Route = createFileRoute("/_authenticated/reports/")({
   head: () => ({
     meta: [
-      { title: "Báo cáo — CEN 1.0" },
+      { title: "Báo cáo — CEN WORK" },
       {
         name: "description",
         content:
-          "Báo cáo ngày cá nhân và báo cáo tuần của Team trong CEN 1.0: gửi, duyệt và theo dõi trạng thái.",
+          "Báo cáo ngày cá nhân và báo cáo tuần của Team trong CEN WORK: gửi, duyệt và theo dõi trạng thái.",
       },
-      { property: "og:title", content: "Báo cáo — CEN 1.0" },
+      { property: "og:title", content: "Báo cáo — CEN WORK" },
       {
         property: "og:description",
         content:
-          "Báo cáo ngày cá nhân và báo cáo tuần của Team trong CEN 1.0: gửi, duyệt và theo dõi trạng thái.",
+          "Báo cáo ngày cá nhân và báo cáo tuần của Team trong CEN WORK: gửi, duyệt và theo dõi trạng thái.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

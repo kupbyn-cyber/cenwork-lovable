@@ -13,13 +13,13 @@ import {
 export const Route = createFileRoute("/_authenticated/theme-preview")({
   head: () => ({
     meta: [
-      { title: "Theme Preview — CEN 1.0 Design Tokens" },
+      { title: "Theme Preview — CEN WORK Design Tokens" },
       {
         name: "description",
         content:
-          "Style board nội bộ kiểm tra design token CEN 1.0: màu, chữ, spacing, radius, border, shadow.",
+          "Style board nội bộ kiểm tra design token CEN WORK: màu, chữ, spacing, radius, border, shadow.",
       },
-      { property: "og:title", content: "Theme Preview — CEN 1.0 Design Tokens" },
+      { property: "og:title", content: "Theme Preview — CEN WORK Design Tokens" },
       {
         property: "og:description",
         content: "Bảng kiểm tra trực quan hệ token dark theme Forest Command.",

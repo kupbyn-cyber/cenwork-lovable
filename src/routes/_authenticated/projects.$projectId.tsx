@@ -44,15 +44,15 @@ import {
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({
     meta: [
-      { title: "Chi tiết dự án — CEN 1.0" },
+      { title: "Chi tiết dự án — CEN WORK" },
       {
         name: "description",
-        content: "Thông tin dự án CEN 1.0: mục tiêu, Owner, Team, Cơ sở, thời gian và lịch sử.",
+        content: "Thông tin dự án CEN WORK: mục tiêu, Owner, Team, Cơ sở, thời gian và lịch sử.",
       },
-      { property: "og:title", content: "Chi tiết dự án — CEN 1.0" },
+      { property: "og:title", content: "Chi tiết dự án — CEN WORK" },
       {
         property: "og:description",
-        content: "Thông tin dự án CEN 1.0: mục tiêu, Owner, Team, Cơ sở, thời gian và lịch sử.",
+        content: "Thông tin dự án CEN WORK: mục tiêu, Owner, Team, Cơ sở, thời gian và lịch sử.",
       },
     ],
   }),
