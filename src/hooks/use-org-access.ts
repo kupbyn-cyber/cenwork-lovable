@@ -48,9 +48,9 @@ export function useOrgAccess() {
     canManageOrg: can(PERMISSIONS.ORG_MANAGE),
     canViewAudit: can(PERMISSIONS.AUDIT_VIEW),
     canManageSettings: can(PERMISSIONS.SETTINGS_ADMIN),
+    /** Chỉ Admin/CMO sửa hồ sơ người khác; ai cũng tự sửa hồ sơ của mình. */
     canEditMember(member: MemberRow) {
       if (isSystemAdmin) return true;
-      if (isLeader && leaderTeamId && member.primary_team_id === leaderTeamId) return true;
       return member.id === user?.id;
     },
   };

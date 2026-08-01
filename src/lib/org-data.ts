@@ -17,6 +17,10 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   member: "Member",
 };
 
+/** Chức danh tổ chức — danh sách cố định, độc lập với vai trò hệ thống. */
+export const JOB_TITLES = ["Giám đốc", "Leader", "Nhân viên"] as const;
+export type JobTitle = (typeof JOB_TITLES)[number];
+
 export const STATUS_LABEL: Record<AccountStatus, string> = {
   active: "Hoạt động",
   locked: "Đã khóa",

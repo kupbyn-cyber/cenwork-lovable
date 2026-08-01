@@ -19,6 +19,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { createMemberAccount, setMemberRole } from "@/lib/org.functions";
 import { isSystemAdminRole, roleRequiresTeam } from "@/lib/permissions";
 import {
+  JOB_TITLES,
   ROLE_LABEL,
   replaceCollaboratorTeams,
   updateMemberProfile,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/org-data";
 
 const NO_TEAM = "__none__";
+const NO_JOB_TITLE = "__no_job__";
 const ROLES: AppRole[] = ["admin", "cmo", "leader", "member"];
 
 export interface MemberFormDrawerProps {
@@ -148,6 +150,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         next.email = "Email không đúng định dạng.";
       if (form.password.length < 8) next.password = "Mật khẩu khởi tạo tối thiểu 8 ký tự.";
     }
+    if (form.jobTitle && !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]))
+      next.jobTitle = "Chức danh cũ không hợp lệ, vui lòng chọn lại.";
     if (form.phoneNumber.trim() && !/^[0-9+][0-9 .()-]{7,19}$/.test(form.phoneNumber.trim()))
       next.phoneNumber = "Số điện thoại không hợp lệ (8–20 ký tự số).";
     if (form.birthday && !/^\d{4}-\d{2}-\d{2}$/.test(form.birthday))
@@ -211,7 +215,9 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           id="member-email"
           label="Email"
           required
-          helperText={isCreate ? "Email dùng để đăng nhập, không được trùng." : "Email không thể thay đổi."}
+          helperText={
+            isCreate ? "Email dùng để đăng nhập, không được trùng." : "Email không thể thay đổi."
+          }
           {...(errors.email ? { error: errors.email } : {})}
         >
           {(controlProps) => (
@@ -246,16 +252,37 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
 
         <FormField
           id="member-job-title"
-          label="Chức danh chuyên môn"
-          helperText="Chỉ mang tính mô tả, không tạo quyền hệ thống."
+          label="Chức danh"
+          helperText="Thông tin tổ chức, độc lập với vai trò hệ thống."
+          {...(errors.jobTitle ? { error: errors.jobTitle } : {})}
         >
           {(controlProps) => (
-            <Input
-              {...controlProps}
-              value={form.jobTitle}
-              maxLength={120}
-              onChange={(e) => setForm((s) => ({ ...s, jobTitle: e.target.value }))}
-            />
+            <Select
+              value={form.jobTitle || NO_JOB_TITLE}
+              onValueChange={(value) =>
+                setForm((s) => ({ ...s, jobTitle: value === NO_JOB_TITLE ? "" : value }))
+              }
+            >
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
+                <SelectValue placeholder="Chọn chức danh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_JOB_TITLE}>Chưa đặt chức danh</SelectItem>
+                {JOB_TITLES.map((title) => (
+                  <SelectItem key={title} value={title}>
+                    {title}
+                  </SelectItem>
+                ))}
+                {/* Giá trị cũ ngoài danh sách: giữ nguyên để không mất dữ liệu, Admin/CMO chọn lại khi sửa. */}
+                {form.jobTitle &&
+                !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]) ? (
+                  <SelectItem value={form.jobTitle}>{form.jobTitle} (giá trị cũ)</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
           )}
         </FormField>
 
@@ -307,7 +334,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
               disabled={!canEditRoleTeam}
               onValueChange={(value) => setForm((s) => ({ ...s, role: value as AppRole }))}
             >
-              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -351,7 +381,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                 }))
               }
             >
-              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+              <SelectTrigger
+                id={controlProps.id}
+                aria-describedby={controlProps["aria-describedby"]}
+              >
                 <SelectValue placeholder="Chọn Team chính" />
               </SelectTrigger>
               <SelectContent>

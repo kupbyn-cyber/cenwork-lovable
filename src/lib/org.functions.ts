@@ -17,7 +17,7 @@ const roleEnum = z.enum(["admin", "cmo", "leader", "member"]);
 const createMemberSchema = z.object({
   email: z.string().trim().email().max(255),
   displayName: z.string().trim().min(1).max(80),
-  jobTitle: z.string().trim().max(120).optional().nullable(),
+  jobTitle: z.enum(["Giám đốc", "Leader", "Nhân viên"]).optional().nullable(),
   role: roleEnum,
   primaryTeamId: z.string().uuid().nullable(),
   collaboratorTeamIds: z.array(z.string().uuid()).max(20).default([]),
