@@ -257,11 +257,30 @@ function AnnouncementsPage() {
                     ),
                   },
                   {
+                    id: "ack",
+                    header: "Đã xác nhận",
+                    className: "min-w-[150px]",
+                    cell: (row) => {
+                      if (row.status !== "published") return "—";
+                      const stat = ackStats.data?.[row.id];
+                      if (!stat) return "—";
+                      return (
+                        <span className="text-body-sm text-text-primary">
+                          {stat.completed}/{stat.total}
+                          {stat.overdue > 0 ? (
+                            <span className="text-state-danger"> • {stat.overdue} quá hạn</span>
+                          ) : null}
+                        </span>
+                      );
+                    },
+                  },
+                  {
                     id: "due",
                     header: "Hạn xác nhận",
                     className: "min-w-[160px]",
                     cell: (row) => (row.due_at ? formatHanoiDateTime(row.due_at) : "—"),
                   },
+
                   {
                     id: "action",
                     header: "",
