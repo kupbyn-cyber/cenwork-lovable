@@ -177,8 +177,14 @@ export function canChangeTaskStatus(task: TaskRow, ctx: TaskAccessContext) {
   return canEditTask(task, ctx);
 }
 
+/** Chỉ Task đã hoàn thành cuối cùng (đã xác nhận) mới được lưu trữ thủ công. */
 export function canArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
-  return !task.is_archived && canManageTask(task, ctx);
+  return !task.is_archived && task.status === "done" && canManageTask(task, ctx);
+}
+
+/** Task thuộc khu vực Lưu trữ: đã hoàn thành cuối cùng hoặc đã lưu trữ. */
+export function isTaskArchived(task: TaskRow) {
+  return task.status === "done" || task.is_archived;
 }
 
 /** Chỉ CMO, Admin, Leader hoặc Project Owner được gắn Task vào dự án. */
