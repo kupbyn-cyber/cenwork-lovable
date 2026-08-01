@@ -65,6 +65,18 @@ function AnnouncementsPage() {
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
+  const members = useQuery(membersQuery());
+
+  const createdIds = React.useMemo(
+    () => (created.data ?? []).filter((row) => row.status === "published").map((row) => row.id),
+    [created.data],
+  );
+  const ackStats = useQuery(ackStatsQuery(createdIds));
+
+  const nameById = React.useMemo(
+    () => new Map((members.data ?? []).map((member) => [member.id, member.display_name])),
+    [members.data],
+  );
 
   const matches = (title: string) =>
     title.toLowerCase().includes(search.trim().toLowerCase());
@@ -78,6 +90,7 @@ function AnnouncementsPage() {
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
   );
+
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
