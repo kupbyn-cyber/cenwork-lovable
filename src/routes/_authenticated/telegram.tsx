@@ -756,7 +756,7 @@ function TelegramPage() {
             <CardContent>
               <DataTable
                 columns={outboxColumns}
-                data={outbox.data ?? []}
+                data={filteredOutbox}
                 getRowId={(row) => row.id}
                 loading={outbox.isLoading}
                 error={outbox.isError}
