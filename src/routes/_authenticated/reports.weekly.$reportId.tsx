@@ -11,6 +11,8 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ReviewActions } from "@/components/report/review-actions";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
+import { RecognitionStatsPanel } from "@/components/recognition/recognition-stats-panel";
+
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
 import {
@@ -189,7 +191,15 @@ function WeeklyReportDetail() {
         </div>
       </div>
 
+      <RecognitionStatsPanel
+        title="Ghi nhận trong tuần"
+        fixedTeamId={report.team_id}
+        fixedRange={{ from: report.week_start, to: addDays(report.week_start, 6) }}
+        description="Số lời ghi nhận thành viên Team nhận được trong tuần báo cáo (không hiển thị nội dung hay người gửi)."
+      />
+
       <Card>
+
         <CardHeader>
           <CardTitle>Lịch sử xử lý</CardTitle>
         </CardHeader>

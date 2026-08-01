@@ -11,6 +11,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
 import { DailyActionHub } from "@/components/home/daily-action-hub";
 import { QuickActions } from "@/components/home/quick-actions";
+import { RoleInsights } from "@/components/home/role-insights";
+
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
@@ -215,6 +217,8 @@ function Dashboard() {
 
       <DailyActionHub />
       <QuickActions />
+      <RoleInsights />
+
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">

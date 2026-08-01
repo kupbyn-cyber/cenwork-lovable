@@ -40,7 +40,7 @@ export function ActionItemRow({ item, onDone }: { item: ActionItem; onDone?: () 
   }, [item.target_route, navigate, onDone]);
 
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-card border border-border-default bg-surface p-3 sm:flex-row sm:items-center sm:gap-3">
+    <div className="cen-transition flex min-w-0 animate-in flex-col gap-2 rounded-card border border-border-default bg-surface p-3 duration-200 fade-in hover:border-border-strong sm:flex-row sm:items-center sm:gap-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="text-caption tracking-[0.1em] text-text-muted uppercase">
