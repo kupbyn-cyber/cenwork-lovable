@@ -138,9 +138,9 @@ export interface ReportArchiveRow {
   projectName: string | null;
   status: string;
   archived_at: string | null;
-  archived_reason: string | null;
+  archive_reason: string | null;
   deleted_at: string | null;
-  deleted_reason: string | null;
+  delete_reason: string | null;
   updated_at: string;
 }
 
@@ -148,7 +148,7 @@ async function fetchArchive(): Promise<ReportArchiveRow[]> {
   const { data, error } = await supabase
     .from("reports")
     .select(
-      `id,report_type,period_key,author_id,status,archived_at,archived_reason,deleted_at,deleted_reason,updated_at,
+      `id,report_type,period_key,author_id,status,archived_at,archive_reason,deleted_at,delete_reason,updated_at,
        author:profiles!reports_author_id_fkey(display_name),team:teams(name),project:projects(name)`,
     )
     .or("archived_at.not.is.null,deleted_at.not.is.null")
@@ -170,9 +170,9 @@ async function fetchArchive(): Promise<ReportArchiveRow[]> {
       projectName: project?.name ?? null,
       status: row["status"] as string,
       archived_at: (row["archived_at"] as string | null) ?? null,
-      archived_reason: (row["archived_reason"] as string | null) ?? null,
+      archive_reason: (row["archive_reason"] as string | null) ?? null,
       deleted_at: (row["deleted_at"] as string | null) ?? null,
-      deleted_reason: (row["deleted_reason"] as string | null) ?? null,
+      delete_reason: (row["delete_reason"] as string | null) ?? null,
       updated_at: row["updated_at"] as string,
     };
   });
