@@ -83,7 +83,7 @@ export function QuestionEditor({ value, disabled, onChange }: Props) {
             <IconButton
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon-sm"
               label="Xóa câu hỏi"
               disabled={disabled}
               onClick={() => onChange(value.filter((_, i) => i !== index))}
@@ -157,7 +157,7 @@ export function QuestionEditor({ value, disabled, onChange }: Props) {
                   <IconButton
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon-sm"
                     label="Xóa phương án"
                     disabled={disabled || question.options.length <= 2}
                     onClick={() =>
