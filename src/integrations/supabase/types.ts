@@ -2020,6 +2020,453 @@ export type Database = {
           },
         ]
       }
+      report_exemption_requests: {
+        Row: {
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          obligation_id: string
+          reason: string
+          requested_by: string
+          status: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at: string
+        }
+        Insert: {
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          obligation_id: string
+          reason: string
+          requested_by: string
+          status?: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at?: string
+        }
+        Update: {
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          obligation_id?: string
+          reason?: string
+          requested_by?: string
+          status?: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_exemption_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_exemption_requests_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "report_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_exemption_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_non_working_days: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day: string
+          id: string
+          reason: string
+          team_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day: string
+          id?: string
+          reason: string
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          id?: string
+          reason?: string
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_non_working_days_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_non_working_days_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_non_working_days_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_obligations: {
+        Row: {
+          created_at: string
+          due_at: string
+          exempt_reason: string | null
+          first_submitted_at: string | null
+          id: string
+          is_exempt: boolean
+          is_late: boolean
+          late_minutes: number | null
+          period_id: string
+          period_key: string
+          report_id: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          reviewer_id: string | null
+          team_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_at: string
+          exempt_reason?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          is_exempt?: boolean
+          is_late?: boolean
+          late_minutes?: number | null
+          period_id: string
+          period_key: string
+          report_id?: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          reviewer_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_at?: string
+          exempt_reason?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          is_exempt?: boolean
+          is_late?: boolean
+          late_minutes?: number | null
+          period_id?: string
+          period_key?: string
+          report_id?: string | null
+          report_type?: Database["public"]["Enums"]["report_kind"]
+          reviewer_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_obligations_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "report_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_obligations_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_obligations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_obligations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_periods: {
+        Row: {
+          config_snapshot: Json
+          created_at: string
+          due_at: string
+          id: string
+          opens_at: string
+          period_end: string
+          period_key: string
+          period_start: string
+          project_id: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requirement_id: string | null
+          status: Database["public"]["Enums"]["report_period_status"]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          config_snapshot?: Json
+          created_at?: string
+          due_at: string
+          id?: string
+          opens_at: string
+          period_end: string
+          period_key: string
+          period_start: string
+          project_id?: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requirement_id?: string | null
+          status?: Database["public"]["Enums"]["report_period_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config_snapshot?: Json
+          created_at?: string
+          due_at?: string
+          id?: string
+          opens_at?: string
+          period_end?: string
+          period_key?: string
+          period_start?: string
+          project_id?: string | null
+          report_type?: Database["public"]["Enums"]["report_kind"]
+          requirement_id?: string | null
+          status?: Database["public"]["Enums"]["report_period_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_periods_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_periods_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "report_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_periods_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_requirements: {
+        Row: {
+          applies_all_teams: boolean
+          cadence: string
+          created_at: string
+          created_by: string | null
+          default_reviewer_id: string | null
+          due_day_of_week: number | null
+          due_time: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_active: boolean
+          open_day_of_week: number | null
+          open_time: string
+          project_id: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requires_ack: boolean
+          requires_evidence: boolean
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applies_all_teams?: boolean
+          cadence?: string
+          created_at?: string
+          created_by?: string | null
+          default_reviewer_id?: string | null
+          due_day_of_week?: number | null
+          due_time?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          open_day_of_week?: number | null
+          open_time?: string
+          project_id?: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requires_ack?: boolean
+          requires_evidence?: boolean
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applies_all_teams?: boolean
+          cadence?: string
+          created_at?: string
+          created_by?: string | null
+          default_reviewer_id?: string | null
+          due_day_of_week?: number | null
+          due_time?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          open_day_of_week?: number | null
+          open_time?: string
+          project_id?: string | null
+          report_type?: Database["public"]["Enums"]["report_kind"]
+          requires_ack?: boolean
+          requires_evidence?: boolean
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_requirements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_requirements_default_reviewer_id_fkey"
+            columns: ["default_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_requirements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_requirements_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_reviewer_assignments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delegate_id: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          principal_id: string
+          report_type: Database["public"]["Enums"]["report_kind"] | null
+          starts_at: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delegate_id: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          principal_id: string
+          report_type?: Database["public"]["Enums"]["report_kind"] | null
+          starts_at?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delegate_id?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          principal_id?: string
+          report_type?: Database["public"]["Enums"]["report_kind"] | null
+          starts_at?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_reviewer_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reviewer_assignments_delegate_id_fkey"
+            columns: ["delegate_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reviewer_assignments_principal_id_fkey"
+            columns: ["principal_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reviewer_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_participants: {
         Row: {
           created_at: string
@@ -2748,6 +3195,34 @@ export type Database = {
           total_count: number
         }[]
       }
+      report_cmo_id: { Args: never; Returns: string }
+      report_config_manager: { Args: never; Returns: boolean }
+      report_decide_exemption: {
+        Args: { _approve: boolean; _note?: string; _request: string }
+        Returns: undefined
+      }
+      report_default_reviewer: {
+        Args: { _team: string; _user: string }
+        Returns: string
+      }
+      report_effective_reviewer: {
+        Args: {
+          _at?: string
+          _default: string
+          _report_type: Database["public"]["Enums"]["report_kind"]
+          _team: string
+        }
+        Returns: string
+      }
+      report_generate_daily: { Args: { _day?: string }; Returns: Json }
+      report_generate_weekly: { Args: { _week_start?: string }; Returns: Json }
+      report_is_non_working: {
+        Args: { _day: string; _team: string; _user: string }
+        Returns: boolean
+      }
+      report_refresh_reviewers: { Args: never; Returns: number }
+      report_team_leader: { Args: { _team: string }; Returns: boolean }
+      report_upsert_obligations: { Args: { _period: string }; Returns: number }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
         Returns: undefined
@@ -2817,6 +3292,9 @@ export type Database = {
         | "initiative"
         | "teamwork"
       recognition_report_status: "open" | "dismissed" | "actioned"
+      report_exemption_status: "pending" | "approved" | "rejected"
+      report_kind: "daily" | "weekly" | "project"
+      report_period_status: "scheduled" | "open" | "closed"
       report_status: "draft" | "submitted" | "changes_requested" | "approved"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
@@ -3001,6 +3479,9 @@ export const Constants = {
         "teamwork",
       ],
       recognition_report_status: ["open", "dismissed", "actioned"],
+      report_exemption_status: ["pending", "approved", "rejected"],
+      report_kind: ["daily", "weekly", "project"],
+      report_period_status: ["scheduled", "open", "closed"],
       report_status: ["draft", "submitted", "changes_requested", "approved"],
       task_priority: ["low", "medium", "high"],
       task_status: ["not_started", "in_progress", "review", "done"],
