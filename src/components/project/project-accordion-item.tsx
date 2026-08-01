@@ -67,7 +67,7 @@ export function ProjectAccordionItem({
       )}
     >
       {/* Header dự án — nền nổi hơn danh sách Task một cấp */}
-      <div className="flex min-w-0 items-start gap-2 bg-surface-subtle px-3 py-3 sm:gap-3 sm:px-4">
+      <div className="flex min-w-0 flex-col gap-2 bg-surface-subtle px-3 py-3 sm:flex-row sm:items-start sm:gap-3 sm:px-4">
         <button
           type="button"
           onClick={onToggle}
@@ -134,7 +134,7 @@ export function ProjectAccordionItem({
           </span>
         </button>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center justify-end gap-1">
           {canAddTask && onAddTask ? (
             <Tooltip>
               <TooltipTrigger asChild>
