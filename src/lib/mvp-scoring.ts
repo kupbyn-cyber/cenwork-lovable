@@ -528,26 +528,68 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
     notApplicableReason: doneTasks.length > 0 ? null : "Chưa hoàn thành công việc nào trong kỳ",
   });
 
-  // 3. Kỷ luật báo cáo.
+  // 3. Nhóm Kỷ luật (15 điểm): báo cáo + xác nhận thông báo bắt buộc.
+  // Chấm thông báo trước để biết có phải phân bổ lại điểm cho báo cáo hay không.
+  const announcementLockAt = input.announcementLockAt ?? new Date().toISOString();
+  const announcementSummary = evaluateAnnouncements(
+    input.announcements ?? [],
+    announcementLockAt,
+    MVP_CRITERION_MAX.announcement,
+  );
+  const reportingMax = announcementSummary.isApplicable
+    ? MVP_CRITERION_MAX.reporting
+    : MVP_DISCIPLINE_MAX;
+
   const dailyRatio = Math.min(input.dailyReportsSubmitted / MVP_EXPECTED_DAILY_REPORTS, 1);
   const weeklyRatio = input.weeklyReportSubmitted === null ? null : input.weeklyReportSubmitted ? 1 : 0;
   const reportingRatio = weeklyRatio === null ? dailyRatio : dailyRatio * 0.7 + weeklyRatio * 0.3;
   components.push({
     criterion: "reporting",
-    maxPoints: MVP_CRITERION_MAX.reporting,
-    earnedPoints: round1(reportingRatio * MVP_CRITERION_MAX.reporting),
+    maxPoints: reportingMax,
+    earnedPoints: round1(reportingRatio * reportingMax),
     formula:
       weeklyRatio === null
-        ? "Số báo cáo ngày đã gửi ÷ 5 × 15"
-        : "(Báo cáo ngày 70% + báo cáo tuần 30%) × 15",
+        ? `Số báo cáo ngày đã gửi ÷ ${MVP_EXPECTED_DAILY_REPORTS} × ${reportingMax}`
+        : `(Báo cáo ngày 70% + báo cáo tuần 30%) × ${reportingMax}`,
     sourceData: {
       dailyReportsSubmitted: input.dailyReportsSubmitted,
       expectedDaily: MVP_EXPECTED_DAILY_REPORTS,
       weeklyReportSubmitted: input.weeklyReportSubmitted,
+      redistributedFromAnnouncement: !announcementSummary.isApplicable,
     },
     isApplicable: true,
     notApplicableReason: null,
   });
+
+  // 3b. Xác nhận thông báo bắt buộc đúng hạn.
+  components.push({
+    criterion: "announcement",
+    maxPoints: MVP_CRITERION_MAX.announcement,
+    earnedPoints: announcementSummary.isApplicable ? announcementSummary.score : 0,
+    formula: `${MVP_CRITERION_MAX.announcement} × tổng hệ số ÷ số thông báo hợp lệ (đúng hạn 1 · trễ ≤12h 0.75 · ≤24h 0.5 · ≤48h 0.25 · >48h hoặc chưa xác nhận 0)`,
+    sourceData: {
+      version: announcementSummary.version,
+      counted: announcementSummary.counted,
+      excluded: announcementSummary.excluded,
+      onTime: announcementSummary.onTime,
+      late12: announcementSummary.late12,
+      late24: announcementSummary.late24,
+      late48: announcementSummary.late48,
+      missed: announcementSummary.missed,
+      coefficientSum: announcementSummary.coefficientSum,
+      lockedAt: announcementLockAt,
+      countedIds: announcementSummary.evaluations
+        .filter((row) => !row.excluded)
+        .map((row) => row.announcementId),
+      excludedIds: announcementSummary.evaluations
+        .filter((row) => row.excluded)
+        .map((row) => ({ id: row.announcementId, reason: row.excludeReason })),
+      items: announcementSummary.evaluations,
+    },
+    isApplicable: announcementSummary.isApplicable,
+    notApplicableReason: announcementSummary.notApplicableReason,
+  });
+
 
   // 4. Phiếu bầu đồng đội (chuẩn hóa theo người nhiều phiếu nhất).
   const voteApplicable = input.topVotes > 0;
