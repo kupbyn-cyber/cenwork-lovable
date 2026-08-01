@@ -87,6 +87,12 @@ function TasksPage() {
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [editTarget, setEditTarget] = React.useState<TaskRow | null>(null);
+  const [completeTarget, setCompleteTarget] = React.useState<TaskRow | null>(null);
+  const [deadlineTarget, setDeadlineTarget] = React.useState<TaskRow | null>(null);
+  const [archiveTarget, setArchiveTarget] = React.useState<TaskRow | null>(null);
+  const [restoreTarget, setRestoreTarget] = React.useState<TaskRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<TaskRow | null>(null);
 
   const projects = projectsResult.data ?? [];
   const teams = teamsResult.data ?? [];
@@ -97,6 +103,48 @@ function TasksPage() {
     role: access.role,
     leaderTeamId: access.leaderTeamId,
   };
+
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+  };
+
+  const completeMutation = useMutation({
+    mutationFn: (task: TaskRow) => setTaskStatus(task.id, "done"),
+    onSuccess: () => {
+      refresh();
+      setCompleteTarget(null);
+      cenToast.success("Đã đánh dấu công việc hoàn thành.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (input: { id: string; archived: boolean }) =>
+      setManualArchive("task", input.id, input.archived),
+    onSuccess: (_data, input) => {
+      refresh();
+      setArchiveTarget(null);
+      setRestoreTarget(null);
+      cenToast.success(
+        input.archived ? "Đã đưa công việc vào Lưu trữ." : "Đã khôi phục công việc khỏi Lưu trữ.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (task: TaskRow) => softDeleteEntity("task", task.id),
+    onSuccess: () => {
+      refresh();
+      setDeleteTarget(null);
+      cenToast.success("Đã xóa công việc khỏi danh sách vận hành.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
 
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
