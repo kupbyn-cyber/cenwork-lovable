@@ -1,11 +1,19 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, CalendarClock, Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Columns3, Plus, Trash2, X } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable, TableCellStack } from "@/components/ui/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -18,32 +26,25 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
+import { TaskCardList } from "@/components/task/task-card-list";
+import { TaskSavedViews } from "@/components/task/task-saved-views";
 import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
-import {
-  activePeopleQuery,
-  isProjectApproved,
-  isProjectArchived,
-  projectsQuery,
-} from "@/lib/project-data";
-import {
-  TaskProjectGroups,
-  type TaskGroup,
-} from "@/components/task/task-project-groups";
+import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
   TASK_PRIORITY_LABEL,
-  TASK_PRIORITY_ORDER,
   TASK_PRIORITY_TONE,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
   canChangeTaskStatus,
-  canCreateProjectTask,
   canEditTask,
   canManuallyArchiveTask,
   canRequestTaskDeadline,
@@ -56,6 +57,24 @@ import {
   type TaskAccessContext,
   type TaskRow,
 } from "@/lib/task-data";
+import {
+  ALL,
+  COLUMN_LABEL,
+  DEFAULT_COLUMNS,
+  EMPTY_FILTERS,
+  NO_PROJECT,
+  OPTIONAL_COLUMNS,
+  TASK_SORT_LABEL,
+  TASK_SORT_ORDER,
+  filterTasks,
+  hasActiveFilters,
+  savedViewsQuery,
+  sortTasks,
+  type OptionalColumnId,
+  type SavedViewConfig,
+  type TaskFilterState,
+  type TaskSortKey,
+} from "@/lib/task-view-data";
 
 export const Route = createFileRoute("/_authenticated/tasks/")({
   head: () => ({
@@ -77,29 +96,29 @@ export const Route = createFileRoute("/_authenticated/tasks/")({
   component: TasksPage,
 });
 
-const ALL = "__all__";
-const NO_PROJECT = "__standalone__";
+const PAGE_SIZE = 25;
 
 function TasksPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const tasksResult = useQuery(tasksQuery());
   const projectsResult = useQuery(projectsQuery());
   const teamsResult = useQuery(teamsQuery());
   const peopleResult = useQuery(activePeopleQuery());
+  const viewsResult = useQuery(savedViewsQuery(access.userId));
 
-  const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState(ALL);
-  const [priorityFilter, setPriorityFilter] = React.useState(ALL);
-  const [assigneeFilter, setAssigneeFilter] = React.useState(ALL);
-  const [projectFilter, setProjectFilter] = React.useState(ALL);
-  const [teamFilter, setTeamFilter] = React.useState(ALL);
+  /** Bộ lọc áp dụng (đã debounce phần tìm kiếm). */
+  const [filters, setFilters] = React.useState<TaskFilterState>(EMPTY_FILTERS);
+  const [searchInput, setSearchInput] = React.useState("");
+  const [sort, setSort] = React.useState<TaskSortKey>("created_desc");
+  const [columns, setColumns] = React.useState<OptionalColumnId[]>(DEFAULT_COLUMNS);
+  const [activeViewId, setActiveViewId] = React.useState<string | null>(null);
   const [view, setView] = React.useState<"active" | "archived">("active");
+  const [limit, setLimit] = React.useState(PAGE_SIZE);
+
   const [createOpen, setCreateOpen] = React.useState(false);
-  /** Dự án được khóa sẵn khi thêm nhanh từ header nhóm (null = công việc độc lập). */
-  const [quickAddProjectId, setQuickAddProjectId] = React.useState<string | null>(null);
-  const [quickAdd, setQuickAdd] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<TaskRow | null>(null);
   const [completeTarget, setCompleteTarget] = React.useState<TaskRow | null>(null);
   const [deadlineTarget, setDeadlineTarget] = React.useState<TaskRow | null>(null);
@@ -110,12 +129,48 @@ function TasksPage() {
   const projects = projectsResult.data ?? [];
   const teams = teamsResult.data ?? [];
   const people = peopleResult.data ?? [];
+  const savedViews = React.useMemo(() => viewsResult.data ?? [], [viewsResult.data]);
 
   const ctx: TaskAccessContext = {
     userId: access.userId,
     role: access.role,
     leaderTeamId: access.leaderTeamId,
   };
+
+  // Debounce tìm kiếm để không lọc lại theo từng ký tự.
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setFilters((prev) => (prev.search === searchInput ? prev : { ...prev, search: searchInput }));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const applyView = React.useCallback((viewId: string | null) => {
+    setActiveViewId(viewId);
+    setLimit(PAGE_SIZE);
+    if (!viewId) {
+      setFilters(EMPTY_FILTERS);
+      setSearchInput("");
+      setSort("created_desc");
+      setColumns(DEFAULT_COLUMNS);
+      return;
+    }
+    const target = savedViews.find((item) => item.id === viewId);
+    if (!target) return;
+    setFilters(target.filters);
+    setSearchInput(target.filters.search);
+    setSort(target.sort);
+    setColumns(target.columns);
+  }, [savedViews]);
+
+  /** Áp dụng chế độ xem mặc định cá nhân khi mở trang. */
+  const appliedDefaultRef = React.useRef(false);
+  React.useEffect(() => {
+    if (appliedDefaultRef.current || viewsResult.isLoading) return;
+    appliedDefaultRef.current = true;
+    const preferred = savedViews.find((item) => item.isDefault);
+    if (preferred) applyView(preferred.id);
+  }, [savedViews, viewsResult.isLoading, applyView]);
 
   const queryClient = useQueryClient();
   const refresh = () => {
@@ -159,284 +214,207 @@ function TasksPage() {
     onError: (error: Error) => cenToast.error(error.message),
   });
 
-  const rows = React.useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return (tasksResult.data ?? []).filter((task) => {
-      if (isTaskArchived(task) !== (view === "archived")) return false;
-      if (keyword && !task.name.toLowerCase().includes(keyword)) return false;
-      if (statusFilter !== ALL && task.status !== statusFilter) return false;
-      if (priorityFilter !== ALL && task.priority !== priorityFilter) return false;
-      if (assigneeFilter !== ALL && task.assignee_id !== assigneeFilter) return false;
-      if (projectFilter === NO_PROJECT && task.project_id !== null) return false;
-      if (projectFilter !== ALL && projectFilter !== NO_PROJECT && task.project_id !== projectFilter)
-        return false;
-      if (teamFilter !== ALL && task.team_id !== teamFilter) return false;
-      return true;
-    });
-  }, [
-    tasksResult.data,
-    search,
-    statusFilter,
-    priorityFilter,
-    assigneeFilter,
-    projectFilter,
-    teamFilter,
-    view,
-  ]);
+  const allTasks = React.useMemo(() => tasksResult.data ?? [], [tasksResult.data]);
 
-  /** Nhóm theo Dự án; không lặp lại cột Dự án trong từng dòng. */
-  const groups = React.useMemo<TaskGroup[]>(() => {
-    const hasFilter =
-      search.trim() !== "" ||
-      statusFilter !== ALL ||
-      priorityFilter !== ALL ||
-      assigneeFilter !== ALL ||
-      projectFilter !== ALL ||
-      teamFilter !== ALL;
-
-    const byProject = new Map<string, TaskRow[]>();
-    for (const task of rows) {
-      const key = task.project_id ?? NO_PROJECT;
-      const list = byProject.get(key);
-      if (list) list.push(task);
-      else byProject.set(key, [task]);
-    }
-
-    const teamName = (teamId: string | null) =>
-      teamId ? (teams.find((team) => team.id === teamId)?.name ?? null) : null;
-
-    const allowProjectTask = canCreateProjectTask(ctx) && access.can("tasks.create");
-    const allowStandaloneTask = access.can("tasks.create");
-
-    const sortTasks = (list: TaskRow[]) =>
-      [...list].sort((a, b) => {
-        const overdue = Number(isTaskOverdue(b)) - Number(isTaskOverdue(a));
-        if (overdue !== 0) return overdue;
-        const deadline = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        if (deadline !== 0) return deadline;
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-      });
-
-    const build = (
-      key: string,
-      projectId: string | null,
-      name: string,
-      team: string | null,
-      list: TaskRow[],
-      canAdd: boolean,
-    ): TaskGroup => ({
-      key,
-      projectId,
-      name,
-      teamName: team,
-      tasks: sortTasks(list),
-      activeCount: list.filter((task) => task.status !== "done").length,
-      overdueCount: list.filter((task) => isTaskOverdue(task)).length,
-      doneCount: list.filter((task) => task.status === "done").length,
-      canAdd,
-    });
-
-    const result: TaskGroup[] = [];
-
-    for (const project of projects) {
-      if (projectFilter !== ALL && projectFilter !== project.id) continue;
-      const list = byProject.get(project.id) ?? [];
-      const addable =
-        allowProjectTask && isProjectApproved(project) && !isProjectArchived(project);
-      if (list.length === 0) {
-        // Sau khi lọc, không hiển thị nhóm rỗng; chỉ giữ nhóm rỗng ở danh sách gốc.
-        if (hasFilter || view === "archived" || !isProjectApproved(project)) continue;
-        if (isProjectArchived(project)) continue;
-      }
-      result.push(
-        build(
-          project.id,
-          project.id,
-          project.name,
-          teamName(project.responsible_team_id),
-          list,
-          addable,
-        ),
-      );
-    }
-
-    // Dự án ngoài danh sách hiển thị (ví dụ chỉ thấy Task) vẫn gom được theo tên.
-    for (const [key, list] of byProject) {
-      if (key === NO_PROJECT) continue;
-      if (result.some((group) => group.key === key)) continue;
-      if (projectFilter !== ALL && projectFilter !== key) continue;
-      const first = list[0]!;
-      result.push(
-        build(key, key, first.projectName ?? "Dự án", teamName(first.team_id), list, false),
-      );
-    }
-
-    if (projectFilter === ALL || projectFilter === NO_PROJECT) {
-      const standalone = byProject.get(NO_PROJECT) ?? [];
-      if (standalone.length > 0 || (!hasFilter && view === "active")) {
-        result.push(
-          build(NO_PROJECT, null, "Công việc độc lập", null, standalone, allowStandaloneTask),
-        );
-      }
-    }
-
-    const rank = (group: TaskGroup) => {
-      if (group.overdueCount > 0) return 0;
-      if (group.tasks.length > 0) return 1;
-      return 2;
-    };
-    return result.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "vi"));
+  const rows = React.useMemo(
+    () => sortTasks(filterTasks(allTasks, filters, view, ctx), sort),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    rows,
-    projects,
-    teams,
-    projectFilter,
-    search,
-    statusFilter,
-    priorityFilter,
-    assigneeFilter,
-    teamFilter,
-    view,
-    access.role,
-    access.userId,
-  ]);
+    [allTasks, filters, view, sort, access.userId, access.role, access.leaderTeamId],
+  );
 
-  /** Mặc định chỉ mở nhóm có Task quá hạn (hệ thống chưa có ngưỡng "sắp đến hạn"). */
-  const [expandedKeys, setExpandedKeys] = React.useState<string[]>([]);
-  const initialisedRef = React.useRef(false);
+  const visibleRows = React.useMemo(() => rows.slice(0, limit), [rows, limit]);
+
   React.useEffect(() => {
-    if (initialisedRef.current || tasksResult.isLoading || groups.length === 0) return;
-    initialisedRef.current = true;
-    setExpandedKeys(groups.filter((group) => group.overdueCount > 0).map((group) => group.key));
-  }, [groups, tasksResult.isLoading]);
+    setLimit(PAGE_SIZE);
+  }, [filters, sort, view]);
 
-  const toggleGroup = (key: string) =>
-    setExpandedKeys((keys) =>
-      keys.includes(key) ? keys.filter((item) => item !== key) : [...keys, key],
+  const filtering = hasActiveFilters(filters);
+  const totalInScope = React.useMemo(
+    () => allTasks.filter((task) => isTaskArchived(task) === (view === "archived")).length,
+    [allTasks, view],
+  );
+
+  const patchFilters = (patch: Partial<TaskFilterState>) =>
+    setFilters((prev) => ({ ...prev, ...patch }));
+
+  const resetFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setSearchInput("");
+  };
+
+  const currentConfig: SavedViewConfig = { filters, sort, columns };
+
+  const rowActions = (row: TaskRow) => {
+    const canComplete =
+      canChangeTaskStatus(row, ctx) && row.status !== "done" && !isTaskArchived(row);
+    const menuActions: RowAction[] = [];
+    if (canRequestTaskDeadline(row, ctx)) {
+      menuActions.push({
+        key: "deadline",
+        label: "Yêu cầu đổi deadline",
+        icon: CalendarClock,
+        onSelect: () => setDeadlineTarget(row),
+      });
+    }
+    if (canManuallyArchiveTask(row, ctx)) {
+      menuActions.push({
+        key: "archive",
+        label: "Đưa vào Lưu trữ",
+        icon: Archive,
+        onSelect: () => setArchiveTarget(row),
+      });
+    }
+    if (canRestoreTask(row, ctx)) {
+      menuActions.push({
+        key: "restore",
+        label: "Khôi phục khỏi Lưu trữ",
+        icon: ArchiveRestore,
+        onSelect: () => setRestoreTarget(row),
+      });
+    }
+    if (canSoftDelete(access.role)) {
+      menuActions.push({
+        key: "delete",
+        label: "Xóa",
+        icon: Trash2,
+        tone: "destructive",
+        onSelect: () => setDeleteTarget(row),
+      });
+    }
+    return (
+      <RowActionsCell
+        onView={() => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
+        onEdit={canEditTask(row, ctx) ? () => setEditTarget(row) : null}
+        onComplete={canComplete ? () => setCompleteTarget(row) : null}
+        completing={completeMutation.isPending && completeTarget?.id === row.id}
+        menuActions={menuActions}
+      />
     );
+  };
 
-  const columns = [
+  const show = (id: OptionalColumnId) => columns.includes(id);
+
+  const tableColumns = [
     {
       id: "name",
       header: "Công việc",
-      className: "min-w-[220px]",
+      className: "min-w-[240px]",
       cell: (row: TaskRow) => <TableCellStack primary={row.name} />,
     },
-
-    {
-      id: "assignee",
-      header: "Người phụ trách",
-      className: "min-w-[150px]",
-      cell: (row: TaskRow) => (
-        <span className="text-text-secondary">{row.assigneeName ?? "—"}</span>
-      ),
-    },
-    {
-      id: "team",
-      header: "Team",
-      className: "min-w-[130px]",
-      cell: (row: TaskRow) => <span className="text-text-secondary">{row.teamName ?? "—"}</span>,
-    },
-    {
-      id: "deadline",
-      header: "Deadline",
-      className: "min-w-[160px]",
-      cell: (row: TaskRow) => (
-        <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
-          {formatDateTime(row.deadline)}
-        </span>
-      ),
-    },
-    {
-      id: "priority",
-      header: "Ưu tiên",
-      className: "min-w-[120px]",
-      cell: (row: TaskRow) => (
-        <StatusBadge
-          label={TASK_PRIORITY_LABEL[row.priority]}
-          tone={TASK_PRIORITY_TONE[row.priority]}
-        />
-      ),
-    },
-    {
-      id: "status",
-      header: "Trạng thái",
-      className: "min-w-[150px]",
-      cell: (row: TaskRow) => (
-        <StatusBadge label={TASK_STATUS_LABEL[row.status]} tone={TASK_STATUS_TONE[row.status]} />
-      ),
-    },
+    ...(show("project")
+      ? [
+          {
+            id: "project",
+            header: "Dự án",
+            className: "min-w-[180px]",
+            cell: (row: TaskRow) =>
+              row.projectName ? (
+                <span className="text-text-secondary">{row.projectName}</span>
+              ) : (
+                <Badge variant="outline" className="font-normal">
+                  Công việc độc lập
+                </Badge>
+              ),
+          },
+        ]
+      : []),
+    ...(show("assignee")
+      ? [
+          {
+            id: "assignee",
+            header: "Người phụ trách",
+            className: "min-w-[150px]",
+            cell: (row: TaskRow) => (
+              <span className="text-text-secondary">{row.assigneeName ?? "—"}</span>
+            ),
+          },
+        ]
+      : []),
+    ...(show("team")
+      ? [
+          {
+            id: "team",
+            header: "Team",
+            className: "min-w-[130px]",
+            cell: (row: TaskRow) => (
+              <span className="text-text-secondary">{row.teamName ?? "—"}</span>
+            ),
+          },
+        ]
+      : []),
+    ...(show("deadline")
+      ? [
+          {
+            id: "deadline",
+            header: "Deadline",
+            className: "min-w-[160px]",
+            cell: (row: TaskRow) => (
+              <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
+                {formatDateTime(row.deadline)}
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(show("priority")
+      ? [
+          {
+            id: "priority",
+            header: "Ưu tiên",
+            className: "min-w-[110px]",
+            cell: (row: TaskRow) => (
+              <StatusBadge
+                label={TASK_PRIORITY_LABEL[row.priority]}
+                tone={TASK_PRIORITY_TONE[row.priority]}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(show("status")
+      ? [
+          {
+            id: "status",
+            header: "Trạng thái",
+            className: "min-w-[140px]",
+            cell: (row: TaskRow) => (
+              <StatusBadge
+                label={TASK_STATUS_LABEL[row.status]}
+                tone={TASK_STATUS_TONE[row.status]}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
       className: "w-[1%] whitespace-nowrap",
       headerClassName: "text-right",
-      cell: (row: TaskRow) => {
-        const canComplete =
-          canChangeTaskStatus(row, ctx) && row.status !== "done" && !isTaskArchived(row);
-        const menuActions: RowAction[] = [];
-        if (canRequestTaskDeadline(row, ctx)) {
-          menuActions.push({
-            key: "deadline",
-            label: "Yêu cầu đổi deadline",
-            icon: CalendarClock,
-            onSelect: () => setDeadlineTarget(row),
-          });
-        }
-        if (canManuallyArchiveTask(row, ctx)) {
-          menuActions.push({
-            key: "archive",
-            label: "Đưa vào Lưu trữ",
-            icon: Archive,
-            onSelect: () => setArchiveTarget(row),
-          });
-        }
-        if (canRestoreTask(row, ctx)) {
-          menuActions.push({
-            key: "restore",
-            label: "Khôi phục khỏi Lưu trữ",
-            icon: ArchiveRestore,
-            onSelect: () => setRestoreTarget(row),
-          });
-        }
-        if (canSoftDelete(access.role)) {
-          menuActions.push({
-            key: "delete",
-            label: "Xóa",
-            icon: Trash2,
-            tone: "destructive",
-            onSelect: () => setDeleteTarget(row),
-          });
-        }
-        return (
-          <RowActionsCell
-            onView={() => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
-            onEdit={canEditTask(row, ctx) ? () => setEditTarget(row) : null}
-            onComplete={canComplete ? () => setCompleteTarget(row) : null}
-            completing={completeMutation.isPending && completeTarget?.id === row.id}
-            menuActions={menuActions}
-          />
-        );
-      },
+      cell: rowActions,
     },
   ];
+
+  const emptyTitle = filtering
+    ? "Không có công việc phù hợp bộ lọc"
+    : view === "archived"
+      ? "Chưa có công việc lưu trữ"
+      : "Chưa có công việc nào";
+  const emptyDescription = filtering
+    ? "Thử bỏ bớt điều kiện lọc hoặc xóa bộ lọc để xem lại toàn bộ công việc."
+    : view === "archived"
+      ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành hoặc lưu trữ."
+      : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ.";
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
         title="Công việc"
-        description="Công việc thuộc dự án hoặc độc lập, trong phạm vi bạn được xem."
+        description="Toàn bộ công việc thuộc dự án hoặc độc lập, trong phạm vi bạn được xem."
         actions={
           access.can("tasks.create") ? (
-            <Button
-              onClick={() => {
-                setQuickAddProjectId(null);
-                setQuickAdd(false);
-                setCreateOpen(true);
-              }}
-            >
+            <Button onClick={() => setCreateOpen(true)}>
               <Plus />
               Tạo công việc
             </Button>
@@ -444,14 +422,22 @@ function TasksPage() {
         }
       />
 
+      <TaskSavedViews
+        userId={access.userId}
+        views={savedViews}
+        activeViewId={activeViewId}
+        onSelect={applyView}
+        currentConfig={currentConfig}
+      />
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Input
           placeholder="Tìm theo tên công việc"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
           aria-label="Tìm theo tên công việc"
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={filters.status} onValueChange={(value) => patchFilters({ status: value })}>
           <SelectTrigger aria-label="Lọc theo trạng thái">
             <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
@@ -464,20 +450,10 @@ function TasksPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger aria-label="Lọc theo mức ưu tiên">
-            <SelectValue placeholder="Ưu tiên" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả mức ưu tiên</SelectItem>
-            {TASK_PRIORITY_ORDER.map((priority) => (
-              <SelectItem key={priority} value={priority}>
-                {TASK_PRIORITY_LABEL[priority]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+        <Select
+          value={filters.assignee}
+          onValueChange={(value) => patchFilters({ assignee: value })}
+        >
           <SelectTrigger aria-label="Lọc theo người phụ trách">
             <SelectValue placeholder="Người phụ trách" />
           </SelectTrigger>
@@ -490,7 +466,7 @@ function TasksPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
+        <Select value={filters.project} onValueChange={(value) => patchFilters({ project: value })}>
           <SelectTrigger aria-label="Lọc theo dự án">
             <SelectValue placeholder="Dự án" />
           </SelectTrigger>
@@ -504,7 +480,7 @@ function TasksPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
+        <Select value={filters.team} onValueChange={(value) => patchFilters({ team: value })}>
           <SelectTrigger aria-label="Lọc theo Team">
             <SelectValue placeholder="Team" />
           </SelectTrigger>
@@ -513,6 +489,18 @@ function TasksPage() {
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id}>
                 {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sort} onValueChange={(value) => setSort(value as TaskSortKey)}>
+          <SelectTrigger aria-label="Sắp xếp">
+            <SelectValue placeholder="Sắp xếp" />
+          </SelectTrigger>
+          <SelectContent>
+            {TASK_SORT_ORDER.map((key) => (
+              <SelectItem key={key} value={key}>
+                {TASK_SORT_LABEL[key]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -540,64 +528,89 @@ function TasksPage() {
             Lưu trữ
           </Button>
         </div>
-        <span className="text-caption text-text-muted">{rows.length} công việc</span>
+
+        <TaskAdvancedFilters filters={filters} onChange={patchFilters} people={people} />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Columns3 />
+              Cột hiển thị
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel>Cột hiển thị</DropdownMenuLabel>
+            {OPTIONAL_COLUMNS.map((id) => (
+              <DropdownMenuCheckboxItem
+                key={id}
+                checked={show(id)}
+                onCheckedChange={(checked) =>
+                  setColumns((prev) =>
+                    checked
+                      ? OPTIONAL_COLUMNS.filter((item) => item === id || prev.includes(item))
+                      : prev.filter((item) => item !== id),
+                  )
+                }
+                onSelect={(event) => event.preventDefault()}
+              >
+                {COLUMN_LABEL[id]}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {filtering ? (
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <X />
+            Xóa bộ lọc
+          </Button>
+        ) : null}
+
+        <span className="text-caption text-text-muted">
+          {rows.length} công việc{filtering ? ` / ${totalInScope}` : ""}
+        </span>
       </div>
 
-
-      {tasksResult.isLoading || tasksResult.isError || groups.length === 0 ? (
-        <DataTable
+      {isMobile && !tasksResult.isLoading && !tasksResult.isError && visibleRows.length > 0 ? (
+        <TaskCardList
+          tasks={visibleRows}
           columns={columns}
-          data={[]}
+          onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          renderActions={rowActions}
+        />
+      ) : (
+        <DataTable
+          columns={tableColumns}
+          data={visibleRows}
           getRowId={(row) => row.id}
           loading={tasksResult.isLoading}
           error={tasksResult.isError}
           onRetry={() => void tasksResult.refetch()}
           errorTitle="Không tải được danh sách công việc"
-          emptyTitle={view === "archived" ? "Chưa có công việc lưu trữ" : "Chưa có công việc nào"}
-          emptyDescription={
-            view === "archived"
-              ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành."
-              : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
-          }
-        />
-      ) : (
-        <TaskProjectGroups
-          groups={groups}
-          columns={columns}
-          expandedKeys={expandedKeys}
-          onToggle={toggleGroup}
-          onAdd={(group) => {
-            setQuickAddProjectId(group.projectId);
-            setQuickAdd(true);
-            setExpandedKeys((keys) => (keys.includes(group.key) ? keys : [...keys, group.key]));
-            setCreateOpen(true);
-          }}
+          emptyTitle={emptyTitle}
+          emptyDescription={emptyDescription}
           onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
         />
       )}
 
+      {visibleRows.length < rows.length ? (
+        <div className="flex justify-center">
+          <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+            Tải thêm ({rows.length - visibleRows.length} công việc)
+          </Button>
+        </div>
+      ) : null}
 
       {access.userId ? (
         <TaskFormDrawer
           open={createOpen}
-          onOpenChange={(open) => {
-            setCreateOpen(open);
-            if (!open) {
-              setQuickAddProjectId(null);
-              setQuickAdd(false);
-            }
-          }}
+          onOpenChange={setCreateOpen}
           task={null}
           ctx={ctx}
-          lockedProjectId={quickAddProjectId}
           projects={projects}
           teams={teams}
           people={people}
-          onCreated={(taskId) => {
-            // Thêm nhanh: giữ nguyên danh sách nhóm, chỉ làm mới dữ liệu.
-            if (quickAdd) return;
-            void navigate({ to: "/tasks/$taskId", params: { taskId } });
-          }}
+          onCreated={(taskId) => void navigate({ to: "/tasks/$taskId", params: { taskId } })}
         />
       ) : null}
 
