@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
+import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
-import { membersQuery } from "@/lib/org-data";
+import { membersQuery, teamsQuery } from "@/lib/org-data";
 
 import {
   PROJECT_STATUS_LABEL,
@@ -88,6 +88,7 @@ function Dashboard() {
   const dailyResult = useQuery(dailyReportsQuery());
   const weeklyResult = useQuery(weeklyReportsQuery());
   const membersResult = useQuery(membersQuery());
+  const teamsResult = useQuery(teamsQuery());
 
 
   const today = hanoiToday();
@@ -144,18 +145,20 @@ function Dashboard() {
 
   /**
    * Hành động nhanh Báo cáo ngày: nhãn và đích đến bám theo trạng thái báo cáo
-   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở form.
+   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở bản xem trước.
    */
   const canSubmitDaily = access.can("reports.submit_daily");
   const dailyDraft =
     myTodayReport && (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
       ? myTodayReport
       : null;
-  const dailyActionLabel = !myTodayReport
-    ? "Gửi báo cáo ngày"
-    : dailyDraft
-      ? "Tiếp tục báo cáo ngày"
-      : "Xem báo cáo hôm nay";
+  const dailySent = Boolean(myTodayReport && !dailyDraft);
+  const dailyActionLabel = dailySent ? "Xem báo cáo hôm nay" : "Xem và gửi báo cáo";
+
+  const me = (membersResult.data ?? []).find((member) => member.id === access.userId);
+  const myTeamName =
+    (teamsResult.data ?? []).find((team) => team.id === me?.primary_team_id)?.name ??
+    "Chưa gắn Team";
 
   function openDailyAction() {
     if (myTodayReport && !dailyDraft) {
@@ -186,14 +189,6 @@ function Dashboard() {
       <PageHeader
         title="Bảng điều hành"
         description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
-        actions={
-          canSubmitDaily ? (
-            <Button onClick={openDailyAction} disabled={dailyResult.isError}>
-              <FileText />
-              {dailyActionLabel}
-            </Button>
-          ) : null
-        }
       />
 
       {canSubmitDaily && dailyResult.isError ? (
@@ -341,6 +336,17 @@ function Dashboard() {
                 )}
               </div>
             ) : null}
+            {canSubmitDaily ? (
+              <Button
+                className="self-start"
+                onClick={openDailyAction}
+                loading={dailyResult.isLoading}
+                disabled={dailyResult.isError}
+              >
+                <FileText />
+                {dailyActionLabel}
+              </Button>
+            ) : null}
             <Link to="/reports" className="cen-transition text-label text-brand-primary hover:underline">
               Mở trang Báo cáo
             </Link>
@@ -349,16 +355,16 @@ function Dashboard() {
       </div>
 
       {canSubmitDaily && access.userId ? (
-        <DailyReportDrawer
+        <DailyReportPreviewModal
           open={dailyOpen}
           onOpenChange={setDailyOpen}
-          report={dailyDraft}
           authorId={access.userId}
-          teamId={
-            (membersResult.data ?? []).find((member) => member.id === access.userId)
-              ?.primary_team_id ?? null
-          }
-          onSaved={(id) =>
+          authorName={me?.display_name ?? "—"}
+          teamId={me?.primary_team_id ?? null}
+          teamName={myTeamName}
+          reportDate={today}
+          existingReportId={dailyDraft?.id ?? null}
+          onSubmitted={(id) =>
             void navigate({ to: "/reports/daily/$reportId", params: { reportId: id } })
           }
         />
