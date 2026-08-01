@@ -80,15 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CEN — Trung tâm điều hành Team Tự Do" },
+      { title: "CEN 1.0 — Trung tâm điều hành" },
       {
         name: "description",
         content: "CEN là hệ thống quản lý công việc, dự án, báo cáo, tiến độ và hiệu suất, giúp Team Tự Do phối hợp rõ ràng, vận hành kỷ luật và ra quyết định nhanh hơn.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:title", content: "CEN — Trung tâm điều hành Team Tự Do" },
-      { name: "twitter:title", content: "CEN — Trung tâm điều hành Team Tự Do" },
+      { property: "og:title", content: "CEN 1.0 — Trung tâm điều hành" },
+      { name: "twitter:title", content: "CEN 1.0 — Trung tâm điều hành" },
       { property: "og:description", content: "CEN là hệ thống quản lý công việc, dự án, báo cáo, tiến độ và hiệu suất, giúp Team Tự Do phối hợp rõ ràng, vận hành kỷ luật và ra quyết định nhanh hơn." },
       { name: "twitter:description", content: "CEN là hệ thống quản lý công việc, dự án, báo cáo, tiến độ và hiệu suất, giúp Team Tự Do phối hợp rõ ràng, vận hành kỷ luật và ra quyết định nhanh hơn." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ddff4671-603a-4f94-98aa-c60fff2cafe9" },
