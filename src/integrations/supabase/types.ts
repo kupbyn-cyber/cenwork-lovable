@@ -632,6 +632,8 @@ export type Database = {
         Row: {
           archived_at: string | null
           archived_by: string | null
+          audience_all_teams: boolean
+          audience_all_users: boolean
           body: string
           comments_enabled: boolean
           created_at: string
@@ -640,6 +642,7 @@ export type Database = {
           deleted_at: string | null
           due_at: string | null
           id: string
+          include_self: boolean
           last_minor_edit_at: string | null
           published_at: string | null
           result_visibility: string
@@ -653,6 +656,8 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
+          audience_all_teams?: boolean
+          audience_all_users?: boolean
           body?: string
           comments_enabled?: boolean
           created_at?: string
@@ -661,6 +666,7 @@ export type Database = {
           deleted_at?: string | null
           due_at?: string | null
           id?: string
+          include_self?: boolean
           last_minor_edit_at?: string | null
           published_at?: string | null
           result_visibility?: string
@@ -674,6 +680,8 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_by?: string | null
+          audience_all_teams?: boolean
+          audience_all_users?: boolean
           body?: string
           comments_enabled?: boolean
           created_at?: string
@@ -682,6 +690,7 @@ export type Database = {
           deleted_at?: string | null
           due_at?: string | null
           id?: string
+          include_self?: boolean
           last_minor_edit_at?: string | null
           published_at?: string | null
           result_visibility?: string
