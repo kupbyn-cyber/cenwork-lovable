@@ -31,12 +31,12 @@ export const Route = createFileRoute("/login")({
   },
   head: () => ({
     meta: [
-      { title: "Đăng nhập — CEN 1.0" },
-      { name: "description", content: "Đăng nhập vào CEN 1.0 Command Center bằng email nội bộ." },
-      { property: "og:title", content: "Đăng nhập — CEN 1.0" },
+      { title: "Đăng nhập — CEN WORK" },
+      { name: "description", content: "Đăng nhập vào CEN WORK Marketing Command Center bằng email nội bộ." },
+      { property: "og:title", content: "Đăng nhập — CEN WORK" },
       {
         property: "og:description",
-        content: "Đăng nhập vào CEN 1.0 Command Center bằng email nội bộ.",
+        content: "Đăng nhập vào CEN WORK Marketing Command Center bằng email nội bộ.",
       },
     ],
   }),
@@ -95,9 +95,9 @@ function LoginPage() {
           />
           <span className="min-w-0">
             <span className="block text-label font-bold tracking-wide text-text-primary">
-              CEN 1.0
+              CEN WORK
             </span>
-            <span className="block text-caption text-text-muted">Trung tâm điều hành</span>
+            <span className="block text-caption text-text-muted">Marketing Command Center</span>
           </span>
         </div>
 

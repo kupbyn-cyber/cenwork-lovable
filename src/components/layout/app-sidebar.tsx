@@ -25,12 +25,12 @@ export function CenLogo({ collapsed = false }: { collapsed?: boolean }) {
       {!collapsed ? (
         <span className="min-w-0 truncate">
           <span className="block truncate text-label font-bold tracking-wide text-text-primary">
-            CEN 1.0
+            CEN WORK
           </span>
-          <span className="block truncate text-caption text-text-muted">Trung tâm điều hành</span>
+          <span className="block truncate text-caption text-text-muted">Marketing Command Center</span>
         </span>
       ) : (
-        <span className="sr-only">CEN 1.0 Trung tâm điều hành</span>
+        <span className="sr-only">CEN WORK Marketing Command Center</span>
       )}
     </div>
   );
