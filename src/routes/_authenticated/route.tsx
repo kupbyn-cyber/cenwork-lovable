@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingBlock } from "@/components/ui/spinner";
 
 /**
- * CEN 1.0 — Vùng ứng dụng yêu cầu đăng nhập (M1.3).
+ * CEN WORK — Vùng ứng dụng yêu cầu đăng nhập (M1.3).
  * ssr:false vì session được Auth SDK lưu ở trình duyệt; kiểm tra trước khi render
  * để không chớp nội dung được bảo vệ.
  */

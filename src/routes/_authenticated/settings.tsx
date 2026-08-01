@@ -19,15 +19,15 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Cài đặt — CEN 1.0" },
+      { title: "Cài đặt — CEN WORK" },
       {
         name: "description",
-        content: "Xem hồ sơ cá nhân, cập nhật tên hiển thị và đổi mật khẩu tài khoản CEN 1.0.",
+        content: "Xem hồ sơ cá nhân, cập nhật tên hiển thị và đổi mật khẩu tài khoản CEN WORK.",
       },
-      { property: "og:title", content: "Hồ sơ cá nhân — CEN 1.0" },
+      { property: "og:title", content: "Hồ sơ cá nhân — CEN WORK" },
       {
         property: "og:description",
-        content: "Xem hồ sơ cá nhân, cập nhật tên hiển thị và đổi mật khẩu tài khoản CEN 1.0.",
+        content: "Xem hồ sơ cá nhân, cập nhật tên hiển thị và đổi mật khẩu tài khoản CEN WORK.",
       },
     ],
   }),

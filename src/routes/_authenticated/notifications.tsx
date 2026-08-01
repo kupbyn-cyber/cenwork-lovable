@@ -26,9 +26,9 @@ import {
 } from "@/lib/notification-data";
 import { cn } from "@/lib/utils";
 
-const TITLE = "Thông báo — CEN 1.0";
+const TITLE = "Thông báo — CEN WORK";
 const DESCRIPTION =
-  "Danh sách thông báo cá nhân trong CEN 1.0: công việc, báo cáo và dự án liên quan tới bạn.";
+  "Danh sách thông báo cá nhân trong CEN WORK: công việc, báo cáo và dự án liên quan tới bạn.";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({

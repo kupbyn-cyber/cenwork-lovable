@@ -29,12 +29,12 @@ import { TASK_STATUS_LABEL, TASK_STATUS_TONE, formatDateTime } from "@/lib/task-
 export const Route = createFileRoute("/_authenticated/reports/daily/$reportId")({
   head: () => ({
     meta: [
-      { title: "Chi tiết báo cáo ngày — CEN 1.0" },
+      { title: "Chi tiết báo cáo ngày — CEN WORK" },
       {
         name: "description",
         content: "Nội dung báo cáo ngày, công việc tổng hợp, trạng thái duyệt và lịch sử xử lý.",
       },
-      { property: "og:title", content: "Chi tiết báo cáo ngày — CEN 1.0" },
+      { property: "og:title", content: "Chi tiết báo cáo ngày — CEN WORK" },
       {
         property: "og:description",
         content: "Nội dung báo cáo ngày, công việc tổng hợp, trạng thái duyệt và lịch sử xử lý.",

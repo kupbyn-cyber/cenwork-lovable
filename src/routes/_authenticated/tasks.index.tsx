@@ -36,17 +36,17 @@ import {
 export const Route = createFileRoute("/_authenticated/tasks/")({
   head: () => ({
     meta: [
-      { title: "Công việc — CEN 1.0" },
+      { title: "Công việc — CEN WORK" },
       {
         name: "description",
         content:
-          "Danh sách công việc CEN 1.0: người phụ trách, dự án, Team, deadline, ưu tiên và trạng thái.",
+          "Danh sách công việc CEN WORK: người phụ trách, dự án, Team, deadline, ưu tiên và trạng thái.",
       },
-      { property: "og:title", content: "Công việc — CEN 1.0" },
+      { property: "og:title", content: "Công việc — CEN WORK" },
       {
         property: "og:description",
         content:
-          "Danh sách công việc CEN 1.0: người phụ trách, dự án, Team, deadline, ưu tiên và trạng thái.",
+          "Danh sách công việc CEN WORK: người phụ trách, dự án, Team, deadline, ưu tiên và trạng thái.",
       },
     ],
   }),

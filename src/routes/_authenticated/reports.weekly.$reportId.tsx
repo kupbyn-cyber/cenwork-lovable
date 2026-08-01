@@ -29,12 +29,12 @@ import {
 export const Route = createFileRoute("/_authenticated/reports/weekly/$reportId")({
   head: () => ({
     meta: [
-      { title: "Chi tiết báo cáo tuần — CEN 1.0" },
+      { title: "Chi tiết báo cáo tuần — CEN WORK" },
       {
         name: "description",
         content: "Báo cáo tuần của Team: kết quả nổi bật, việc chưa xong, blocker và kế hoạch tuần tới.",
       },
-      { property: "og:title", content: "Chi tiết báo cáo tuần — CEN 1.0" },
+      { property: "og:title", content: "Chi tiết báo cáo tuần — CEN WORK" },
       {
         property: "og:description",
         content: "Báo cáo tuần của Team: kết quả nổi bật, việc chưa xong, blocker và kế hoạch tuần tới.",

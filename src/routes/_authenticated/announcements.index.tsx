@@ -33,9 +33,9 @@ import {
 } from "@/lib/announcement-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
 
-const TITLE = "Thông báo nội bộ — CEN 1.0";
+const TITLE = "Thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
-  "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN 1.0.";
+  "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
 
 export const Route = createFileRoute("/_authenticated/announcements/")({
   head: () => ({

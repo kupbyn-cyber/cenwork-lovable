@@ -36,17 +36,17 @@ import {
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Bảng điều hành — CEN 1.0" },
+      { title: "CEN WORK — Marketing Command Center" },
       {
         name: "description",
         content:
-          "Tổng quan vận hành CEN 1.0: dự án đang hoạt động, công việc của tôi, việc quá hạn và tình trạng báo cáo.",
+          "CEN WORK là hệ thống Marketing Command Center: tổng quan dự án, công việc và tình trạng báo cáo.",
       },
-      { property: "og:title", content: "Bảng điều hành — CEN 1.0" },
+      { property: "og:title", content: "CEN WORK — Marketing Command Center" },
       {
         property: "og:description",
         content:
-          "Tổng quan vận hành CEN 1.0: dự án đang hoạt động, công việc của tôi, việc quá hạn và tình trạng báo cáo.",
+          "CEN WORK là hệ thống Marketing Command Center: tổng quan dự án, công việc và tình trạng báo cáo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

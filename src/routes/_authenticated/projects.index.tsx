@@ -34,17 +34,17 @@ import {
 export const Route = createFileRoute("/_authenticated/projects/")({
   head: () => ({
     meta: [
-      { title: "Dự án — CEN 1.0" },
+      { title: "Dự án — CEN WORK" },
       {
         name: "description",
         content:
-          "Danh sách dự án CEN 1.0: trạng thái, Project Owner, Team tham gia và tiến độ thời gian.",
+          "Danh sách dự án CEN WORK: trạng thái, Project Owner, Team tham gia và tiến độ thời gian.",
       },
-      { property: "og:title", content: "Dự án — CEN 1.0" },
+      { property: "og:title", content: "Dự án — CEN WORK" },
       {
         property: "og:description",
         content:
-          "Danh sách dự án CEN 1.0: trạng thái, Project Owner, Team tham gia và tiến độ thời gian.",
+          "Danh sách dự án CEN WORK: trạng thái, Project Owner, Team tham gia và tiến độ thời gian.",
       },
     ],
   }),

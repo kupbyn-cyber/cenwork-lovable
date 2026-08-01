@@ -45,9 +45,9 @@ import {
 import { dispatchTelegramQueue } from "@/lib/telegram.functions";
 import { enqueueAnnouncementReminders } from "@/lib/announcement.functions";
 
-const TITLE = "Kết nối Telegram — CEN 1.0";
+const TITLE = "Kết nối Telegram — CEN WORK";
 const DESCRIPTION =
-  "Quản trị kết nối Telegram của CEN 1.0: ánh xạ cá nhân, ánh xạ Team/topic và hàng đợi gửi tin.";
+  "Quản trị kết nối Telegram của CEN WORK: ánh xạ cá nhân, ánh xạ Team/topic và hàng đợi gửi tin.";
 
 export const Route = createFileRoute("/_authenticated/telegram")({
   head: () => ({

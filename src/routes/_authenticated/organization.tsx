@@ -7,15 +7,15 @@ import { FacilitiesSection, TeamsSection } from "@/components/org/org-sections";
 export const Route = createFileRoute("/_authenticated/organization")({
   head: () => ({
     meta: [
-      { title: "Cơ cấu tổ chức — CEN 1.0" },
+      { title: "Cơ cấu tổ chức — CEN WORK" },
       {
         name: "description",
-        content: "Quản lý Team và danh mục cơ sở của CEN 1.0 trong một màn hình duy nhất.",
+        content: "Quản lý Team và danh mục cơ sở của CEN WORK trong một màn hình duy nhất.",
       },
-      { property: "og:title", content: "Cơ cấu tổ chức — CEN 1.0" },
+      { property: "og:title", content: "Cơ cấu tổ chức — CEN WORK" },
       {
         property: "og:description",
-        content: "Quản lý Team và danh mục cơ sở của CEN 1.0 trong một màn hình duy nhất.",
+        content: "Quản lý Team và danh mục cơ sở của CEN WORK trong một màn hình duy nhất.",
       },
     ],
   }),

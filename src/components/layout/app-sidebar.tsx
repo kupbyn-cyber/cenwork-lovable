@@ -9,7 +9,7 @@ import { isNavItemActive, visibleNavGroups, type NavItem } from "@/config/naviga
 import { useOrgAccess } from "@/hooks/use-org-access";
 
 /**
- * CEN 1.0 — Sidebar điều hướng (M1.2)
+ * CEN WORK — Sidebar điều hướng (M1.2)
  * Dùng chung cho Desktop (cố định, mở rộng/thu gọn) và Mobile Drawer.
  */
 
@@ -25,12 +25,12 @@ export function CenLogo({ collapsed = false }: { collapsed?: boolean }) {
       {!collapsed ? (
         <span className="min-w-0 truncate">
           <span className="block truncate text-label font-bold tracking-wide text-text-primary">
-            CEN 1.0
+            CEN WORK
           </span>
-          <span className="block truncate text-caption text-text-muted">Trung tâm điều hành</span>
+          <span className="block truncate text-caption text-text-muted">Marketing Command Center</span>
         </span>
       ) : (
-        <span className="sr-only">CEN 1.0 Trung tâm điều hành</span>
+        <span className="sr-only">CEN WORK Marketing Command Center</span>
       )}
     </div>
   );
@@ -76,7 +76,7 @@ function NavLinkItem({
     </span>
   ) : (
     <Link
-      to={item.to}
+      to={item.to!}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? item.label : undefined}
