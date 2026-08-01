@@ -169,12 +169,7 @@ function AnnouncementDetailPage() {
   const revoked = Boolean(row.revoked_at);
   const archived = Boolean(row.archived_at);
   const active = row.status === "published" && !revoked && !archived;
-  const answerError = validateAnswers(
-    questions,
-    questions.map(
-      (question) => drafts[question.id] ?? { questionId: question.id, optionIds: [], text: "" },
-    ),
-  );
+  const answerError = validateAnswers(questions, drafts);
 
   const canSeeResults =
     canModerate ||
@@ -210,7 +205,7 @@ function AnnouncementDetailPage() {
               tone={row.status === "published" ? "success" : "neutral"}
               label={ANNOUNCEMENT_STATUS_LABEL[row.status]}
             />
-            {revoked ? <StatusBadge tone="danger" label="Đã thu hồi" /> : null}
+            {revoked ? <StatusBadge tone="error" label="Đã thu hồi" /> : null}
             {archived ? <StatusBadge tone="neutral" label="Đã lưu trữ" /> : null}
             {myStatus ? (
               <StatusBadge
