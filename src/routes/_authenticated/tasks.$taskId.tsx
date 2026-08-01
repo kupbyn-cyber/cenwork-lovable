@@ -103,6 +103,9 @@ function TaskDetailPage() {
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [restoreOpen, setRestoreOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
+  const [decisionOpen, setDecisionOpen] = React.useState(false);
 
   const task = taskResult.data ?? null;
   const ctx: TaskAccessContext = {
@@ -111,10 +114,14 @@ function TaskDetailPage() {
     leaderTeamId: access.leaderTeamId,
   };
 
+  const requestsResult = useQuery(deadlineRequestsQuery("task", taskId));
+  const pendingRequest = findPending(requestsResult.data, "task", taskId);
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
+    void queryClient.invalidateQueries({ queryKey: ["deadline-requests"] });
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
@@ -128,11 +135,14 @@ function TaskDetailPage() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: () => setTaskArchived(taskId, true),
-    onSuccess: () => {
+    mutationFn: (archived: boolean) => setManualArchive("task", taskId, archived),
+    onSuccess: (_data, archived) => {
       invalidate();
       setArchiveOpen(false);
-      cenToast.success("Đã lưu trữ công việc.");
+      setRestoreOpen(false);
+      cenToast.success(
+        archived ? "Đã đưa công việc vào Lưu trữ." : "Đã khôi phục công việc khỏi Lưu trữ.",
+      );
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
