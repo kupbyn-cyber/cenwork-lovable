@@ -1,16 +1,18 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Send, Trash2 } from "lucide-react";
+import { Bell, Send } from "lucide-react";
 
-import { Button, IconButton } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { PasswordInput } from "@/components/ui/password-input";
 import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
@@ -24,30 +26,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cenToast } from "@/components/ui/toast";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDateTime } from "@/lib/datetime";
-import { membersQuery, teamsQuery } from "@/lib/org-data";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
   DELIVERY_STATUS_LABEL,
   DELIVERY_STATUS_TONE,
-  deleteTeamLink,
-  deleteUserLink,
   maskChatId,
+  saveMemberTelegram,
+  saveTeamTelegram,
+  telegramMembersQuery,
   telegramOutboxQuery,
-  telegramTeamLinksQuery,
-  telegramUserLinksQuery,
-  upsertTeamLink,
-  upsertUserLink,
+  telegramTeamsQuery,
   type DeliveryStatus,
+  type TelegramMemberRow,
   type TelegramOutboxRow,
-  type TelegramTeamLinkRow,
-  type TelegramUserLinkRow,
+  type TelegramTeamRow,
 } from "@/lib/telegram-data";
-import { dispatchTelegramQueue } from "@/lib/telegram.functions";
+import { dispatchTelegramQueue, getTelegramConfig, saveTelegramConfig } from "@/lib/telegram.functions";
 import { enqueueAnnouncementReminders } from "@/lib/announcement.functions";
 
 const TITLE = "Kết nối Telegram — CEN WORK";
 const DESCRIPTION =
-  "Quản trị kết nối Telegram của CEN WORK: ánh xạ cá nhân, ánh xạ Team/topic và hàng đợi gửi tin.";
+  "Quản trị Telegram của CEN WORK: cấu hình bot dùng chung, ánh xạ cá nhân, topic của Team và hàng đợi gửi tin.";
 
 export const Route = createFileRoute("/_authenticated/telegram")({
   head: () => ({
@@ -63,69 +62,147 @@ export const Route = createFileRoute("/_authenticated/telegram")({
   component: TelegramPage,
 });
 
+/** Khu vực cấu hình chung: một Bot, một Group Chat. Chỉ Admin. */
+function ConfigSection() {
+  const queryClient = useQueryClient();
+  const config = useQuery({
+    queryKey: ["telegram-config"],
+    queryFn: () => getTelegramConfig(),
+  });
+
+  const [groupChatId, setGroupChatId] = React.useState("");
+  const [botToken, setBotToken] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (config.data) setGroupChatId(config.data.groupChatId);
+  }, [config.data]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      saveTelegramConfig({
+        data: {
+          groupChatId,
+          ...(botToken.trim() ? { botToken: botToken.trim() } : {}),
+        },
+      }),
+    onSuccess: () => {
+      setBotToken("");
+      setError(null);
+      cenToast.success("Đã lưu cấu hình Telegram.");
+      void queryClient.invalidateQueries({ queryKey: ["telegram-config"] });
+    },
+    onError: (mutationError: Error) => setError(mutationError.message),
+  });
+
+  return (
+    <Card>
+      <CardContent className="flex min-w-0 flex-col gap-4">
+        <SectionHeader
+          title="Cấu hình Telegram"
+          description="Một Bot dùng chung và một Group Chat chung cho toàn hệ thống. Mỗi Team dùng một Topic Thread ID riêng trong nhóm này."
+        />
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+          <FormField
+            id="tg-group-chat"
+            label="Group Chat ID chung"
+            required
+            helperText="Áp dụng cho mọi Team, không nhập riêng theo Team."
+          >
+            {(control) => (
+              <Input
+                {...control}
+                value={groupChatId}
+                placeholder="-1002041537249"
+                onChange={(event) => setGroupChatId(event.target.value)}
+              />
+            )}
+          </FormField>
+          <FormField
+            id="tg-bot-token"
+            label="Bot Token"
+            helperText={
+              config.data?.botConfigured
+                ? `Đã cấu hình (${config.data.botTokenMasked}). Để trống nếu không đổi.`
+                : "Chưa cấu hình. Token chỉ được lưu và dùng ở phía máy chủ."
+            }
+          >
+            {(control) => (
+              <PasswordInput
+                {...control}
+                value={botToken}
+                autoComplete="off"
+                placeholder="123456789:AA..."
+                onChange={(event) => setBotToken(event.target.value)}
+              />
+            )}
+          </FormField>
+        </div>
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-control border border-state-danger/50 bg-state-danger-surface px-3 py-2 text-helper text-state-danger"
+          >
+            {error}
+          </p>
+        ) : null}
+        <div>
+          <Button
+            type="button"
+            loading={save.isPending}
+            disabled={config.isLoading || !groupChatId.trim()}
+            onClick={() => save.mutate()}
+          >
+            Lưu cấu hình
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function TelegramPage() {
   const access = useOrgAccess();
   const canManage = access.can(PERMISSIONS.TELEGRAM_MANAGE);
   const queryClient = useQueryClient();
 
-  const members = useQuery({ ...membersQuery(), enabled: canManage });
-  const teams = useQuery({ ...teamsQuery(), enabled: canManage });
-  const userLinks = useQuery(telegramUserLinksQuery(canManage));
-  const teamLinks = useQuery(telegramTeamLinksQuery(canManage));
+  const members = useQuery(telegramMembersQuery(canManage));
+  const teams = useQuery(telegramTeamsQuery(canManage));
   const outbox = useQuery(telegramOutboxQuery(canManage));
 
   const [userForm, setUserForm] = React.useState({ userId: "", chatId: "", active: true });
-  const [teamForm, setTeamForm] = React.useState({
-    teamId: "",
-    chatId: "",
-    topicId: "",
-    active: true,
-  });
-
-  function refreshLinks() {
-    void queryClient.invalidateQueries({ queryKey: ["telegram-user-links"] });
-    void queryClient.invalidateQueries({ queryKey: ["telegram-team-links"] });
-  }
+  const [teamForm, setTeamForm] = React.useState({ teamId: "", topicId: "", active: true });
+  const [confirm, setConfirm] = React.useState<null | "reminders" | "dispatch">(null);
 
   const saveUser = useMutation({
     mutationFn: () =>
-      upsertUserLink({
+      saveMemberTelegram({
         userId: userForm.userId,
-        chatId: userForm.chatId,
-        isActive: userForm.active,
+        telegramUserId: userForm.chatId,
+        enabled: userForm.active,
       }),
     onSuccess: () => {
-      cenToast.success("Đã lưu ánh xạ Telegram cá nhân.");
+      cenToast.success("Đã lưu Telegram User ID của thành viên.");
       setUserForm({ userId: "", chatId: "", active: true });
-      refreshLinks();
+      void queryClient.invalidateQueries({ queryKey: ["telegram-members"] });
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
 
   const saveTeam = useMutation({
     mutationFn: () =>
-      upsertTeamLink({
+      saveTeamTelegram({
         teamId: teamForm.teamId,
-        chatId: teamForm.chatId,
         topicId: teamForm.topicId.trim() || null,
-        isActive: teamForm.active,
+        enabled: teamForm.active,
       }),
     onSuccess: () => {
-      cenToast.success("Đã lưu ánh xạ Telegram của Team.");
-      setTeamForm({ teamId: "", chatId: "", topicId: "", active: true });
-      refreshLinks();
+      cenToast.success("Đã lưu Topic Thread ID của Team.");
+      setTeamForm({ teamId: "", topicId: "", active: true });
+      void queryClient.invalidateQueries({ queryKey: ["telegram-teams"] });
+      void queryClient.invalidateQueries({ queryKey: ["teams"] });
     },
-    onError: (error: Error) => cenToast.error(error.message),
-  });
-
-  const removeUser = useMutation({
-    mutationFn: (id: string) => deleteUserLink(id),
-    onSuccess: refreshLinks,
-    onError: (error: Error) => cenToast.error(error.message),
-  });
-  const removeTeam = useMutation({
-    mutationFn: (id: string) => deleteTeamLink(id),
-    onSuccess: refreshLinks,
     onError: (error: Error) => cenToast.error(error.message),
   });
 
@@ -142,16 +219,17 @@ function TelegramPage() {
 
   const reminders = useMutation({
     mutationFn: () => enqueueAnnouncementReminders(),
-    onSuccess: () => {
-      cenToast.success("Đã xếp hàng nhắc hạn thông báo nội bộ.");
+    onSuccess: (result: unknown) => {
+      const count = typeof result === "number" ? result : (result as { count?: number })?.count;
+      cenToast.success(
+        typeof count === "number"
+          ? `Đã tạo ${count} thông báo nhắc hạn vào hàng đợi.`
+          : "Đã tạo thông báo nhắc hạn vào hàng đợi.",
+      );
       void queryClient.invalidateQueries({ queryKey: ["telegram-outbox"] });
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
-
-  const memberName = (id: string) =>
-    members.data?.find((member) => member.id === id)?.display_name ?? id;
-  const teamName = (id: string) => teams.data?.find((team) => team.id === id)?.name ?? id;
 
   if (!access.loading && !canManage) {
     return (
@@ -173,42 +251,39 @@ function TelegramPage() {
     {
       id: "user",
       header: "Thành viên",
-      className: "min-w-[180px]",
-      cell: (row: TelegramUserLinkRow) => memberName(row.user_id),
+      className: "min-w-[200px]",
+      cell: (row: TelegramMemberRow) => (
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate">{row.display_name}</span>
+          <span className="truncate text-caption text-text-muted">{row.email}</span>
+        </div>
+      ),
     },
     {
       id: "chat",
-      header: "Chat ID",
-      className: "min-w-[120px]",
-      cell: (row: TelegramUserLinkRow) => (
-        <span className="text-text-secondary">{maskChatId(row.chat_id)}</span>
+      header: "Telegram User ID",
+      className: "min-w-[150px]",
+      cell: (row: TelegramMemberRow) => (
+        <span className="text-text-secondary">
+          {row.telegram_user_id ? maskChatId(row.telegram_user_id) : "—"}
+        </span>
       ),
     },
     {
       id: "state",
-      header: "Trạng thái",
-      className: "min-w-[120px]",
-      cell: (row: TelegramUserLinkRow) => (
+      header: "Nhận thông báo",
+      className: "min-w-[140px]",
+      cell: (row: TelegramMemberRow) => (
         <StatusBadge
-          tone={row.is_active ? "success" : "neutral"}
-          label={row.is_active ? "Đang bật" : "Đang tắt"}
+          tone={row.telegram_enabled && row.telegram_user_id ? "success" : "neutral"}
+          label={
+            !row.telegram_user_id
+              ? "Chưa ánh xạ"
+              : row.telegram_enabled
+                ? "Đang bật"
+                : "Đang tắt"
+          }
         />
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      className: "w-[64px]",
-      cell: (row: TelegramUserLinkRow) => (
-        <IconButton
-          variant="ghost"
-          size="icon-sm"
-          type="button"
-          label="Gỡ ánh xạ"
-          onClick={() => removeUser.mutate(row.id)}
-        >
-          <Trash2 />
-        </IconButton>
       ),
     },
   ];
@@ -217,48 +292,24 @@ function TelegramPage() {
     {
       id: "team",
       header: "Team",
-      className: "min-w-[180px]",
-      cell: (row: TelegramTeamLinkRow) => teamName(row.team_id),
-    },
-    {
-      id: "chat",
-      header: "Chat ID",
-      className: "min-w-[120px]",
-      cell: (row: TelegramTeamLinkRow) => (
-        <span className="text-text-secondary">{maskChatId(row.chat_id)}</span>
-      ),
+      className: "min-w-[200px]",
+      cell: (row: TelegramTeamRow) => row.name,
     },
     {
       id: "topic",
-      header: "Topic",
-      className: "min-w-[100px]",
-      cell: (row: TelegramTeamLinkRow) => row.topic_id ?? "—",
+      header: "Topic Thread ID",
+      className: "min-w-[150px]",
+      cell: (row: TelegramTeamRow) => row.telegram_topic_id ?? "—",
     },
     {
       id: "state",
-      header: "Trạng thái",
-      className: "min-w-[120px]",
-      cell: (row: TelegramTeamLinkRow) => (
+      header: "Gửi Telegram",
+      className: "min-w-[140px]",
+      cell: (row: TelegramTeamRow) => (
         <StatusBadge
-          tone={row.is_active ? "success" : "neutral"}
-          label={row.is_active ? "Đang bật" : "Đang tắt"}
+          tone={row.telegram_enabled ? "success" : "neutral"}
+          label={row.telegram_enabled ? "Đang bật" : "Đang tắt"}
         />
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      className: "w-[64px]",
-      cell: (row: TelegramTeamLinkRow) => (
-        <IconButton
-          variant="ghost"
-          size="icon-sm"
-          type="button"
-          label="Gỡ ánh xạ"
-          onClick={() => removeTeam.mutate(row.id)}
-        >
-          <Trash2 />
-        </IconButton>
       ),
     },
   ];
@@ -277,6 +328,7 @@ function TelegramPage() {
       cell: (row: TelegramOutboxRow) => (
         <span className="text-text-secondary">
           {row.target_type === "team" ? "Team" : "Cá nhân"} · {maskChatId(row.chat_id)}
+          {row.topic_id ? ` · topic ${row.topic_id}` : ""}
         </span>
       ),
     },
@@ -313,43 +365,41 @@ function TelegramPage() {
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="Kết nối Telegram"
-        description="Ánh xạ tài khoản CEN với Telegram và theo dõi hàng đợi gửi tin."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              loading={reminders.isPending}
-              onClick={() => reminders.mutate()}
-            >
-              Xếp nhắc hạn thông báo
-            </Button>
-            <Button type="button" loading={dispatch.isPending} onClick={() => dispatch.mutate()}>
-              <Send />
-              Gửi hàng đợi
-            </Button>
-          </div>
-        }
-
+        description="Một Bot chung, một Group Chat chung; mỗi Team một Topic Thread ID, mỗi thành viên một Telegram User ID."
       />
 
-      <Tabs defaultValue="users">
+      <Tabs defaultValue="config">
         <TabsList>
+          <TabsTrigger value="config">Cấu hình</TabsTrigger>
           <TabsTrigger value="users">Cá nhân</TabsTrigger>
           <TabsTrigger value="teams">Team / topic</TabsTrigger>
           <TabsTrigger value="outbox">Hàng đợi gửi</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="config" className="flex min-w-0 flex-col gap-4">
+          <ConfigSection />
+        </TabsContent>
+
         <TabsContent value="users" className="flex min-w-0 flex-col gap-4">
           <Card>
             <CardContent className="flex min-w-0 flex-col gap-4">
-              <SectionHeader title="Thêm hoặc cập nhật ánh xạ cá nhân" />
+              <SectionHeader
+                title="Ánh xạ Telegram cá nhân"
+                description="Dữ liệu này nằm trong hồ sơ thành viên, dùng chung với trang Thành viên."
+              />
               <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                 <FormField id="tg-user" label="Thành viên" required>
                   {(control) => (
                     <Select
                       value={userForm.userId}
-                      onValueChange={(value) => setUserForm({ ...userForm, userId: value })}
+                      onValueChange={(value) => {
+                        const member = members.data?.find((row) => row.id === value);
+                        setUserForm({
+                          userId: value,
+                          chatId: member?.telegram_user_id ?? "",
+                          active: member?.telegram_enabled ?? true,
+                        });
+                      }}
                     >
                       <SelectTrigger {...control} aria-label="Thành viên">
                         <SelectValue placeholder="Chọn thành viên" />
@@ -366,17 +416,14 @@ function TelegramPage() {
                 </FormField>
                 <FormField
                   id="tg-user-chat"
-                  label="Chat ID Telegram"
-                  required
-                  helperText="Chat ID cá nhân giữa người dùng và bot."
+                  label="Telegram User ID"
+                  helperText="ID cá nhân của thành viên trên Telegram."
                 >
                   {(control) => (
                     <Input
                       {...control}
                       value={userForm.chatId}
-                      onChange={(event) =>
-                        setUserForm({ ...userForm, chatId: event.target.value })
-                      }
+                      onChange={(event) => setUserForm({ ...userForm, chatId: event.target.value })}
                       placeholder="Ví dụ: 123456789"
                     />
                   )}
@@ -385,17 +432,15 @@ function TelegramPage() {
               <label className="flex items-center gap-2 text-body-sm">
                 <Checkbox
                   checked={userForm.active}
-                  onCheckedChange={(value) =>
-                    setUserForm({ ...userForm, active: value === true })
-                  }
-                  aria-label="Bật gửi Telegram"
+                  onCheckedChange={(value) => setUserForm({ ...userForm, active: value === true })}
+                  aria-label="Nhận thông báo Telegram cá nhân"
                 />
-                Bật gửi Telegram cho thành viên này
+                Nhận thông báo Telegram cá nhân
               </label>
               <div>
                 <Button
                   type="button"
-                  disabled={!userForm.userId || !userForm.chatId.trim()}
+                  disabled={!userForm.userId}
                   loading={saveUser.isPending}
                   onClick={() => saveUser.mutate()}
                 >
@@ -409,12 +454,12 @@ function TelegramPage() {
             <CardContent>
               <DataTable
                 columns={userColumns}
-                data={userLinks.data ?? []}
+                data={members.data ?? []}
                 getRowId={(row) => row.id}
-                loading={userLinks.isLoading}
-                error={userLinks.isError}
-                emptyTitle="Chưa có ánh xạ cá nhân"
-                emptyDescription="Thêm Chat ID để thành viên nhận thông báo Telegram."
+                loading={members.isLoading}
+                error={members.isError}
+                emptyTitle="Chưa có thành viên"
+                emptyDescription="Thêm Telegram User ID để thành viên nhận thông báo."
               />
             </CardContent>
           </Card>
@@ -423,13 +468,23 @@ function TelegramPage() {
         <TabsContent value="teams" className="flex min-w-0 flex-col gap-4">
           <Card>
             <CardContent className="flex min-w-0 flex-col gap-4">
-              <SectionHeader title="Thêm hoặc cập nhật ánh xạ Team" />
-              <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+              <SectionHeader
+                title="Topic Thread ID theo Team"
+                description="Mọi Team dùng chung Group Chat ID cấu hình ở tab Cấu hình; chỉ Topic Thread ID là riêng."
+              />
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                 <FormField id="tg-team" label="Team" required>
                   {(control) => (
                     <Select
                       value={teamForm.teamId}
-                      onValueChange={(value) => setTeamForm({ ...teamForm, teamId: value })}
+                      onValueChange={(value) => {
+                        const team = teams.data?.find((row) => row.id === value);
+                        setTeamForm({
+                          teamId: value,
+                          topicId: team?.telegram_topic_id ?? "",
+                          active: team?.telegram_enabled ?? false,
+                        });
+                      }}
                     >
                       <SelectTrigger {...control} aria-label="Team">
                         <SelectValue placeholder="Chọn Team" />
@@ -444,26 +499,16 @@ function TelegramPage() {
                     </Select>
                   )}
                 </FormField>
-                <FormField id="tg-team-chat" label="Chat ID nhóm" required>
-                  {(control) => (
-                    <Input
-                      {...control}
-                      value={teamForm.chatId}
-                      onChange={(event) =>
-                        setTeamForm({ ...teamForm, chatId: event.target.value })
-                      }
-                      placeholder="Ví dụ: -1001234567890"
-                    />
-                  )}
-                </FormField>
-                <FormField id="tg-team-topic" label="Topic ID" helperText="Bỏ trống nếu nhóm không dùng topic.">
+                <FormField
+                  id="tg-team-topic"
+                  label="Telegram Topic Thread ID"
+                  helperText="Bắt buộc nếu bật gửi Telegram cho Team."
+                >
                   {(control) => (
                     <Input
                       {...control}
                       value={teamForm.topicId}
-                      onChange={(event) =>
-                        setTeamForm({ ...teamForm, topicId: event.target.value })
-                      }
+                      onChange={(event) => setTeamForm({ ...teamForm, topicId: event.target.value })}
                       placeholder="Ví dụ: 12"
                     />
                   )}
@@ -472,9 +517,7 @@ function TelegramPage() {
               <label className="flex items-center gap-2 text-body-sm">
                 <Checkbox
                   checked={teamForm.active}
-                  onCheckedChange={(value) =>
-                    setTeamForm({ ...teamForm, active: value === true })
-                  }
+                  onCheckedChange={(value) => setTeamForm({ ...teamForm, active: value === true })}
                   aria-label="Bật gửi Telegram cho Team"
                 />
                 Bật gửi Telegram cho Team này
@@ -482,7 +525,7 @@ function TelegramPage() {
               <div>
                 <Button
                   type="button"
-                  disabled={!teamForm.teamId || !teamForm.chatId.trim()}
+                  disabled={!teamForm.teamId || (teamForm.active && !teamForm.topicId.trim())}
                   loading={saveTeam.isPending}
                   onClick={() => saveTeam.mutate()}
                 >
@@ -496,12 +539,12 @@ function TelegramPage() {
             <CardContent>
               <DataTable
                 columns={teamColumns}
-                data={teamLinks.data ?? []}
+                data={teams.data ?? []}
                 getRowId={(row) => row.id}
-                loading={teamLinks.isLoading}
-                error={teamLinks.isError}
-                emptyTitle="Chưa có ánh xạ Team"
-                emptyDescription="Thêm Chat ID nhóm để gửi thông báo theo Team hoặc topic."
+                loading={teams.isLoading}
+                error={teams.isError}
+                emptyTitle="Chưa có Team"
+                emptyDescription="Tạo Team trước khi cấu hình Topic Thread ID."
               />
             </CardContent>
           </Card>
@@ -511,20 +554,33 @@ function TelegramPage() {
           <Card>
             <CardContent className="flex min-w-0 flex-col gap-4">
               <SectionHeader
-                title="Hàng đợi gửi Telegram"
-                description="Tin lỗi sẽ được thử lại tối đa 5 lần khi bấm Gửi hàng đợi."
-                actions={
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    onClick={() => void outbox.refetch()}
-                  >
-                    <RefreshCw />
-                    Làm mới
-                  </Button>
-                }
+                title="Công cụ quản trị"
+                description="Chỉ Admin được vận hành hàng đợi gửi Telegram."
               />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={reminders.isPending}
+                  onClick={() => setConfirm("reminders")}
+                >
+                  <Bell />
+                  Tạo thông báo nhắc hạn
+                </Button>
+                <Button
+                  type="button"
+                  loading={dispatch.isPending}
+                  onClick={() => setConfirm("dispatch")}
+                >
+                  <Send />
+                  Gửi thông báo đang chờ
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
               <DataTable
                 columns={outboxColumns}
                 data={outbox.data ?? []}
@@ -532,12 +588,33 @@ function TelegramPage() {
                 loading={outbox.isLoading}
                 error={outbox.isError}
                 emptyTitle="Hàng đợi trống"
-                emptyDescription="Chưa có tin nhắn Telegram nào được tạo."
+                emptyDescription="Chưa có tin nhắn Telegram nào cần gửi."
               />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ConfirmDialog
+        open={confirm !== null}
+        onOpenChange={(next) => {
+          if (!next) setConfirm(null);
+        }}
+        title={
+          confirm === "dispatch" ? "Gửi thông báo đang chờ?" : "Tạo thông báo nhắc hạn?"
+        }
+        description={
+          confirm === "dispatch"
+            ? "Hệ thống sẽ gửi các tin đang chờ trong hàng đợi tới Telegram."
+            : "Hệ thống sẽ tạo tin nhắc hạn cho các thông báo nội bộ sắp đến hạn."
+        }
+        confirmLabel={confirm === "dispatch" ? "Gửi ngay" : "Tạo nhắc hạn"}
+        onConfirm={() => {
+          if (confirm === "dispatch") dispatch.mutate();
+          else reminders.mutate();
+          setConfirm(null);
+        }}
+      />
     </div>
   );
 }
