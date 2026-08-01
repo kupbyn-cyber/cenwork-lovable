@@ -316,6 +316,48 @@ export async function fetchDailyTaskRefs(
   return refs;
 }
 
+/**
+ * Kết quả đạt được tự điền cho Báo cáo ngày.
+ * Chỉ lấy Task mà người gửi là người phụ trách, đã hoàn thành trong đúng ngày
+ * báo cáo (giờ Hà Nội) và đã có Kết quả công việc.
+ * Định dạng mỗi dòng: `Tên công việc — Kết quả công việc`.
+ */
+export async function fetchDailyResultLines(
+  authorId: string,
+  reportDate: string,
+): Promise<string[]> {
+  const dayStart = hanoiStartOfDayMs(reportDate);
+  if (dayStart === null) return [];
+  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id,name,result_text,result_updated_at,updated_at,deadline")
+    .eq("assignee_id", authorId)
+    .eq("status", "done")
+    .not("result_text", "is", null)
+    .order("deadline", { ascending: true })
+    .limit(200);
+  if (error) throw new Error(error.message);
+
+  const lines: string[] = [];
+  for (const row of data ?? []) {
+    const doneAt = new Date((row.result_updated_at ?? row.updated_at) as string).getTime();
+    if (Number.isNaN(doneAt) || doneAt < dayStart || doneAt >= dayEnd) continue;
+    const result = (row.result_text ?? "").trim();
+    if (!result) continue;
+    lines.push(`${row.name} — ${result}`);
+  }
+  return lines;
+}
+
+export const dailyResultLinesQuery = (authorId: string | null, reportDate: string) =>
+  queryOptions({
+    queryKey: ["daily-result-lines", authorId, reportDate],
+    queryFn: () => (authorId ? fetchDailyResultLines(authorId, reportDate) : Promise.resolve([])),
+    enabled: Boolean(authorId && reportDate),
+  });
+
 export const dailyTaskRefsQuery = (authorId: string | null, reportDate: string) =>
   queryOptions({
     queryKey: ["daily-task-refs", authorId, reportDate],
