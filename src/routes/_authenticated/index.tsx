@@ -79,11 +79,15 @@ function Metric({ label, value, hint }: { label: string; value: number | string;
 
 function Dashboard() {
   const access = useOrgAccess();
+  const navigate = useNavigate();
+  const [dailyOpen, setDailyOpen] = React.useState(false);
 
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
   const dailyResult = useQuery(dailyReportsQuery());
   const weeklyResult = useQuery(weeklyReportsQuery());
+  const membersResult = useQuery(membersQuery());
+
 
   const today = hanoiToday();
   const thisWeek = weekStartOf(today);
