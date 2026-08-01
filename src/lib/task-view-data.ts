@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { isPastInstant } from "@/lib/datetime";
 import {
   canManageTask,
@@ -332,9 +333,9 @@ export const savedViewsQuery = (userId: string | null) =>
 
 function toPayload(config: SavedViewConfig) {
   return {
-    filters: config.filters as unknown as Record<string, unknown>,
-    sort_config: { key: config.sort },
-    visible_columns: config.columns,
+    filters: config.filters as unknown as Json,
+    sort_config: { key: config.sort } as unknown as Json,
+    visible_columns: config.columns as unknown as Json,
   };
 }
 
