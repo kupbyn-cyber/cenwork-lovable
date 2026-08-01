@@ -138,7 +138,8 @@ function DataTableInner<T>(
 
   return (
     <TableContainer ref={ref} className={className} {...props}>
-      <Table>
+      <Table className={tableClassName}>
+
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader>
           <TableRow className="hover:bg-transparent">
