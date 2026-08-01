@@ -81,6 +81,7 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "reports.review_daily": "Báo cáo",
   "reports.submit_weekly": "Báo cáo",
   "reports.review_weekly": "Báo cáo",
+  "telegram.manage": "Hệ thống",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
