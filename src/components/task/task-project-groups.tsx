@@ -1,6 +1,7 @@
 import * as React from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, FolderKanban, ListTodo, Plus } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -35,17 +36,6 @@ export interface TaskProjectGroupsProps {
   onRowClick: (row: TaskRow) => void;
 }
 
-function GroupStat({ label, value, tone }: { label: string; value: string; tone?: "danger" }) {
-  return (
-    <span className="text-caption text-text-muted">
-      {label}{" "}
-      <span className={cn("font-medium", tone === "danger" ? "text-state-danger" : "text-text-secondary")}>
-        {value}
-      </span>
-    </span>
-  );
-}
-
 export function TaskProjectGroups({
   groups,
   columns,
@@ -55,60 +45,81 @@ export function TaskProjectGroups({
   onRowClick,
 }: TaskProjectGroupsProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-4">
       {groups.map((group) => {
         const expanded = expandedKeys.includes(group.key);
         const panelId = `task-group-${group.key}`;
+        const standalone = group.projectId === null;
+        const overdue = group.overdueCount > 0;
+        const GroupIcon = standalone ? ListTodo : FolderKanban;
+
         return (
           <section
             key={group.key}
-            className="min-w-0 overflow-hidden rounded-card border border-border-default bg-surface"
+            className={cn(
+              "min-w-0 overflow-hidden rounded-card border border-border-default border-l-4",
+              overdue
+                ? "border-l-state-danger"
+                : standalone
+                  ? "border-l-state-info"
+                  : "border-l-brand-primary",
+            )}
           >
-            <div className="flex min-w-0 items-center gap-3 px-3 py-2.5 sm:px-4">
+            {/* Project Bar — nền sáng hơn danh sách Task một cấp */}
+            <div className="flex min-w-0 items-start gap-2 bg-surface-subtle px-3 py-3.5 sm:gap-3 sm:px-4">
               <button
                 type="button"
                 onClick={() => onToggle(group.key)}
                 aria-expanded={expanded}
                 aria-controls={panelId}
-                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                className="-m-1 flex min-w-0 flex-1 items-start gap-2 rounded-control p-1 text-left cen-transition hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:gap-3"
               >
-                <ChevronRight
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-control text-text-secondary">
+                  <ChevronRight
+                    aria-hidden="true"
+                    className={cn("size-icon-md cen-transition", expanded && "rotate-90")}
+                  />
+                </span>
+                <GroupIcon
                   aria-hidden="true"
                   className={cn(
-                    "size-icon-sm shrink-0 text-text-muted cen-transition",
-                    expanded && "rotate-90",
+                    "mt-1 size-icon-md shrink-0",
+                    standalone ? "text-state-info" : "text-brand-primary",
                   )}
                 />
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-body font-medium text-text-primary">
-                    {group.name}
+                <span className="flex min-w-0 flex-col gap-1.5">
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="truncate text-body-lg font-semibold text-text-primary">
+                      {group.name}
+                    </span>
+                    <span className="text-caption text-text-muted">
+                      {standalone ? "Không thuộc Dự án" : (group.teamName ?? "Chưa gán Team")}
+                    </span>
                   </span>
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                    {group.teamName ? (
-                      <span className="text-caption text-text-muted">{group.teamName}</span>
-                    ) : null}
-                    <GroupStat label="Đang làm" value={String(group.activeCount)} />
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <Badge size="sm" variant="neutral">
+                      Đang làm {group.activeCount}
+                    </Badge>
                     {group.overdueCount > 0 ? (
-                      <GroupStat
-                        label="Quá hạn"
-                        value={String(group.overdueCount)}
-                        tone="danger"
-                      />
+                      <Badge size="sm" variant="error">
+                        Quá hạn {group.overdueCount}
+                      </Badge>
                     ) : null}
-                    <GroupStat
-                      label="Hoàn thành"
-                      value={`${group.doneCount}/${group.tasks.length}`}
-                    />
+                    <Badge size="sm" variant={group.doneCount > 0 ? "success" : "outline"}>
+                      Hoàn thành {group.doneCount}/{group.tasks.length}
+                    </Badge>
                   </span>
                 </span>
               </button>
+
               {group.canAdd ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <IconButton
-                      variant="ghost"
+                      variant="secondary"
                       size="icon-sm"
                       label="Thêm công việc"
+                      className="mt-0.5 shrink-0"
                       onClick={() => onAdd(group)}
                     >
                       <Plus />
@@ -120,9 +131,12 @@ export function TaskProjectGroups({
             </div>
 
             {expanded ? (
-              <div id={panelId} className="min-w-0 border-t border-border-default">
+              <div
+                id={panelId}
+                className="min-w-0 border-t border-border-default bg-background pl-2 sm:pl-3"
+              >
                 {group.tasks.length === 0 ? (
-                  <p className="px-4 py-4 text-body-sm text-text-muted">Chưa có công việc</p>
+                  <p className="py-4 pr-4 text-body-sm text-text-muted">Chưa có công việc</p>
                 ) : (
                   <DataTable
                     columns={columns}
