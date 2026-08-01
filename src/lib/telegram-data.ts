@@ -23,6 +23,13 @@ export const DELIVERY_STATUS_TONE: Record<DeliveryStatus, "warning" | "success" 
   failed: "error",
 };
 
+export type OutboxMessageType = "daily_report" | "notification";
+
+export const MESSAGE_TYPE_LABEL: Record<string, string> = {
+  daily_report: "Báo cáo ngày",
+  notification: "Thông báo cá nhân",
+};
+
 export interface TelegramOutboxRow {
   id: string;
   target_type: string;
@@ -35,6 +42,9 @@ export interface TelegramOutboxRow {
   last_error: string | null;
   sent_at: string | null;
   created_at: string;
+  message_type: string;
+  report_id: string | null;
+  telegram_message_id: string | null;
 }
 
 export interface TelegramMemberRow {
@@ -43,6 +53,7 @@ export interface TelegramMemberRow {
   email: string;
   telegram_user_id: string | null;
   telegram_enabled: boolean;
+  primary_team_id: string | null;
 }
 
 export interface TelegramTeamRow {
@@ -65,7 +76,7 @@ export function maskChatId(chatId: string): string {
 export async function fetchTelegramMembers(): Promise<TelegramMemberRow[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,display_name,email,telegram_user_id,telegram_enabled")
+    .select("id,display_name,email,telegram_user_id,telegram_enabled,primary_team_id")
     .order("display_name");
   fail(error);
   return (data ?? []) as TelegramMemberRow[];
@@ -84,7 +95,7 @@ export async function fetchOutbox(limit = 50): Promise<TelegramOutboxRow[]> {
   const { data, error } = await supabase
     .from("telegram_outbox")
     .select(
-      "id,target_type,target_id,chat_id,topic_id,message,status,attempts,last_error,sent_at,created_at",
+      "id,target_type,target_id,chat_id,topic_id,message,status,attempts,last_error,sent_at,created_at,message_type,report_id,telegram_message_id",
     )
     .order("created_at", { ascending: false })
     .limit(limit);

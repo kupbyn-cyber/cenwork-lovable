@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Send } from "lucide-react";
+import { Bell, PlugZap, RefreshCw, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import {
   DELIVERY_STATUS_LABEL,
   DELIVERY_STATUS_TONE,
+  MESSAGE_TYPE_LABEL,
   maskChatId,
   saveMemberTelegram,
   saveTeamTelegram,
@@ -41,7 +42,13 @@ import {
   type TelegramOutboxRow,
   type TelegramTeamRow,
 } from "@/lib/telegram-data";
-import { dispatchTelegramQueue, getTelegramConfig, saveTelegramConfig } from "@/lib/telegram.functions";
+import {
+  dispatchTelegramQueue,
+  getTelegramConfig,
+  retryTelegramOutboxItem,
+  saveTelegramConfig,
+  testTelegramConnection,
+} from "@/lib/telegram.functions";
 import { enqueueAnnouncementReminders } from "@/lib/announcement.functions";
 
 const TITLE = "Kết nối Telegram — CEN WORK";
@@ -71,11 +78,15 @@ function ConfigSection() {
   });
 
   const [groupChatId, setGroupChatId] = React.useState("");
+  const [dailyTopicId, setDailyTopicId] = React.useState("");
   const [botToken, setBotToken] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (config.data) setGroupChatId(config.data.groupChatId);
+    if (config.data) {
+      setGroupChatId(config.data.groupChatId);
+      setDailyTopicId(config.data.dailyReportTopicId ?? "");
+    }
   }, [config.data]);
 
   const save = useMutation({
@@ -83,6 +94,7 @@ function ConfigSection() {
       saveTelegramConfig({
         data: {
           groupChatId,
+          dailyReportTopicId: dailyTopicId,
           ...(botToken.trim() ? { botToken: botToken.trim() } : {}),
         },
       }),
@@ -95,12 +107,21 @@ function ConfigSection() {
     onError: (mutationError: Error) => setError(mutationError.message),
   });
 
+  const test = useMutation({
+    mutationFn: () => testTelegramConnection(),
+    onSuccess: () => {
+      setError(null);
+      cenToast.success("Đã gửi tin kiểm tra vào Group và Topic Báo cáo ngày.");
+    },
+    onError: (testError: Error) => setError(testError.message),
+  });
+
   return (
     <Card>
       <CardContent className="flex min-w-0 flex-col gap-4">
         <SectionHeader
           title="Cấu hình Telegram"
-          description="Một Bot dùng chung và một Group Chat chung cho toàn hệ thống. Mỗi Team dùng một Topic Thread ID riêng trong nhóm này."
+          description="Một Bot dùng chung, một Group Chat chung và một Topic Báo cáo ngày chung cho toàn hệ thống."
         />
         <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <FormField
@@ -115,6 +136,21 @@ function ConfigSection() {
                 value={groupChatId}
                 placeholder="-1002041537249"
                 onChange={(event) => setGroupChatId(event.target.value)}
+              />
+            )}
+          </FormField>
+          <FormField
+            id="tg-daily-topic"
+            label="Daily Report Topic Thread ID"
+            required
+            helperText="Topic chung nhận Báo cáo ngày của tất cả Team."
+          >
+            {(control) => (
+              <Input
+                {...control}
+                value={dailyTopicId}
+                placeholder="Ví dụ: 25"
+                onChange={(event) => setDailyTopicId(event.target.value)}
               />
             )}
           </FormField>
@@ -146,14 +182,29 @@ function ConfigSection() {
             {error}
           </p>
         ) : null}
-        <div>
+        {test.isSuccess && !error ? (
+          <p className="rounded-control border border-state-success/50 bg-state-success-surface px-3 py-2 text-helper text-state-success">
+            Kết nối hợp lệ: Bot đã gửi được tin kiểm tra vào đúng Group và Topic Báo cáo ngày.
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             loading={save.isPending}
-            disabled={config.isLoading || !groupChatId.trim()}
+            disabled={config.isLoading || !groupChatId.trim() || !dailyTopicId.trim()}
             onClick={() => save.mutate()}
           >
             Lưu cấu hình
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={test.isPending}
+            disabled={config.isLoading || !config.data?.botConfigured}
+            onClick={() => test.mutate()}
+          >
+            <PlugZap />
+            Kiểm tra kết nối
           </Button>
         </div>
       </CardContent>
@@ -173,6 +224,23 @@ function TelegramPage() {
   const [userForm, setUserForm] = React.useState({ userId: "", chatId: "", active: true });
   const [teamForm, setTeamForm] = React.useState({ teamId: "", topicId: "", active: true });
   const [confirm, setConfirm] = React.useState<null | "reminders" | "dispatch">(null);
+  const [typeFilter, setTypeFilter] = React.useState<string>("all");
+  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [retryId, setRetryId] = React.useState<string | null>(null);
+
+  const retry = useMutation({
+    mutationFn: (id: string) => retryTelegramOutboxItem({ data: { id } }),
+    onSuccess: (result) => {
+      setRetryId(null);
+      if (result.sent > 0) cenToast.success("Đã gửi lại thành công.");
+      else cenToast.error("Gửi lại vẫn thất bại, xem lỗi trong hàng đợi.");
+      void queryClient.invalidateQueries({ queryKey: ["telegram-outbox"] });
+    },
+    onError: (error: Error) => {
+      setRetryId(null);
+      cenToast.error(error.message);
+    },
+  });
 
   const saveUser = useMutation({
     mutationFn: () =>
@@ -314,6 +382,9 @@ function TelegramPage() {
     },
   ];
 
+  const memberById = new Map((members.data ?? []).map((row) => [row.id, row]));
+  const teamNameById = new Map((teams.data ?? []).map((row) => [row.id, row.name]));
+
   const outboxColumns = [
     {
       id: "created",
@@ -322,12 +393,49 @@ function TelegramPage() {
       cell: (row: TelegramOutboxRow) => formatHanoiDateTime(row.created_at),
     },
     {
+      id: "type",
+      header: "Loại tin",
+      className: "min-w-[140px]",
+      cell: (row: TelegramOutboxRow) => (
+        <StatusBadge
+          tone={row.message_type === "daily_report" ? "progress" : "neutral"}
+          label={MESSAGE_TYPE_LABEL[row.message_type] ?? row.message_type}
+        />
+      ),
+    },
+    {
+      id: "subject",
+      header: "Liên quan",
+      className: "min-w-[180px]",
+      cell: (row: TelegramOutboxRow) => {
+        const member = row.target_id ? memberById.get(row.target_id) : undefined;
+        const teamName = member?.primary_team_id
+          ? teamNameById.get(member.primary_team_id)
+          : undefined;
+        return (
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate">{member?.display_name ?? "—"}</span>
+            {row.message_type === "daily_report" ? (
+              <span className="truncate text-caption text-text-muted">
+                {teamName ?? "Chưa có Team"}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
       id: "target",
       header: "Đích gửi",
-      className: "min-w-[150px]",
+      className: "min-w-[170px]",
       cell: (row: TelegramOutboxRow) => (
         <span className="text-text-secondary">
-          {row.target_type === "team" ? "Team" : "Cá nhân"} · {maskChatId(row.chat_id)}
+          {row.message_type === "daily_report"
+            ? "Topic Báo cáo ngày"
+            : row.target_type === "team"
+              ? "Topic Team"
+              : "Telegram cá nhân"}{" "}
+          · {maskChatId(row.chat_id)}
           {row.topic_id ? ` · topic ${row.topic_id}` : ""}
         </span>
       ),
@@ -335,7 +443,7 @@ function TelegramPage() {
     {
       id: "message",
       header: "Nội dung",
-      className: "min-w-[260px]",
+      className: "min-w-[240px]",
       cell: (row: TelegramOutboxRow) => (
         <span className="line-clamp-2 min-w-0 break-words text-body-sm">{row.message}</span>
       ),
@@ -343,7 +451,7 @@ function TelegramPage() {
     {
       id: "status",
       header: "Trạng thái",
-      className: "min-w-[160px]",
+      className: "min-w-[180px]",
       cell: (row: TelegramOutboxRow) => (
         <div className="flex min-w-0 flex-col gap-1">
           <StatusBadge
@@ -351,6 +459,11 @@ function TelegramPage() {
             label={DELIVERY_STATUS_LABEL[row.status as DeliveryStatus]}
           />
           <span className="text-caption text-text-muted">Số lần thử: {row.attempts}</span>
+          {row.sent_at ? (
+            <span className="text-caption text-text-muted">
+              Gửi lúc: {formatHanoiDateTime(row.sent_at)}
+            </span>
+          ) : null}
           {row.last_error ? (
             <span className="min-w-0 break-words text-caption text-state-danger">
               {row.last_error}
@@ -359,7 +472,36 @@ function TelegramPage() {
         </div>
       ),
     },
+    {
+      id: "actions",
+      header: "Thao tác",
+      className: "min-w-[120px]",
+      cell: (row: TelegramOutboxRow) =>
+        row.status === "sent" ? (
+          <span className="text-caption text-text-muted">Đã gửi</span>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            loading={retry.isPending && retryId === row.id}
+            onClick={() => {
+              setRetryId(row.id);
+              retry.mutate(row.id);
+            }}
+          >
+            <RefreshCw />
+            Gửi lại
+          </Button>
+        ),
+    },
   ];
+
+  const filteredOutbox = (outbox.data ?? []).filter(
+    (row) =>
+      (typeFilter === "all" || row.message_type === typeFilter) &&
+      (statusFilter === "all" || row.status === statusFilter),
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -576,6 +718,37 @@ function TelegramPage() {
                   Gửi thông báo đang chờ
                 </Button>
               </div>
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <FormField id="tg-filter-type" label="Lọc theo loại tin">
+                  {(control) => (
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger {...control} aria-label="Lọc theo loại tin">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="daily_report">Báo cáo ngày</SelectItem>
+                        <SelectItem value="notification">Thông báo cá nhân</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormField>
+                <FormField id="tg-filter-status" label="Lọc theo trạng thái">
+                  {(control) => (
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger {...control} aria-label="Lọc theo trạng thái">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ gửi</SelectItem>
+                        <SelectItem value="sent">Đã gửi</SelectItem>
+                        <SelectItem value="failed">Thất bại</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormField>
+              </div>
             </CardContent>
           </Card>
 
@@ -583,7 +756,7 @@ function TelegramPage() {
             <CardContent>
               <DataTable
                 columns={outboxColumns}
-                data={outbox.data ?? []}
+                data={filteredOutbox}
                 getRowId={(row) => row.id}
                 loading={outbox.isLoading}
                 error={outbox.isError}

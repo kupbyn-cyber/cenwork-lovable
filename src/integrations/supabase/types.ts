@@ -1873,6 +1873,7 @@ export type Database = {
         Row: {
           bot_token: string | null
           created_at: string
+          daily_report_topic_id: string | null
           group_chat_id: string
           id: boolean
           updated_at: string
@@ -1881,6 +1882,7 @@ export type Database = {
         Insert: {
           bot_token?: string | null
           created_at?: string
+          daily_report_topic_id?: string | null
           group_chat_id?: string
           id?: boolean
           updated_at?: string
@@ -1889,6 +1891,7 @@ export type Database = {
         Update: {
           bot_token?: string | null
           created_at?: string
+          daily_report_topic_id?: string | null
           group_chat_id?: string
           id?: boolean
           updated_at?: string
@@ -1913,11 +1916,14 @@ export type Database = {
           id: string
           last_error: string | null
           message: string
+          message_type: string
           notification_id: string | null
+          report_id: string | null
           sent_at: string | null
           status: Database["public"]["Enums"]["delivery_status"]
           target_id: string | null
           target_type: string
+          telegram_message_id: string | null
           topic_id: string | null
           updated_at: string
         }
@@ -1929,11 +1935,14 @@ export type Database = {
           id?: string
           last_error?: string | null
           message: string
+          message_type?: string
           notification_id?: string | null
+          report_id?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["delivery_status"]
           target_id?: string | null
           target_type: string
+          telegram_message_id?: string | null
           topic_id?: string | null
           updated_at?: string
         }
@@ -1945,11 +1954,14 @@ export type Database = {
           id?: string
           last_error?: string | null
           message?: string
+          message_type?: string
           notification_id?: string | null
+          report_id?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["delivery_status"]
           target_id?: string | null
           target_type?: string
+          telegram_message_id?: string | null
           topic_id?: string | null
           updated_at?: string
         }
@@ -1959,6 +1971,13 @@ export type Database = {
             columns: ["notification_id"]
             isOneToOne: false
             referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_outbox_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_reports"
             referencedColumns: ["id"]
           },
         ]
