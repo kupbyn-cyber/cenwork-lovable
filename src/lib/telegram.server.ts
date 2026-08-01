@@ -17,6 +17,7 @@ export interface TelegramTarget {
 export interface TelegramConfig {
   botToken: string | null;
   groupChatId: string;
+  dailyReportTopicId: string | null;
 }
 
 export const DEFAULT_GROUP_CHAT_ID = "-1002041537249";
