@@ -1574,6 +1574,63 @@ export type Database = {
           },
         ]
       }
+      project_approvals: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: Database["public"]["Enums"]["app_role"] | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["project_status"] | null
+          id: string
+          project_id: string
+          reason: string | null
+          round: number
+          stage: string
+          to_status: Database["public"]["Enums"]["project_status"] | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["project_status"] | null
+          id?: string
+          project_id: string
+          reason?: string | null
+          round?: number
+          stage: string
+          to_status?: Database["public"]["Enums"]["project_status"] | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["project_status"] | null
+          id?: string
+          project_id?: string
+          reason?: string | null
+          round?: number
+          stage?: string
+          to_status?: Database["public"]["Enums"]["project_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_approvals_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_approvals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_facilities: {
         Row: {
           created_at: string
@@ -1684,9 +1741,13 @@ export type Database = {
       }
       projects: {
         Row: {
+          approval_round: number
+          approved_at: string | null
+          approved_by: string | null
           completed_at: string | null
           created_at: string
           created_by: string
+          creator_role_snapshot: Database["public"]["Enums"]["app_role"] | null
           deadline: string | null
           deleted_at: string | null
           deleted_by: string | null
@@ -1698,14 +1759,23 @@ export type Database = {
           name: string
           objective: string
           owner_id: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          responsible_team_id: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
+          submitted_at: string | null
           updated_at: string
         }
         Insert: {
+          approval_round?: number
+          approved_at?: string | null
+          approved_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
+          creator_role_snapshot?: Database["public"]["Enums"]["app_role"] | null
           deadline?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1717,14 +1787,23 @@ export type Database = {
           name: string
           objective: string
           owner_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          responsible_team_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          submitted_at?: string | null
           updated_at?: string
         }
         Update: {
+          approval_round?: number
+          approved_at?: string | null
+          approved_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          creator_role_snapshot?: Database["public"]["Enums"]["app_role"] | null
           deadline?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1736,11 +1815,23 @@ export type Database = {
           name?: string
           objective?: string
           owner_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          responsible_team_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          submitted_at?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
@@ -1767,6 +1858,20 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_responsible_team_id_fkey"
+            columns: ["responsible_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2396,6 +2501,7 @@ export type Database = {
       }
       is_mvp_admin: { Args: never; Returns: boolean }
       is_mvp_cycle_published: { Args: { _cycle: string }; Returns: boolean }
+      is_project_approved: { Args: { _project: string }; Returns: boolean }
       is_project_person: { Args: { _person: string }; Returns: boolean }
       is_project_team: { Args: { _team: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
@@ -2421,6 +2527,14 @@ export type Database = {
           _title: string
         }
         Returns: undefined
+      }
+      project_decide: {
+        Args: { _approve: boolean; _project: string; _reason?: string }
+        Returns: Database["public"]["Enums"]["project_status"]
+      }
+      project_submit: {
+        Args: { _project: string }
+        Returns: Database["public"]["Enums"]["project_status"]
       }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
