@@ -204,7 +204,7 @@ function ReportDocPage() {
           </CardTitle>
           <div className="flex flex-wrap gap-2">
             {editable ? (
-              <Button size="sm" disabled={submit.isPending} onClick={() => submit.mutate()}>
+              <Button size="sm" loading={submit.isPending} onClick={() => submit.mutate()}>
                 {doc.first_submitted_at ? "Gửi lại" : "Gửi báo cáo"}
               </Button>
             ) : null}
@@ -265,6 +265,7 @@ function ReportDocPage() {
               <Button
                 size="sm"
                 variant="secondary"
+                loading={review.isPending && review.variables === "comment"}
                 disabled={review.isPending || !reviewNote.trim()}
                 onClick={() => review.mutate("comment")}
               >
@@ -273,6 +274,7 @@ function ReportDocPage() {
               <Button
                 size="sm"
                 variant="secondary"
+                loading={review.isPending && review.variables === "request_revision"}
                 disabled={review.isPending || !awaitingReview || !reviewNote.trim()}
                 onClick={() => review.mutate("request_revision")}
               >
@@ -280,6 +282,7 @@ function ReportDocPage() {
               </Button>
               <Button
                 size="sm"
+                loading={review.isPending && review.variables === "confirm"}
                 disabled={review.isPending || !awaitingReview}
                 onClick={() => review.mutate("confirm")}
               >
@@ -297,6 +300,7 @@ function ReportDocPage() {
                 <div className="mt-2 flex gap-2">
                   <Button
                     size="sm"
+                    loading={decide.isPending && decide.variables?.approve === true}
                     disabled={decide.isPending}
                     onClick={() => decide.mutate({ id: pendingReopen.id, approve: true })}
                   >
@@ -305,6 +309,7 @@ function ReportDocPage() {
                   <Button
                     size="sm"
                     variant="secondary"
+                    loading={decide.isPending && decide.variables?.approve === false}
                     disabled={decide.isPending || !reviewNote.trim()}
                     onClick={() => decide.mutate({ id: pendingReopen.id, approve: false })}
                   >
@@ -370,10 +375,11 @@ function ReportDocPage() {
         description="Cần nêu lý do và nội dung dự kiến sửa; người xác nhận hoặc CMO sẽ quyết định."
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setReopenOpen(false)}>
+            <Button variant="ghost" disabled={askReopen.isPending} onClick={() => setReopenOpen(false)}>
               Hủy
             </Button>
             <Button
+              loading={askReopen.isPending}
               disabled={askReopen.isPending || !reopenReason.trim() || !reopenPlanned.trim()}
               onClick={() => askReopen.mutate()}
             >
@@ -413,10 +419,11 @@ function ReportDocPage() {
         description="Nhập lý do để ghi vào Audit Log. Báo cáo vẫn xem được trong tab Lưu trữ."
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setArchiveOpen(false)}>
+            <Button variant="ghost" disabled={archive.isPending} onClick={() => setArchiveOpen(false)}>
               Hủy
             </Button>
             <Button
+              loading={archive.isPending}
               disabled={archiveReason.trim().length < 3 || archive.isPending}
               onClick={() => archive.mutate()}
             >
