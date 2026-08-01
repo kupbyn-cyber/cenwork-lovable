@@ -410,12 +410,40 @@ function ProjectDetailPage() {
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title="Lưu trữ dự án?"
-        description="Dự án không bị xóa. Sau khi lưu trữ, dự án chỉ còn ở chế độ xem."
-        confirmLabel="Lưu trữ"
-        loading={busy}
-        onConfirm={() => statusMutation.mutate({ status: "archived" })}
+        title="Đưa dự án vào Lưu trữ?"
+        description="Dự án không bị xóa và trạng thái nghiệp vụ giữ nguyên; dự án chỉ chuyển sang tab Lưu trữ."
+        confirmLabel="Đưa vào Lưu trữ"
+        loading={manualArchiveMutation.isPending}
+        onConfirm={() => manualArchiveMutation.mutate(true)}
       />
+
+      <ConfirmDialog
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        title="Khôi phục dự án?"
+        description="Dự án quay lại danh sách đang hoạt động, trạng thái nghiệp vụ không đổi."
+        confirmLabel="Khôi phục"
+        loading={manualArchiveMutation.isPending}
+        onConfirm={() => manualArchiveMutation.mutate(false)}
+      />
+
+      <DeadlineRequestModal
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        entityType="project"
+        entityId={detail.id}
+        entityName={detail.name}
+        currentDeadline={detail.deadline ? `${detail.deadline}T00:00:00+07:00` : null}
+        dateOnly
+      />
+
+      <DeadlineDecisionModal
+        open={decisionOpen}
+        onOpenChange={setDecisionOpen}
+        request={pendingRequest}
+        entityName={detail.name}
+      />
+
     </div>
   );
 }
