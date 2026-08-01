@@ -53,9 +53,11 @@ export function CommentThread({
   const [body, setBody] = React.useState("");
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [mentionIds, setMentionIds] = React.useState<string[]>([]);
+  const [mentionQuery, setMentionQuery] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState<{ id: string; body: string } | null>(null);
   const [hiding, setHiding] = React.useState<CommentRow | null>(null);
   const [hideReason, setHideReason] = React.useState("");
+
 
   const nameById = React.useMemo(
     () => new Map((members.data ?? []).map((member) => [member.id, member.display_name])),
