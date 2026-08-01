@@ -161,6 +161,18 @@ function Dashboard() {
   );
   const inReview = tasks.filter((task) => task.status === "review");
 
+  /** Bộ lọc thời gian chỉ ảnh hưởng hiển thị KPI, không đổi dữ liệu nguồn. */
+  const rangeMeta = RANGE_OPTIONS.find((option) => option.key === range) ?? RANGE_OPTIONS[1];
+  const rangeEnd = new Date(`${today}T00:00:00+07:00`);
+  rangeEnd.setDate(rangeEnd.getDate() + rangeMeta.days);
+  const dueInRange = tasks.filter(
+    (task) =>
+      task.status !== "done" &&
+      task.deadline >= today &&
+      new Date(task.deadline).getTime() < rangeEnd.getTime(),
+  );
+
+
   const activeProjects = projects.filter((project) =>
     ACTIVE_PROJECT_STATUSES.includes(project.status),
   );
