@@ -219,9 +219,23 @@ function LoginPage() {
               </p>
             ) : null}
 
-            <Button type="submit" fullWidth loading={submitting}>
-              Đăng nhập
+            <Button
+              type="submit"
+              fullWidth
+              loading={submitting && !succeeded}
+              disabled={succeeded}
+              className="cen-transition hover:brightness-110 active:scale-[0.98]"
+            >
+              {succeeded ? (
+                <>
+                  <Check className="animate-scale-in" aria-hidden />
+                  Đã xác thực
+                </>
+              ) : (
+                "Đăng nhập"
+              )}
             </Button>
+
           </form>
         </div>
 
