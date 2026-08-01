@@ -84,7 +84,7 @@ export function TaskProjectGroups({
                   aria-hidden="true"
                   className={cn(
                     "mt-1 size-icon-md shrink-0",
-                    standalone ? "text-state-info" : "text-brand-secondary",
+                    standalone ? "text-state-info" : "text-brand-primary",
                   )}
                 />
                 <span className="flex min-w-0 flex-col gap-1.5">
