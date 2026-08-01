@@ -55,6 +55,9 @@ export interface TaskRow {
   description: string | null;
   project_id: string | null;
   projectName: string | null;
+  projectOwnerId: string | null;
+  /** Dự án cha đang bị lưu trữ thủ công → Task cũng rời danh sách hoạt động. */
+  projectManuallyArchivedAt: string | null;
   assignee_id: string;
   assigneeName: string | null;
   assigneeTeamId: string | null;
@@ -65,6 +68,9 @@ export interface TaskRow {
   priority: TaskPriority;
   status: TaskStatus;
   is_archived: boolean;
+  completed_at: string | null;
+  manually_archived_at: string | null;
+  manually_archived_by: string | null;
   created_by: string;
   creatorName: string | null;
   created_at: string;
@@ -75,8 +81,9 @@ export interface TaskRow {
 
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
-  is_archived,created_by,created_at,updated_at,
-  project:projects(id,name),
+  is_archived,completed_at,manually_archived_at,manually_archived_by,
+  created_by,created_at,updated_at,
+  project:projects(id,name,owner_id,manually_archived_at),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
   team:teams(id,name),
@@ -86,7 +93,11 @@ const SELECT = `
 type RawTask = Record<string, unknown>;
 
 function mapTask(raw: RawTask): TaskRow {
-  const project = raw["project"] as { name: string } | null;
+  const project = raw["project"] as {
+    name: string;
+    owner_id: string | null;
+    manually_archived_at: string | null;
+  } | null;
   const assignee = raw["assignee"] as
     | { display_name: string; primary_team_id: string | null }
     | null;
@@ -103,6 +114,8 @@ function mapTask(raw: RawTask): TaskRow {
     description: (raw["description"] as string | null) ?? null,
     project_id: (raw["project_id"] as string | null) ?? null,
     projectName: project?.name ?? null,
+    projectOwnerId: project?.owner_id ?? null,
+    projectManuallyArchivedAt: project?.manually_archived_at ?? null,
     assignee_id: raw["assignee_id"] as string,
     assigneeName: assignee?.display_name ?? null,
     assigneeTeamId: assignee?.primary_team_id ?? null,
@@ -113,6 +126,9 @@ function mapTask(raw: RawTask): TaskRow {
     priority: raw["priority"] as TaskPriority,
     status: raw["status"] as TaskStatus,
     is_archived: Boolean(raw["is_archived"]),
+    completed_at: (raw["completed_at"] as string | null) ?? null,
+    manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
+    manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
     creatorName: creator?.display_name ?? null,
     created_at: raw["created_at"] as string,
