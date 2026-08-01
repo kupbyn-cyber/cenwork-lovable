@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { IconButton } from "@/components/ui/button";
 import { AppSidebar, CenLogo, SidebarNav } from "@/components/layout/app-sidebar";
 import { TopBar } from "@/components/layout/top-bar";
-import { OverdueAnnouncementBanner } from "@/components/announcement/overdue-banner";
+import { AnnouncementReminderBar } from "@/components/announcement/announcement-reminder-bar";
 
 /**
  * CEN 1.0 — App Shell (M1.2)
