@@ -1,0 +1,17 @@
+revoke execute on function public.report_config_manager() from public, anon;
+revoke execute on function public.report_team_leader(uuid) from public, anon;
+revoke execute on function public.report_cmo_id() from public, anon;
+revoke execute on function public.report_effective_reviewer(uuid, public.report_kind, uuid, timestamptz) from public, anon;
+revoke execute on function public.report_default_reviewer(uuid, uuid) from public, anon;
+revoke execute on function public.report_is_non_working(uuid, uuid, date) from public, anon;
+revoke execute on function public.report_generate_daily(date) from public, anon;
+revoke execute on function public.report_generate_weekly(date) from public, anon;
+revoke execute on function public.report_decide_exemption(uuid, boolean, text) from public, anon;
+revoke execute on function public.report_refresh_reviewers() from public, anon;
+revoke execute on function public.report_upsert_obligations(uuid) from public, anon;
+revoke execute on function public.report_sync_submission() from public, anon;
+revoke execute on function public.audit_report_requirement() from public, anon;
+revoke execute on function public.audit_report_period() from public, anon;
+revoke execute on function public.audit_report_obligation() from public, anon;
+revoke execute on function public.audit_report_reviewer_assignment() from public, anon;
+revoke execute on function public.enforce_report_requirement_write() from public, anon;

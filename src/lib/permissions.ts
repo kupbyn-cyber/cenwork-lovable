@@ -32,6 +32,8 @@ export const PERMISSIONS = {
   REPORTS_REVIEW_DAILY: "reports.review_daily",
   REPORTS_SUBMIT_WEEKLY: "reports.submit_weekly",
   REPORTS_REVIEW_WEEKLY: "reports.review_weekly",
+  REPORTS_OBLIGATIONS_VIEW: "reports.obligations_view",
+  REPORTS_CONFIG: "reports.config",
   TELEGRAM_MANAGE: "telegram.manage",
   MVP_VIEW: "mvp.view",
   MVP_VOTE: "mvp.vote",
@@ -66,6 +68,8 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "reports.review_daily": "Duyệt báo cáo ngày",
   "reports.submit_weekly": "Gửi báo cáo tuần của Team",
   "reports.review_weekly": "Duyệt báo cáo tuần",
+  "reports.obligations_view": "Xem nghĩa vụ báo cáo trong phạm vi",
+  "reports.config": "Cấu hình quy tắc và kỳ báo cáo",
   "telegram.manage": "Quản lý kết nối Telegram",
   "mvp.view": "Xem MVP và danh hiệu",
   "mvp.vote": "Bỏ phiếu MVP",
@@ -98,6 +102,8 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "reports.review_daily": "Báo cáo",
   "reports.submit_weekly": "Báo cáo",
   "reports.review_weekly": "Báo cáo",
+  "reports.obligations_view": "Báo cáo",
+  "reports.config": "Báo cáo",
   "telegram.manage": "Hệ thống",
   "mvp.view": "MVP và danh hiệu",
   "mvp.vote": "MVP và danh hiệu",
@@ -143,6 +149,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.submit_daily",
     "reports.review_daily",
     "reports.review_weekly",
+    "reports.obligations_view",
     "telegram.manage",
     "mvp.view",
     "mvp.vote",
@@ -168,6 +175,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.submit_daily",
     "reports.review_daily",
     "reports.submit_weekly",
+    "reports.obligations_view",
     "mvp.view",
     "mvp.vote",
     "announcements.view",
@@ -183,6 +191,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "tasks.create",
     "reports.view",
     "reports.submit_daily",
+    "reports.obligations_view",
     "mvp.view",
     "mvp.vote",
     "announcements.view",
@@ -199,3 +208,5 @@ export const PERMISSION_DENIED_MESSAGE = "Bạn không có quyền thực hiện
 
 // CMO ngang quyền Admin: đồng bộ một chiều để CMO không bao giờ thiếu quyền mới của Admin.
 ROLE_PERMISSIONS.cmo = [...ROLE_PERMISSIONS.admin];
+// REPORT-01: cấu hình nghiệp vụ báo cáo chỉ thuộc CMO; Admin không có quyền nghiệp vụ mặc định.
+ROLE_PERMISSIONS.cmo.push("reports.config");
