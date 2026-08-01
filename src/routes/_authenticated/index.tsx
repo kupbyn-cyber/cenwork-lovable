@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
+import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
@@ -60,11 +61,7 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
-const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = [
-  "planning",
-  "in_progress",
-  "pending_acceptance",
-];
+const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = ["planning", "in_progress", "pending_acceptance"];
 
 function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
@@ -89,7 +86,6 @@ function Dashboard() {
   const weeklyResult = useQuery(weeklyReportsQuery());
   const membersResult = useQuery(membersQuery());
   const teamsResult = useQuery(teamsQuery());
-
 
   const today = hanoiToday();
   const thisWeek = weekStartOf(today);
@@ -149,7 +145,8 @@ function Dashboard() {
    */
   const canSubmitDaily = access.can("reports.submit_daily");
   const dailyDraft =
-    myTodayReport && (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
+    myTodayReport &&
+    (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
       ? myTodayReport
       : null;
   const dailySent = Boolean(myTodayReport && !dailyDraft);
@@ -207,13 +204,29 @@ function Dashboard() {
         </div>
       ) : null}
 
-
+      <PendingAnnouncementsPanel />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Metric label="Dự án đang chạy" value={activeProjects.length} hint={`${projects.length} dự án trong phạm vi`} />
-        <Metric label="Công việc của tôi" value={myTasks.length} hint={`${myTasks.filter(isTaskOverdue).length} quá hạn`} />
-        <Metric label="Đến hạn hôm nay" value={dueToday.length} hint={`${overdue.length} việc quá hạn`} />
-        <Metric label="Chờ kiểm tra" value={inReview.length} hint="Công việc ở trạng thái chờ kiểm tra" />
+        <Metric
+          label="Dự án đang chạy"
+          value={activeProjects.length}
+          hint={`${projects.length} dự án trong phạm vi`}
+        />
+        <Metric
+          label="Công việc của tôi"
+          value={myTasks.length}
+          hint={`${myTasks.filter(isTaskOverdue).length} quá hạn`}
+        />
+        <Metric
+          label="Đến hạn hôm nay"
+          value={dueToday.length}
+          hint={`${overdue.length} việc quá hạn`}
+        />
+        <Metric
+          label="Chờ kiểm tra"
+          value={inReview.length}
+          hint="Công việc ở trạng thái chờ kiểm tra"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -346,7 +359,9 @@ function Dashboard() {
                 className="self-start"
                 onClick={openDailyAction}
                 loading={dailyResult.isLoading || access.loading}
-                disabled={dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)}
+                disabled={
+                  dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)
+                }
               >
                 <FileText />
                 {dailyActionLabel}
@@ -377,6 +392,5 @@ function Dashboard() {
         />
       ) : null}
     </div>
-
   );
 }
