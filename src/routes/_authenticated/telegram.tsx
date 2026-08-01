@@ -305,11 +305,22 @@ function TelegramPage() {
         title="Kết nối Telegram"
         description="Ánh xạ tài khoản CEN với Telegram và theo dõi hàng đợi gửi tin."
         actions={
-          <Button type="button" loading={dispatch.isPending} onClick={() => dispatch.mutate()}>
-            <Send />
-            Gửi hàng đợi
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              loading={reminders.isPending}
+              onClick={() => reminders.mutate()}
+            >
+              Xếp nhắc hạn thông báo
+            </Button>
+            <Button type="button" loading={dispatch.isPending} onClick={() => dispatch.mutate()}>
+              <Send />
+              Gửi hàng đợi
+            </Button>
+          </div>
         }
+
       />
 
       <Tabs defaultValue="users">
