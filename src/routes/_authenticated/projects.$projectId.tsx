@@ -247,7 +247,12 @@ function ProjectDetailPage() {
   const actions: React.ReactNode[] = [];
   if (canSubmitProject(detail, ctx)) {
     actions.push(
-      <Button key="submit" loading={busy} onClick={() => submitMutation.mutate()}>
+      <Button
+        key="submit"
+        loading={submitMutation.isPending}
+        disabled={busy}
+        onClick={() => submitMutation.mutate()}
+      >
         <Send />
         {isProjectRejected(detail) ? "Gửi duyệt lại" : "Gửi duyệt"}
       </Button>,
@@ -255,11 +260,16 @@ function ProjectDetailPage() {
   }
   if (canDecideProject(detail, ctx)) {
     actions.push(
-      <Button key="approve" loading={busy} onClick={() => decideMutation.mutate({ approve: true })}>
+      <Button
+        key="approve"
+        loading={decideMutation.isPending && decideMutation.variables?.approve === true}
+        disabled={busy}
+        onClick={() => decideMutation.mutate({ approve: true })}
+      >
         <Check />
         {stage === "leader" ? "Duyệt và chuyển CMO" : "Duyệt dự án"}
       </Button>,
-      <Button key="reject" variant="outline" onClick={() => setRejectOpen(true)}>
+      <Button key="reject" variant="outline" disabled={busy} onClick={() => setRejectOpen(true)}>
         <X />
         Từ chối
       </Button>,
@@ -270,7 +280,8 @@ function ProjectDetailPage() {
       <Button
         key={status}
         variant="secondary"
-        loading={busy}
+        loading={statusMutation.isPending && statusMutation.variables?.status === status}
+        disabled={busy}
         onClick={() => statusMutation.mutate({ status })}
       >
         {PROJECT_STATUS_LABEL[status]}
@@ -279,7 +290,7 @@ function ProjectDetailPage() {
   }
   if (canEditProject(detail, ctx)) {
     actions.push(
-      <Button key="edit" variant="outline" onClick={() => setEditOpen(true)}>
+      <Button key="edit" variant="outline" disabled={busy} onClick={() => setEditOpen(true)}>
         <Pencil />
         Cập nhật
       </Button>,
@@ -546,7 +557,8 @@ function ProjectDetailPage() {
             </Button>
             <Button
               variant="destructive"
-              loading={busy}
+              loading={decideMutation.isPending && decideMutation.variables?.approve === false}
+              disabled={busy}
               onClick={() => {
                 if (!rejectNote.trim()) {
                   setRejectError("Phải nhập lý do từ chối.");

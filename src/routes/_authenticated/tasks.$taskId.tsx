@@ -1,7 +1,14 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, ArrowLeft, CalendarClock, Pencil } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  CalendarClock,
+  Loader2,
+  Pencil,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +33,8 @@ import {
   DeadlineRequestModal,
 } from "@/components/common/deadline-request-modal";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { cn } from "@/lib/utils";
+import { useFlashHighlight } from "@/hooks/use-flash-highlight";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
 import {
@@ -125,10 +134,13 @@ function TaskDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
+  const { flash, isFlashing, flashKey } = useFlashHighlight();
+
   const statusMutation = useMutation({
     mutationFn: (status: TaskStatus) => setTaskStatus(taskId, status),
     onSuccess: (_data, status) => {
       invalidate();
+      flash("status");
       cenToast.success(`Đã chuyển trạng thái: ${TASK_STATUS_LABEL[status]}.`);
     },
     onError: (error: Error) => cenToast.error(error.message),
@@ -198,6 +210,7 @@ function TaskDetailPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             {canChangeTaskStatus(task, ctx) ? (
+              <div className="flex items-center gap-2">
               <Select
                 value={task.status}
                 onValueChange={(value) => statusMutation.mutate(value as TaskStatus)}
@@ -214,9 +227,21 @@ function TaskDetailPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {statusMutation.isPending ? (
+                <Loader2
+                  className="size-icon-sm shrink-0 animate-spin text-text-muted"
+                  aria-label="Đang cập nhật trạng thái"
+                  role="status"
+                />
+              ) : null}
+              </div>
             ) : null}
             {editable ? (
-              <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              <Button
+                variant="secondary"
+                disabled={statusMutation.isPending}
+                onClick={() => setEditOpen(true)}
+              >
                 <Pencil />
                 Cập nhật
               </Button>
@@ -271,10 +296,18 @@ function TaskDetailPage() {
             <InfoRow
               label="Trạng thái"
               value={
-                <StatusBadge
-                  label={TASK_STATUS_LABEL[task.status]}
-                  tone={TASK_STATUS_TONE[task.status]}
-                />
+                <span
+                  key={`status-${flashKey("status")}`}
+                  className={cn(
+                    "inline-flex rounded-badge",
+                    isFlashing("status") && "cen-flash",
+                  )}
+                >
+                  <StatusBadge
+                    label={TASK_STATUS_LABEL[task.status]}
+                    tone={TASK_STATUS_TONE[task.status]}
+                  />
+                </span>
               }
             />
             <InfoRow

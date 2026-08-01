@@ -631,7 +631,8 @@ function ProjectsPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
-              loading={decideMutation.isPending}
+              loading={decideMutation.isPending && decideMutation.variables?.id === project.id}
+              disabled={decideMutation.isPending}
               onClick={() => decideMutation.mutate({ id: project.id, approve: true })}
             >
               <Check />
@@ -640,6 +641,7 @@ function ProjectsPage() {
             <Button
               size="sm"
               variant="destructive"
+              disabled={decideMutation.isPending}
               onClick={() => {
                 setRejectTarget(project);
                 setRejectNote("");
@@ -682,7 +684,8 @@ function ProjectsPage() {
         {canSubmitProject(project, ctx) ? (
           <Button
             size="sm"
-            loading={submitMutation.isPending}
+            loading={submitMutation.isPending && submitMutation.variables?.id === project.id}
+            disabled={submitMutation.isPending}
             onClick={() => submitMutation.mutate(project)}
           >
             <Send />
@@ -1037,12 +1040,19 @@ function ProjectsPage() {
 
       <Modal
         open={rejectTarget !== null}
-        onOpenChange={(open) => !open && setRejectTarget(null)}
+        onOpenChange={(open) => {
+          if (decideMutation.isPending) return;
+          if (!open) setRejectTarget(null);
+        }}
         title="Từ chối dự án"
         description="Bắt buộc nhập lý do để người tạo chỉnh sửa và gửi duyệt lại."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRejectTarget(null)}>
+            <Button
+              variant="ghost"
+              disabled={decideMutation.isPending}
+              onClick={() => setRejectTarget(null)}
+            >
               Hủy
             </Button>
             <Button

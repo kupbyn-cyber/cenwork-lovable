@@ -438,3 +438,25 @@ html[data-motion="off"] :is(.cen-press, .cen-press-subtle, .cen-hover-lift) {
     animation: none !important;
   }
 }
+
+/* ---- MOTION-02: highlight dữ liệu vừa cập nhật (một lần, tự kết thúc) ---- */
+@keyframes cen-flash-in {
+  0% {
+    background-color: color-mix(in oklab, var(--brand-primary) 22%, transparent);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+@utility cen-flash {
+  animation: cen-flash-in 900ms var(--ease-exit) 1 both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cen-flash {
+    animation: none !important;
+  }
+}

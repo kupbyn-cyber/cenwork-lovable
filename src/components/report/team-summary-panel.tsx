@@ -116,7 +116,7 @@ export function TeamSummaryPanel() {
                   />
                 )}
               </FormField>
-              <Button size="sm" disabled={build.isPending} onClick={() => build.mutate()}>
+              <Button size="sm" loading={build.isPending} disabled={build.isPending} onClick={() => build.mutate()}>
                 <RefreshCw className="size-4" /> Dựng bản nháp
               </Button>
             </div>
@@ -197,12 +197,18 @@ export function TeamSummaryPanel() {
                   <Button
                     size="sm"
                     variant="secondary"
+                    loading={save.isPending && save.variables === row.id}
                     disabled={save.isPending}
                     onClick={() => save.mutate(row.id)}
                   >
                     Lưu
                   </Button>
-                  <Button size="sm" disabled={publish.isPending} onClick={() => publish.mutate(row.id)}>
+                  <Button
+                    size="sm"
+                    loading={publish.isPending && publish.variables === row.id}
+                    disabled={publish.isPending}
+                    onClick={() => publish.mutate(row.id)}
+                  >
                     Phát hành
                   </Button>
                 </div>
@@ -222,6 +228,11 @@ export function TeamSummaryPanel() {
                     <Button
                       size="sm"
                       variant="secondary"
+                      loading={
+                        sendFeedback.isPending &&
+                        sendFeedback.variables?.id === row.id &&
+                        sendFeedback.variables.revision === false
+                      }
                       disabled={sendFeedback.isPending || !(feedback[row.id] ?? "").trim()}
                       onClick={() => sendFeedback.mutate({ id: row.id, revision: false })}
                     >
@@ -230,6 +241,11 @@ export function TeamSummaryPanel() {
                     <Button
                       size="sm"
                       variant="secondary"
+                      loading={
+                        sendFeedback.isPending &&
+                        sendFeedback.variables?.id === row.id &&
+                        sendFeedback.variables.revision === true
+                      }
                       disabled={sendFeedback.isPending || !(feedback[row.id] ?? "").trim()}
                       onClick={() => sendFeedback.mutate({ id: row.id, revision: true })}
                     >
