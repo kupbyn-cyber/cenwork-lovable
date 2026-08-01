@@ -293,3 +293,57 @@
   background:
     linear-gradient(90deg, oklch(0.235 0.018 162 / 90%) 0%, oklch(0.2 0.008 165 / 88%) 55%, oklch(0.2 0.008 165 / 88%) 100%);
 }
+
+/* ---- Login entrance & ambient motion (chỉ dùng ở màn Đăng nhập) ---- */
+@keyframes cen-logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cen-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cen-aurora-drift {
+  0% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(1.5%, 1.2%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1.04);
+  }
+}
+
+@utility cen-anim-logo {
+  animation: cen-logo-in 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility cen-anim-rise {
+  animation: cen-rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility cen-anim-aurora {
+  animation: cen-aurora-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cen-anim-aurora {
+    animation: none !important;
+  }
+}
