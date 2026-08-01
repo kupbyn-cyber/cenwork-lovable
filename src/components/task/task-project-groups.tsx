@@ -133,7 +133,7 @@ export function TaskProjectGroups({
             {expanded ? (
               <div
                 id={panelId}
-                className="min-w-0 border-t border-border-default bg-background-elevated pl-3 sm:pl-4"
+                className="min-w-0 border-t border-border-default bg-background pl-2 sm:pl-3"
               >
                 {group.tasks.length === 0 ? (
                   <p className="py-4 pr-4 text-body-sm text-text-muted">Chưa có công việc</p>
