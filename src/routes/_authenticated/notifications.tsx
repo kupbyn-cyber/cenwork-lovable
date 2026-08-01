@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { useFlashHighlight } from "@/hooks/use-flash-highlight";
 import { formatHanoiDateTime } from "@/lib/datetime";
 import {
   markAllNotificationsRead,
@@ -57,10 +59,16 @@ function NotificationsPage() {
     void queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
   }
 
+  const { flash, isFlashing, flashKey } = useFlashHighlight();
+
   const markOne = useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
-    onSuccess: refresh,
+    onSuccess: (_data, id) => {
+      refresh();
+      flash(id);
+    },
   });
+  const pendingId = markOne.isPending ? markOne.variables : null;
   const markAll = useMutation({ mutationFn: markAllNotificationsRead, onSuccess: refresh });
 
   const rows = (list.data ?? []).filter((row) => (filter === "unread" ? !row.read_at : true));
@@ -107,7 +115,13 @@ function NotificationsPage() {
               onRetry={() => void list.refetch()}
             />
           ) : list.isLoading ? (
-            <p className="text-body-sm text-text-muted">Đang tải…</p>
+            <ul className="flex min-w-0 flex-col gap-2" aria-busy="true">
+              {[0, 1, 2, 3].map((index) => (
+                <li key={index}>
+                  <Skeleton className="h-[86px] w-full rounded-control" />
+                </li>
+              ))}
+            </ul>
           ) : rows.length === 0 ? (
             <EmptyState
               title="Không có thông báo"
@@ -119,12 +133,17 @@ function NotificationsPage() {
                 <li key={row.id}>
                   <button
                     type="button"
+                    key={`${row.id}-${flashKey(row.id)}`}
+                    aria-busy={pendingId === row.id || undefined}
+                    disabled={pendingId === row.id}
                     onClick={() => {
+                      if (pendingId) return;
                       if (!row.read_at) markOne.mutate(row.id);
                       if (row.link) void navigate({ to: row.link });
                     }}
                     className={cn(
-                      "cen-transition flex w-full min-w-0 flex-col gap-1 rounded-control border p-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+                      "cen-transition cen-press-subtle flex w-full min-w-0 flex-col gap-1 rounded-control border p-3 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-progress disabled:opacity-70",
+                      isFlashing(row.id) && "cen-flash",
                       row.read_at
                         ? "border-border-default bg-surface"
                         : "border-border-strong bg-surface-raised",
