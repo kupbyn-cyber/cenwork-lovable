@@ -66,6 +66,21 @@ export const Route = createFileRoute("/_authenticated/")({
 
 const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = ["planning", "in_progress", "pending_acceptance"];
 
+/** Lời chào theo giờ Hà Nội — chỉ hiển thị, không ảnh hưởng dữ liệu. */
+function greeting(): string {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date()),
+  );
+  if (hour < 11) return "Chào buổi sáng";
+  if (hour < 14) return "Chào buổi trưa";
+  if (hour < 18) return "Chào buổi chiều";
+  return "Chào buổi tối";
+}
+
 function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <Card density="compact">
