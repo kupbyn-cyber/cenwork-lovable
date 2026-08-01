@@ -447,6 +447,92 @@ function ProjectsPage() {
           }
         />
       ) : null}
+
+      {access.userId && editTarget ? (
+        <ProjectFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+          project={editTarget}
+          fullEdit={editTarget.status !== "idea" && editTarget.status !== "leader_review"}
+          currentUserId={access.userId}
+          teams={teams}
+          facilities={facilities}
+          people={people}
+        />
+      ) : null}
+
+      {deadlineTarget ? (
+        <DeadlineRequestModal
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeadlineTarget(null);
+          }}
+          entityType="project"
+          entityId={deadlineTarget.id}
+          entityName={deadlineTarget.name}
+          currentDeadline={deadlineTarget.deadline}
+          dateOnly
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={completeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !completeMutation.isPending) setCompleteTarget(null);
+        }}
+        title="Xác nhận hoàn thành dự án?"
+        description={`Dự án "${completeTarget?.name ?? ""}" sẽ chuyển sang trạng thái Hoàn thành và vào khu vực Lưu trữ.`}
+        confirmLabel="Hoàn thành"
+        loading={completeMutation.isPending}
+        onConfirm={() => {
+          if (completeTarget) completeMutation.mutate(completeTarget);
+        }}
+      />
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setArchiveTarget(null);
+        }}
+        title="Đưa dự án vào Lưu trữ?"
+        description={`Dự án "${archiveTarget?.name ?? ""}" sẽ được ẩn khỏi danh sách đang hoạt động, trạng thái giữ nguyên.`}
+        confirmLabel="Lưu trữ"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (archiveTarget) archiveMutation.mutate({ id: archiveTarget.id, archived: true });
+        }}
+      />
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setRestoreTarget(null);
+        }}
+        title="Khôi phục dự án?"
+        description={`Dự án "${restoreTarget?.name ?? ""}" sẽ quay lại danh sách đang hoạt động.`}
+        confirmLabel="Khôi phục"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (restoreTarget) archiveMutation.mutate({ id: restoreTarget.id, archived: false });
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+        tone="destructive"
+        title="Xóa dự án?"
+        description={`Dự án "${deleteTarget?.name ?? ""}" và các công việc thuộc dự án sẽ bị ẩn khỏi toàn bộ danh sách vận hành. Hành động này chỉ Admin thực hiện và được ghi Audit Log.`}
+        confirmLabel="Xóa"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget);
+        }}
+      />
     </div>
   );
 }
