@@ -109,8 +109,16 @@
   --spacing-icon-md: 1rem;
   --spacing-icon-lg: 1.25rem;
 
-  /* ---- Motion ---- */
+  /* ---- Motion (single source of truth) ---- */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --duration-slowest: 280ms;
 }
 
 :root {
