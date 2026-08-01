@@ -68,6 +68,18 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "task.restored": "Khôi phục công việc",
   "task.participant_linked": "Thêm người tham gia công việc",
   "task.participant_unlinked": "Gỡ người tham gia công việc",
+  "mvp.cycle_created": "Mở kỳ MVP",
+  "mvp.cycle_status_changed": "Đổi trạng thái kỳ MVP",
+  "mvp.cycle_published": "Công bố kết quả kỳ MVP",
+  "mvp.review_saved": "Lưu đánh giá thực tế",
+  "mvp.review_submitted": "Gửi đánh giá thực tế",
+  "mvp.vote_cast": "Ghi nhận phiếu bầu",
+  "mvp.award_proposed": "Đề xuất danh hiệu",
+  "mvp.award_approved": "Phê duyệt danh hiệu",
+  "mvp.award_withheld": "Không trao danh hiệu",
+  "mvp.award_published": "Công bố danh hiệu",
+  "mvp.award_updated": "Cập nhật danh hiệu",
+  "mvp.data_adjusted": "Điều chỉnh dữ liệu chấm điểm",
 };
 
 export const AUDIT_ENTITY_LABEL: Record<string, string> = {
@@ -78,6 +90,10 @@ export const AUDIT_ENTITY_LABEL: Record<string, string> = {
   app_setting: "Cấu hình",
   project: "Dự án",
   task: "Công việc",
+  mvp_cycle: "Kỳ MVP",
+  mvp_review: "Đánh giá MVP",
+  mvp_vote: "Phiếu bầu MVP",
+  mvp_award: "Danh hiệu",
 };
 
 export function auditActionLabel(action: string) {

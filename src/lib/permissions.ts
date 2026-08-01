@@ -32,7 +32,13 @@ export const PERMISSIONS = {
   REPORTS_SUBMIT_WEEKLY: "reports.submit_weekly",
   REPORTS_REVIEW_WEEKLY: "reports.review_weekly",
   TELEGRAM_MANAGE: "telegram.manage",
+  MVP_VIEW: "mvp.view",
+  MVP_VOTE: "mvp.vote",
+  MVP_REVIEW: "mvp.review",
+  MVP_APPROVE: "mvp.approve",
+  MVP_MANAGE: "mvp.manage",
 } as const;
+
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
@@ -58,6 +64,11 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "reports.submit_weekly": "Gửi báo cáo tuần của Team",
   "reports.review_weekly": "Duyệt báo cáo tuần",
   "telegram.manage": "Quản lý kết nối Telegram",
+  "mvp.view": "Xem MVP và danh hiệu",
+  "mvp.vote": "Bỏ phiếu MVP",
+  "mvp.review": "Chấm điểm đánh giá thực tế",
+  "mvp.approve": "Phê duyệt và công bố danh hiệu",
+  "mvp.manage": "Quản lý kỳ MVP và dữ liệu chấm điểm",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -82,6 +93,11 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "reports.submit_weekly": "Báo cáo",
   "reports.review_weekly": "Báo cáo",
   "telegram.manage": "Hệ thống",
+  "mvp.view": "MVP và danh hiệu",
+  "mvp.vote": "MVP và danh hiệu",
+  "mvp.review": "MVP và danh hiệu",
+  "mvp.approve": "MVP và danh hiệu",
+  "mvp.manage": "MVP và danh hiệu",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
@@ -106,6 +122,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.review_daily",
     "reports.review_weekly",
     "telegram.manage",
+    "mvp.view",
+    "mvp.vote",
+    "mvp.manage",
   ],
   cmo: [
     "members.view",
@@ -122,6 +141,11 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.view",
     "reports.review_daily",
     "reports.review_weekly",
+    "mvp.view",
+    "mvp.vote",
+    "mvp.review",
+    "mvp.approve",
+    "mvp.manage",
   ],
   leader: [
     "members.view",
@@ -136,6 +160,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.submit_daily",
     "reports.review_daily",
     "reports.submit_weekly",
+    "mvp.view",
+    "mvp.vote",
+    "mvp.review",
   ],
   member: [
     "organization.view",
@@ -143,6 +170,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "projects.create",
     "reports.view",
     "reports.submit_daily",
+    "mvp.view",
+    "mvp.vote",
   ],
 };
 

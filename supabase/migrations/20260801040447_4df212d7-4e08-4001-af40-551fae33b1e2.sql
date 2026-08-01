@@ -1,0 +1,14 @@
+REVOKE EXECUTE ON FUNCTION public.is_mvp_admin() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.can_manage_mvp_cycle() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.mvp_cycle_status_of(uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.is_mvp_cycle_published(uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.can_review_mvp(uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.can_view_mvp_scorecard(uuid, uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.validate_mvp_cycle_task() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.validate_mvp_manual_review() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.validate_mvp_vote() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.audit_mvp_cycle() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.audit_mvp_review() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.audit_mvp_vote() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.audit_mvp_award() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.audit_mvp_adjustment() FROM anon, authenticated, public;
