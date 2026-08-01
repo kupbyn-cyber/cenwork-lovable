@@ -97,6 +97,8 @@ function TasksPage() {
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
+  /** Dự án được khóa sẵn khi thêm nhanh từ header nhóm (null = công việc độc lập). */
+  const [quickAddProjectId, setQuickAddProjectId] = React.useState<string | null>(null);
   const [editTarget, setEditTarget] = React.useState<TaskRow | null>(null);
   const [completeTarget, setCompleteTarget] = React.useState<TaskRow | null>(null);
   const [deadlineTarget, setDeadlineTarget] = React.useState<TaskRow | null>(null);
@@ -569,9 +571,13 @@ function TasksPage() {
       {access.userId ? (
         <TaskFormDrawer
           open={createOpen}
-          onOpenChange={setCreateOpen}
+          onOpenChange={(open) => {
+            setCreateOpen(open);
+            if (!open) setQuickAddProjectId(null);
+          }}
           task={null}
           ctx={ctx}
+          lockedProjectId={quickAddProjectId}
           projects={projects}
           teams={teams}
           people={people}
