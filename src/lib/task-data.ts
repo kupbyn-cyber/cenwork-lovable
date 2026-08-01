@@ -142,13 +142,19 @@ export async function fetchTasks(): Promise<TaskRow[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(SELECT)
+    .is("deleted_at", null)
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapTask(row as RawTask));
 }
 
 export async function fetchTask(id: string): Promise<TaskRow | null> {
-  const { data, error } = await supabase.from("tasks").select(SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(SELECT)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapTask(data as RawTask) : null;
 }

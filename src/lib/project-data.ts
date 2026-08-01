@@ -125,13 +125,19 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
   const { data, error } = await supabase
     .from("projects")
     .select(SELECT)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapProject(row as RawProject));
 }
 
 export async function fetchProject(id: string): Promise<ProjectRow | null> {
-  const { data, error } = await supabase.from("projects").select(SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("projects")
+    .select(SELECT)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapProject(data as RawProject) : null;
 }
@@ -151,6 +157,7 @@ export async function fetchProjectTaskCounts(): Promise<Record<string, number>> 
   const { data, error } = await supabase
     .from("tasks")
     .select("id,project_id")
+    .is("deleted_at", null)
     .not("project_id", "is", null);
   if (error) throw new Error(error.message);
   const counts: Record<string, number> = {};
