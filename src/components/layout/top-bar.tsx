@@ -56,7 +56,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border-default bg-background/95 px-3 backdrop-blur sm:px-4">
+    <header className="cen-topbar-surface sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border-default px-3 backdrop-blur sm:px-4">
       <IconButton
         variant="ghost"
         size="icon"

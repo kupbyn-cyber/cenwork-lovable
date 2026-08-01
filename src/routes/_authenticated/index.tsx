@@ -5,7 +5,6 @@ import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
@@ -84,22 +83,51 @@ function greeting(): string {
   return "Chào buổi tối";
 }
 
-function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
+const METRIC_TONE = {
+  brand: "before:bg-brand-primary",
+  yellow: "before:bg-accent-yellow",
+  orange: "before:bg-accent-orange",
+  danger: "before:bg-state-danger",
+} as const;
+
+function Metric({
+  label,
+  value,
+  hint,
+  tone = "brand",
+}: {
+  label: string;
+  value: number | string;
+  hint?: string;
+  tone?: keyof typeof METRIC_TONE;
+}) {
   return (
-    <Card density="compact">
-      <CardContent className="flex flex-col gap-1 pt-(--card-pad)">
+    <Card
+      density="compact"
+      className={`relative overflow-hidden before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[''] ${METRIC_TONE[tone]}`}
+    >
+      <CardContent className="flex flex-col gap-1 pt-(--card-pad) pl-4">
         <span className="text-caption tracking-[0.12em] text-text-muted uppercase">{label}</span>
-        <span className="text-h2 font-semibold text-text-primary">{value}</span>
+        <span className="cen-kpi text-text-primary">{value}</span>
         {hint ? <span className="text-helper text-text-muted">{hint}</span> : null}
       </CardContent>
     </Card>
   );
 }
 
+const RANGE_OPTIONS = [
+  { key: "today", label: "Hôm nay", days: 1 },
+  { key: "week", label: "Tuần này", days: 7 },
+  { key: "month", label: "Tháng này", days: 30 },
+] as const;
+type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
+
+
 function Dashboard() {
   const access = useOrgAccess();
   const navigate = useNavigate();
   const [dailyOpen, setDailyOpen] = React.useState(false);
+  const [range, setRange] = React.useState<RangeKey>("week");
 
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
@@ -131,6 +159,18 @@ function Dashboard() {
     (task) => task.status !== "done" && task.deadline.slice(0, 10) === today,
   );
   const inReview = tasks.filter((task) => task.status === "review");
+
+  /** Bộ lọc thời gian chỉ ảnh hưởng hiển thị KPI, không đổi dữ liệu nguồn. */
+  const rangeMeta = RANGE_OPTIONS.find((option) => option.key === range) ?? RANGE_OPTIONS[1];
+  const rangeEnd = new Date(`${today}T00:00:00+07:00`);
+  rangeEnd.setDate(rangeEnd.getDate() + rangeMeta.days);
+  const dueInRange = tasks.filter(
+    (task) =>
+      task.status !== "done" &&
+      task.deadline >= today &&
+      new Date(task.deadline).getTime() < rangeEnd.getTime(),
+  );
+
 
   const activeProjects = projects.filter((project) =>
     ACTIVE_PROJECT_STATUSES.includes(project.status),
@@ -211,16 +251,78 @@ function Dashboard() {
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <PageHeader
-        title={`${greeting()}, ${me?.display_name ?? "bạn"}`}
-        description={`Hôm nay ${formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo cáo trong phạm vi bạn được xem.`}
-      />
+      <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default shadow-level-2">
+        <div className="relative z-10 flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <img src="/brand/logo-mark.svg" alt="" aria-hidden className="size-6 object-contain" />
+              <span className="text-caption tracking-[0.24em] text-accent-yellow/80 uppercase">
+                Marketing Command Center
+              </span>
+            </div>
+            <h1 className="mt-2 text-h1 font-semibold text-text-primary">
+              {greeting()}, {me?.display_name ?? "bạn"}
+            </h1>
+            <p className="mt-1 max-w-2xl text-body text-text-secondary">
+              Hôm nay {formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo
+              cáo trong phạm vi bạn được xem.
+            </p>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Bộ lọc thời gian"
+            className="flex shrink-0 gap-1 self-start rounded-control border border-border-default bg-background/60 p-1 backdrop-blur lg:self-auto"
+          >
+            {RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                aria-pressed={range === option.key}
+                onClick={() => setRange(option.key)}
+                className={
+                  range === option.key
+                    ? "cen-transition rounded-badge bg-brand-primary px-3 py-1.5 text-label font-medium text-brand-foreground"
+                    : "cen-transition rounded-badge px-3 py-1.5 text-label text-text-secondary hover:bg-surface-subtle hover:text-text-primary"
+                }
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Metric
+          label="Dự án đang triển khai"
+          value={activeProjects.length}
+          hint={`${approvedProjects.length} dự án đã duyệt trong phạm vi`}
+        />
+        <Metric
+          label="Công việc cần xử lý"
+          value={myTasks.filter((task) => task.status !== "done").length}
+          tone="yellow"
+          hint={`${dueToday.length} việc đến hạn hôm nay`}
+        />
+        <Metric
+          label={`Đến hạn · ${rangeMeta.label}`}
+          value={dueInRange.length}
+          tone="orange"
+          hint="Theo bộ lọc thời gian đang chọn"
+        />
+        <Metric
+          label="Công việc quá hạn"
+          value={overdue.length}
+          tone="danger"
+          hint={`${inReview.length} nội dung chờ duyệt`}
+        />
+      </div>
 
       <DailyActionHub />
       <QuickActions />
       <RoleInsights />
       <ReportSummaryCards />
-
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
@@ -235,28 +337,8 @@ function Dashboard() {
 
       <PendingAnnouncementsPanel />
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Metric
-          label="Dự án đang chạy"
-          value={activeProjects.length}
-          hint={`${approvedProjects.length} dự án đã duyệt trong phạm vi`}
-        />
-        <Metric
-          label="Công việc của tôi"
-          value={myTasks.length}
-          hint={`${myTasks.filter(isTaskOverdue).length} quá hạn`}
-        />
-        <Metric
-          label="Đến hạn hôm nay"
-          value={dueToday.length}
-          hint={`${overdue.length} việc quá hạn`}
-        />
-        <Metric
-          label="Chờ kiểm tra"
-          value={inReview.length}
-          hint="Công việc ở trạng thái chờ kiểm tra"
-        />
-      </div>
+
+
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>

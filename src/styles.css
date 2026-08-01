@@ -238,3 +238,58 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- Brand surfaces (chỉ dùng ở vùng thương hiệu & header) ---- */
+@utility cen-brand-glow {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -40% -10%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 70% at 18% 30%, oklch(0.4482 0.0728 158.3 / 45%), transparent 70%),
+      radial-gradient(45% 60% at 82% 20%, oklch(0.7101 0.1541 53.2 / 14%), transparent 72%);
+    filter: blur(28px);
+  }
+}
+
+@utility cen-hero-surface {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, oklch(0.26 0.028 162) 0%, oklch(0.215 0.012 165) 46%, oklch(0.2 0.009 165) 100%);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(38% 120% at 96% -10%, oklch(0.8464 0.1585 88.5 / 10%), transparent 70%),
+      radial-gradient(30% 100% at 78% 120%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%);
+  }
+}
+
+/* Đường nét hình học mảnh lấy cảm hứng từ logo (chỉ vùng thương hiệu) */
+@utility cen-hairlines {
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(115deg, transparent 49.8%, oklch(0.62 0.098 158.3 / 16%) 50%, transparent 50.2%),
+      linear-gradient(115deg, transparent 63.8%, oklch(0.8464 0.1585 88.5 / 10%) 64%, transparent 64.2%),
+      linear-gradient(115deg, transparent 78.8%, oklch(0.7101 0.1541 53.2 / 9%) 79%, transparent 79.2%);
+  }
+}
+
+@utility cen-topbar-surface {
+  background:
+    linear-gradient(90deg, oklch(0.235 0.018 162 / 90%) 0%, oklch(0.2 0.008 165 / 88%) 55%, oklch(0.2 0.008 165 / 88%) 100%);
+}
