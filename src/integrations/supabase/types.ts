@@ -2994,6 +2994,45 @@ export type Database = {
           },
         ]
       }
+      task_results: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          result_text: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          result_text: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          result_text?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_results_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_results_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_saved_views: {
         Row: {
           created_at: string
@@ -3055,6 +3094,9 @@ export type Database = {
           name: string
           priority: Database["public"]["Enums"]["task_priority"]
           project_id: string | null
+          result_text: string | null
+          result_updated_at: string | null
+          result_updated_by: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
           team_id: string | null
@@ -3076,6 +3118,9 @@ export type Database = {
           name: string
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          result_text?: string | null
+          result_updated_at?: string | null
+          result_updated_by?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           team_id?: string | null
@@ -3097,6 +3142,9 @@ export type Database = {
           name?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          result_text?: string | null
+          result_updated_at?: string | null
+          result_updated_by?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           team_id?: string | null
@@ -3136,6 +3184,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_result_updated_by_fkey"
+            columns: ["result_updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
