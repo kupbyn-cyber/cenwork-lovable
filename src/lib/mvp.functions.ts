@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
+import { MVP_ANNOUNCEMENT_FORMULA_VERSION } from "@/lib/mvp-scoring";
 import { computeCycleScores, refreshAwardProposals, snapshotCycleTasks } from "@/lib/mvp.server";
 import { canTransitionCycle, MVP_CYCLE_STATUS_LABEL } from "@/lib/mvp-scoring";
 
