@@ -194,8 +194,20 @@ function Dashboard() {
             </Button>
           ) : null
         }
-
       />
+
+      {canSubmitDaily && dailyResult.isError ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
+          <span className="text-body text-state-danger">
+            Không kiểm tra được báo cáo hôm nay của bạn.
+          </span>
+          <Button variant="secondary" size="sm" onClick={() => void dailyResult.refetch()}>
+            Thử lại
+          </Button>
+        </div>
+      ) : null}
+
+
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric label="Dự án đang chạy" value={activeProjects.length} hint={`${projects.length} dự án trong phạm vi`} />
