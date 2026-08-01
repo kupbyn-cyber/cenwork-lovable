@@ -102,10 +102,10 @@ function LoginPage() {
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
-      {/* Vùng thương hiệu: gradient + glow trôi rất chậm, không phủ lên form */}
+      {/* Vùng thương hiệu: gradient tĩnh, không hiệu ứng */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="cen-anim-aurora cen-hairlines absolute -inset-[6%]"
+          className="absolute -inset-[6%]"
           style={{
             background:
               "radial-gradient(70% 55% at 50% -5%, oklch(0.30 0.045 160 / 85%), transparent 70%), radial-gradient(45% 40% at 88% 100%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%)",
@@ -114,31 +114,22 @@ function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-[26rem]">
-        <div className="cen-brand-glow flex flex-col items-center text-center">
+        <div className="flex flex-col items-center text-center">
           <img
             src="/brand/logo-mark.svg"
             alt="Logo CEN WORK"
-            className="cen-anim-logo size-16 shrink-0 object-contain drop-shadow-[0_6px_24px_oklch(0.7101_0.1541_53.2/25%)]"
+            className="size-16 shrink-0 object-contain"
           />
-          <h1
-            className="cen-anim-rise mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase"
-            style={{ animationDelay: "140ms" }}
-          >
+          <h1 className="mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase">
             CEN WORK
           </h1>
-          <p
-            className="cen-anim-rise mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase"
-            style={{ animationDelay: "200ms" }}
-          >
+          <p className="mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase">
             Marketing Command Center
           </p>
         </div>
 
 
-        <div
-          className="cen-anim-rise mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl"
-          style={{ animationDelay: "260ms" }}
-        >
+        <div className="mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3">
           <h2 className="text-h4 text-text-primary">Đăng nhập</h2>
           <p className="mt-1 text-helper text-text-muted">
             Sử dụng tài khoản nội bộ đã được cấp để truy cập hệ thống.
