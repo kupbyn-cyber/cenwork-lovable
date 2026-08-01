@@ -9,6 +9,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   Bell,
+  Megaphone,
   Send,
   Palette,
   ScrollText,
@@ -84,6 +85,13 @@ export const navGroups: NavGroup[] = [
         to: "/mvp",
         icon: Trophy,
         permissionKey: "mvp.view",
+      },
+      {
+        key: "announcements",
+        label: "Thông báo nội bộ",
+        to: "/announcements",
+        icon: Megaphone,
+        permissionKey: "announcements.view",
       },
       {
         key: "notifications",

@@ -24,7 +24,6 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
   ANNOUNCEMENT_STATUS_LABEL,
-  announcementQuery,
   effectiveRecipientStatus,
   inboxQuery,
   myAnnouncementsQuery,
@@ -275,6 +274,3 @@ function AnnouncementsPage() {
     </div>
   );
 }
-
-/** Giữ import để type-check khi mở chi tiết từ danh sách. */
-void announcementQuery;
