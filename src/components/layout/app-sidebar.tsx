@@ -76,7 +76,7 @@ function NavLinkItem({
     </span>
   ) : (
     <Link
-      to={item.to}
+      to={item.to!}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? item.label : undefined}
