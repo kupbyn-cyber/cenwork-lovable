@@ -37,6 +37,8 @@ export const PERMISSIONS = {
   MVP_REVIEW: "mvp.review",
   MVP_APPROVE: "mvp.approve",
   MVP_MANAGE: "mvp.manage",
+  ANNOUNCEMENTS_VIEW: "announcements.view",
+  ANNOUNCEMENTS_CREATE: "announcements.create",
 } as const;
 
 
@@ -69,6 +71,8 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "mvp.review": "Chấm điểm đánh giá thực tế",
   "mvp.approve": "Phê duyệt và công bố danh hiệu",
   "mvp.manage": "Quản lý kỳ MVP và dữ liệu chấm điểm",
+  "announcements.view": "Xem thông báo nội bộ",
+  "announcements.create": "Soạn và phát hành thông báo nội bộ",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -98,6 +102,8 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "mvp.review": "MVP và danh hiệu",
   "mvp.approve": "MVP và danh hiệu",
   "mvp.manage": "MVP và danh hiệu",
+  "announcements.view": "Thông báo nội bộ",
+  "announcements.create": "Thông báo nội bộ",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
@@ -124,6 +130,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "telegram.manage",
     "mvp.view",
     "mvp.vote",
+    "announcements.view",
+    "announcements.create",
     "mvp.manage",
   ],
   cmo: [
@@ -143,6 +151,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.review_weekly",
     "mvp.view",
     "mvp.vote",
+    "announcements.view",
+    "announcements.create",
     "mvp.review",
     "mvp.approve",
     "mvp.manage",
@@ -162,6 +172,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.submit_weekly",
     "mvp.view",
     "mvp.vote",
+    "announcements.view",
+    "announcements.create",
     "mvp.review",
   ],
   member: [
@@ -172,6 +184,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.submit_daily",
     "mvp.view",
     "mvp.vote",
+    "announcements.view",
+    "announcements.create",
   ],
 };
 

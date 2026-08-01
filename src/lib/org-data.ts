@@ -20,7 +20,9 @@ export const ROLE_LABEL: Record<AppRole, string> = {
 export const STATUS_LABEL: Record<AccountStatus, string> = {
   active: "Hoạt động",
   locked: "Đã khóa",
+  resigned: "Đã nghỉ",
 };
+
 
 export interface TeamRow {
   id: string;
