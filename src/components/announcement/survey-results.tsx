@@ -40,8 +40,9 @@ export function SurveyResults({
   const countByOption = React.useMemo(() => {
     const map = new Map<string, number>();
     for (const row of rows) {
-      if (!row.option_id) continue;
-      map.set(row.option_id, (map.get(row.option_id) ?? 0) + 1);
+      for (const optionId of row.option_ids ?? []) {
+        map.set(optionId, (map.get(optionId) ?? 0) + 1);
+      }
     }
     return map;
   }, [rows]);
@@ -65,7 +66,7 @@ export function SurveyResults({
       {questions.map((question) => {
         const list = options.filter((option) => option.question_id === question.id);
         const texts = rows.filter(
-          (row) => row.question_id === question.id && row.answer_text,
+          (row) => row.question_id === question.id && Boolean(row.text_answer),
         );
         const total =
           question.question_type === "short"
@@ -91,7 +92,7 @@ export function SurveyResults({
                       key={row.id}
                       className="min-w-0 break-words rounded-control border border-border-default p-2 text-body-sm text-text-secondary"
                     >
-                      {row.answer_text}
+                      {row.text_answer}
                     </p>
                   ))
                 )}
