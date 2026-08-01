@@ -420,6 +420,9 @@ function ProjectsPage() {
       </div>
 
       <DataTable
+        className="hidden overflow-x-hidden sm:block"
+        tableClassName="table-fixed"
+        density="compact"
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
@@ -437,6 +440,74 @@ function ProjectsPage() {
           void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
         }
       />
+
+      <div className="flex flex-col gap-3 sm:hidden">
+        {projectsResult.isLoading ? (
+          <div className="rounded-card border border-border-default bg-surface p-4 text-body text-text-muted">
+            Đang tải danh sách dự án…
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="rounded-card border border-border-default bg-surface p-4 text-body text-text-muted">
+            {view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
+          </div>
+        ) : (
+          rows.map((row) => {
+            const value = timeProgress(row);
+            return (
+              <div
+                key={row.id}
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void navigate({ to: "/projects/$projectId", params: { projectId: row.id } });
+                  }
+                }}
+                className="cen-transition flex min-w-0 flex-col gap-2 rounded-card border border-border-default bg-surface p-3 shadow-level-1"
+              >
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-body font-medium text-text-primary">
+                      {row.name}
+                    </div>
+                    {row.objective ? (
+                      <div className="truncate text-helper text-text-muted">{row.objective}</div>
+                    ) : null}
+                  </div>
+                  <StatusBadge
+                    label={PROJECT_STATUS_LABEL[row.status]}
+                    tone={PROJECT_STATUS_TONE[row.status]}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption text-text-muted">
+                  <span className="truncate">Phụ trách: {row.ownerName ?? "Chưa chỉ định"}</span>
+                  <span className="truncate">
+                    Team: {row.teamIds.length === 0 ? "—" : row.teamIds.map(teamName).join(", ")}
+                  </span>
+                  <span className={isOverdue(row) ? "text-state-danger" : undefined}>
+                    Deadline: {formatDate(row.deadline)}
+                  </span>
+                  <span>Số CV: {taskCounts[row.id] ?? 0}</span>
+                </div>
+                {value !== null ? (
+                  <div className="flex items-center gap-2">
+                    <Progress value={value} className="h-1.5 min-w-0 flex-1" />
+                    <span className="shrink-0 text-caption tabular-nums text-text-muted">
+                      {value}%
+                    </span>
+                  </div>
+                ) : null}
+                <div className="flex justify-end">{rowActions(row)}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
 
 
       {access.userId ? (
