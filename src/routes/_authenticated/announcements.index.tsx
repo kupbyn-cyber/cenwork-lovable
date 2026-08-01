@@ -198,6 +198,13 @@ function AnnouncementsPage() {
                     },
                   },
                   {
+                    id: "sender",
+                    header: "Người gửi",
+                    className: "min-w-[160px]",
+                    cell: (row) =>
+                      nameById.get(row.announcement.created_by) ?? "—",
+                  },
+                  {
                     id: "due",
                     header: "Hạn xác nhận",
                     className: "min-w-[160px]",
@@ -209,6 +216,7 @@ function AnnouncementsPage() {
                     className: "min-w-[160px]",
                     cell: (row) => formatHanoiDateTime(row.announcement.published_at),
                   },
+
                 ]}
               />
             </TabsContent>
