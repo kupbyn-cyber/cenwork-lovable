@@ -82,11 +82,11 @@ export function ReportArchivePanel() {
         />
       ),
     },
-    { id: "author", header: "Người gửi", width: 150, cell: (row) => row.authorName ?? "—" },
+    { id: "author", header: "Người gửi", className: "w-[150px]", cell: (row) => row.authorName ?? "—" },
     {
       id: "at",
       header: mode === "archived" ? "Lưu trữ lúc" : "Xóa lúc",
-      width: 160,
+      className: "w-[160px]",
       cell: (row) =>
         formatHanoiDateTime((mode === "archived" ? row.archived_at : row.deleted_at) ?? row.updated_at),
     },
@@ -102,7 +102,7 @@ export function ReportArchivePanel() {
     {
       id: "actions",
       header: "",
-      width: 190,
+      className: "w-[190px]",
       cell: (row) => (
         <div className="flex justify-end gap-2">
           {mode === "archived" ? (
@@ -135,7 +135,7 @@ export function ReportArchivePanel() {
     ) : (
       <>
         <div className="hidden md:block">
-          <DataTable data={data} columns={buildColumns(mode)} rowKey={(row) => row.id} density="compact" />
+          <DataTable data={data} columns={buildColumns(mode)} getRowId={(row) => row.id} density="compact" />
         </div>
         <div className="space-y-2 md:hidden">
           {data.map((row) => (

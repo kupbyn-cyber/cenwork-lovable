@@ -99,14 +99,14 @@ function GroupTable({ title, rows }: { title: string; rows: ReportStatsGroup[] }
         <TableCellStack primary={row.label} secondary={`${row.total} nghĩa vụ`} />
       ),
     },
-    { id: "submitted", header: "Đúng hạn", width: 96, cell: (row: ReportStatsGroup) => row.submitted },
-    { id: "late", header: "Gửi trễ", width: 88, cell: (row: ReportStatsGroup) => row.lateSubmitted },
-    { id: "overdue", header: "Quá hạn", width: 88, cell: (row: ReportStatsGroup) => row.overdue },
-    { id: "pending", header: "Chưa gửi", width: 96, cell: (row: ReportStatsGroup) => row.pending },
+    { id: "submitted", header: "Đúng hạn", className: "w-[96px]", cell: (row: ReportStatsGroup) => row.submitted },
+    { id: "late", header: "Gửi trễ", className: "w-[88px]", cell: (row: ReportStatsGroup) => row.lateSubmitted },
+    { id: "overdue", header: "Quá hạn", className: "w-[88px]", cell: (row: ReportStatsGroup) => row.overdue },
+    { id: "pending", header: "Chưa gửi", className: "w-[96px]", cell: (row: ReportStatsGroup) => row.pending },
     {
       id: "rate",
       header: "Đúng hạn",
-      width: 96,
+      className: "w-[96px]",
       cell: (row: ReportStatsGroup) => percent(row.onTimeRate),
     },
   ];
@@ -116,7 +116,7 @@ function GroupTable({ title, rows }: { title: string; rows: ReportStatsGroup[] }
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <DataTable data={rows} columns={columns} rowKey={(row) => row.key} density="compact" />
+        <DataTable data={rows} columns={columns} getRowId={(row) => row.key} density="compact" />
         <div className="mt-3 space-y-2 md:hidden">
           {rows.map((row) => (
             <div key={`m-${row.key}`} className="rounded-control border border-border-default p-3">
@@ -207,20 +207,20 @@ export function ReportStatsPanel() {
     {
       id: "period",
       header: "Kỳ",
-      width: 180,
+      className: "w-[180px]",
       cell: (row: ReportObligationRow) =>
         `${REPORT_KIND_LABEL[row.report_type]} — ${row.period_key}`,
     },
     {
       id: "due",
       header: "Hạn",
-      width: 160,
+      className: "w-[160px]",
       cell: (row: ReportObligationRow) => formatHanoiDateTime(row.due_at),
     },
     {
       id: "state",
       header: "Trạng thái",
-      width: 130,
+      className: "w-[130px]",
       cell: (row: ReportObligationRow) => {
         const state = obligationState(row);
         return (
@@ -365,7 +365,7 @@ export function ReportStatsPanel() {
                 <DataTable
                   data={attention}
                   columns={attentionColumns}
-                  rowKey={(row) => row.id}
+                  getRowId={(row) => row.id}
                   density="compact"
                 />
               </div>
