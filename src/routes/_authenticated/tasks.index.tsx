@@ -6,7 +6,7 @@ import { Archive, ArchiveRestore, CalendarClock, Columns3, Plus, Trash2, X } fro
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DataTable, TableCellStack } from "@/components/ui/data-table";
+import { DataTable } from "@/components/ui/data-table";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -33,6 +33,7 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
@@ -593,6 +594,7 @@ function TasksPage() {
           columns={tableColumns}
           data={visibleRows}
           density="compact"
+          tableClassName="table-fixed"
           getRowId={(row) => row.id}
           loading={tasksResult.isLoading}
           error={tasksResult.isError}
