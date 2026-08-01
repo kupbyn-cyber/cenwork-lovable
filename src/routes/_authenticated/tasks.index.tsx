@@ -226,6 +226,60 @@ function TasksPage() {
         <StatusBadge label={TASK_STATUS_LABEL[row.status]} tone={TASK_STATUS_TONE[row.status]} />
       ),
     },
+    {
+      id: "actions",
+      header: "Hành động",
+      align: "right" as const,
+      className: "w-[1%] whitespace-nowrap",
+      headerClassName: "text-right",
+      cell: (row: TaskRow) => {
+        const canComplete =
+          canChangeTaskStatus(row, ctx) && row.status !== "done" && !isTaskArchived(row);
+        const menuActions: RowAction[] = [];
+        if (canRequestTaskDeadline(row, ctx)) {
+          menuActions.push({
+            key: "deadline",
+            label: "Yêu cầu đổi deadline",
+            icon: CalendarClock,
+            onSelect: () => setDeadlineTarget(row),
+          });
+        }
+        if (canManuallyArchiveTask(row, ctx)) {
+          menuActions.push({
+            key: "archive",
+            label: "Đưa vào Lưu trữ",
+            icon: Archive,
+            onSelect: () => setArchiveTarget(row),
+          });
+        }
+        if (canRestoreTask(row, ctx)) {
+          menuActions.push({
+            key: "restore",
+            label: "Khôi phục khỏi Lưu trữ",
+            icon: ArchiveRestore,
+            onSelect: () => setRestoreTarget(row),
+          });
+        }
+        if (canSoftDelete(access.role)) {
+          menuActions.push({
+            key: "delete",
+            label: "Xóa",
+            icon: Trash2,
+            tone: "destructive",
+            onSelect: () => setDeleteTarget(row),
+          });
+        }
+        return (
+          <RowActionsCell
+            onView={() => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
+            onEdit={canEditTask(row, ctx) ? () => setEditTarget(row) : null}
+            onComplete={canComplete ? () => setCompleteTarget(row) : null}
+            completing={completeMutation.isPending && completeTarget?.id === row.id}
+            menuActions={menuActions}
+          />
+        );
+      },
+    },
   ];
 
   return (
