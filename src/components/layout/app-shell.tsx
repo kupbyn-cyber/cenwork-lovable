@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { IconButton } from "@/components/ui/button";
 import { AppSidebar, CenLogo, SidebarNav } from "@/components/layout/app-sidebar";
 import { TopBar } from "@/components/layout/top-bar";
+import { OverdueAnnouncementBanner } from "@/components/announcement/overdue-banner";
 
 /**
  * CEN 1.0 — App Shell (M1.2)
@@ -22,7 +23,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onOpenMobileNav={() => setMobileOpen(true)} />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6">{children}</div>
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6">
+            <div className="mb-4 empty:mb-0">
+              <OverdueAnnouncementBanner />
+            </div>
+            {children}
+          </div>
         </main>
       </div>
 
