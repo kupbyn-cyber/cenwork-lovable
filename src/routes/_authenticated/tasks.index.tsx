@@ -257,15 +257,29 @@ function TasksPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant={showArchived ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setShowArchived((value) => !value)}
-        >
-          {showArchived ? "Đang hiện công việc lưu trữ" : "Hiện công việc lưu trữ"}
-        </Button>
+        <div className="inline-flex rounded-md border border-border-subtle p-1" role="tablist">
+          <Button
+            role="tab"
+            aria-selected={view === "active"}
+            variant={view === "active" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("active")}
+          >
+            Đang hoạt động
+          </Button>
+          <Button
+            role="tab"
+            aria-selected={view === "archived"}
+            variant={view === "archived" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("archived")}
+          >
+            Lưu trữ
+          </Button>
+        </div>
         <span className="text-caption text-text-muted">{rows.length} công việc</span>
       </div>
+
 
       <DataTable
         columns={columns}
