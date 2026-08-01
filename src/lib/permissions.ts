@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   REPORTS_REVIEW_DAILY: "reports.review_daily",
   REPORTS_SUBMIT_WEEKLY: "reports.submit_weekly",
   REPORTS_REVIEW_WEEKLY: "reports.review_weekly",
+  TELEGRAM_MANAGE: "telegram.manage",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -56,6 +57,7 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "reports.review_daily": "Duyệt báo cáo ngày",
   "reports.submit_weekly": "Gửi báo cáo tuần của Team",
   "reports.review_weekly": "Duyệt báo cáo tuần",
+  "telegram.manage": "Quản lý kết nối Telegram",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -79,6 +81,7 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "reports.review_daily": "Báo cáo",
   "reports.submit_weekly": "Báo cáo",
   "reports.review_weekly": "Báo cáo",
+  "telegram.manage": "Hệ thống",
 };
 
 /** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
@@ -102,6 +105,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.view",
     "reports.review_daily",
     "reports.review_weekly",
+    "telegram.manage",
   ],
   cmo: [
     "members.view",
