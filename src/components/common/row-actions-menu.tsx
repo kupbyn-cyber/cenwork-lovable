@@ -36,7 +36,7 @@ export function RowActionsMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           aria-label={label}
           onClick={(event) => event.stopPropagation()}
         >

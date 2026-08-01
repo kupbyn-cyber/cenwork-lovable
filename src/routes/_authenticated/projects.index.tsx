@@ -161,52 +161,123 @@ function ProjectsPage() {
     });
   }, [projectsResult.data, search, statusFilter, ownerFilter, teamFilter, facilityFilter, view]);
 
+  const rowActions = (row: ProjectRow) => {
+    const canComplete = nextStatuses(row, ctx).includes("completed");
+    const menuActions: RowAction[] = [];
+    if (canRequestProjectDeadline(row, ctx)) {
+      menuActions.push({
+        key: "deadline",
+        label: "Yêu cầu đổi deadline",
+        icon: CalendarClock,
+        onSelect: () => setDeadlineTarget(row),
+      });
+    }
+    if (canManuallyArchiveProject(row, ctx)) {
+      menuActions.push({
+        key: "archive",
+        label: "Đưa vào Lưu trữ",
+        icon: Archive,
+        onSelect: () => setArchiveTarget(row),
+      });
+    }
+    if (canRestoreProject(row, ctx)) {
+      menuActions.push({
+        key: "restore",
+        label: "Khôi phục khỏi Lưu trữ",
+        icon: ArchiveRestore,
+        onSelect: () => setRestoreTarget(row),
+      });
+    }
+    if (canSoftDelete(access.role)) {
+      menuActions.push({
+        key: "delete",
+        label: "Xóa",
+        icon: Trash2,
+        tone: "destructive",
+        onSelect: () => setDeleteTarget(row),
+      });
+    }
+    return (
+      <RowActionsCell
+        onView={() => void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })}
+        onEdit={canEditProject(row, ctx) ? () => setEditTarget(row) : null}
+        onComplete={canComplete ? () => setCompleteTarget(row) : null}
+        completing={completeMutation.isPending && completeTarget?.id === row.id}
+        menuActions={menuActions}
+      />
+    );
+  };
+
   const columns = [
     {
       id: "name",
       header: "Dự án",
-      className: "min-w-[220px]",
+      className: "w-auto",
       cell: (row: ProjectRow) => (
-        <TableCellStack primary={row.name} secondary={row.objective} />
+        <div className="min-w-0">
+          <div className="truncate text-body font-medium text-text-primary" title={row.name}>
+            {row.name}
+          </div>
+          {row.objective ? (
+            <div
+              className="hidden truncate text-helper text-text-muted lg:block"
+              title={row.objective}
+            >
+              {row.objective}
+            </div>
+          ) : null}
+        </div>
       ),
     },
     {
       id: "status",
       header: "Trạng thái",
-      className: "min-w-[150px]",
+      className: "w-[112px]",
+      headerClassName: "w-[112px]",
       cell: (row: ProjectRow) => (
         <StatusBadge label={PROJECT_STATUS_LABEL[row.status]} tone={PROJECT_STATUS_TONE[row.status]} />
       ),
     },
     {
       id: "owner",
-      header: "Project Owner",
-      className: "min-w-[150px]",
+      header: "Phụ trách",
+      className: "hidden w-[130px] lg:table-cell",
+      headerClassName: "hidden w-[130px] lg:table-cell",
       cell: (row: ProjectRow) => (
-        <span className="text-text-secondary">{row.ownerName ?? "Chưa chỉ định"}</span>
+        <div
+          className="truncate text-text-secondary"
+          title={row.ownerName ?? "Chưa chỉ định"}
+        >
+          {row.ownerName ?? "Chưa chỉ định"}
+        </div>
       ),
     },
     {
       id: "teams",
       header: "Team",
-      className: "min-w-[160px]",
-      cell: (row: ProjectRow) => (
-        <span className="text-text-secondary">
-          {row.teamIds.length === 0 ? "—" : row.teamIds.map(teamName).join(", ")}
-        </span>
-      ),
+      className: "hidden w-[130px] xl:table-cell",
+      headerClassName: "hidden w-[130px] xl:table-cell",
+      cell: (row: ProjectRow) => {
+        const label = row.teamIds.length === 0 ? "—" : row.teamIds.map(teamName).join(", ");
+        return (
+          <div className="truncate text-text-secondary" title={label}>
+            {label}
+          </div>
+        );
+      },
     },
     {
       id: "progress",
-      header: "Tiến độ thời gian",
-      className: "min-w-[160px]",
+      header: "Tiến độ",
+      className: "hidden w-[110px] lg:table-cell",
+      headerClassName: "hidden w-[110px] lg:table-cell",
       cell: (row: ProjectRow) => {
         const value = timeProgress(row);
-        if (value === null) return <span className="text-text-muted">Chưa có mốc thời gian</span>;
+        if (value === null) return <span className="text-text-muted">—</span>;
         return (
-          <div className="flex min-w-0 flex-col gap-1">
-            <Progress value={value} />
-            <span className="text-caption text-text-muted">{value}%</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <Progress value={value} className="h-1.5 min-w-0 flex-1" />
+            <span className="shrink-0 text-caption tabular-nums text-text-muted">{value}%</span>
           </div>
         );
       },
@@ -214,7 +285,8 @@ function ProjectsPage() {
     {
       id: "deadline",
       header: "Deadline",
-      className: "min-w-[130px]",
+      className: "w-[96px] whitespace-nowrap",
+      headerClassName: "w-[96px]",
       cell: (row: ProjectRow) => (
         <span className={isOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
           {formatDate(row.deadline)}
@@ -225,7 +297,8 @@ function ProjectsPage() {
       id: "task-count",
       header: "Số CV",
       align: "right" as const,
-      className: "min-w-[80px] tabular-nums",
+      className: "hidden w-[64px] tabular-nums lg:table-cell",
+      headerClassName: "hidden w-[64px] text-right lg:table-cell",
       cell: (row: ProjectRow) => (
         <span className="text-text-secondary">{taskCounts[row.id] ?? 0}</span>
       ),
@@ -234,58 +307,12 @@ function ProjectsPage() {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
-      className: "w-[1%] whitespace-nowrap",
-      headerClassName: "text-right",
-      cell: (row: ProjectRow) => {
-        const canComplete = nextStatuses(row, ctx).includes("completed");
-        const menuActions: RowAction[] = [];
-        if (canRequestProjectDeadline(row, ctx)) {
-          menuActions.push({
-            key: "deadline",
-            label: "Yêu cầu đổi deadline",
-            icon: CalendarClock,
-            onSelect: () => setDeadlineTarget(row),
-          });
-        }
-        if (canManuallyArchiveProject(row, ctx)) {
-          menuActions.push({
-            key: "archive",
-            label: "Đưa vào Lưu trữ",
-            icon: Archive,
-            onSelect: () => setArchiveTarget(row),
-          });
-        }
-        if (canRestoreProject(row, ctx)) {
-          menuActions.push({
-            key: "restore",
-            label: "Khôi phục khỏi Lưu trữ",
-            icon: ArchiveRestore,
-            onSelect: () => setRestoreTarget(row),
-          });
-        }
-        if (canSoftDelete(access.role)) {
-          menuActions.push({
-            key: "delete",
-            label: "Xóa",
-            icon: Trash2,
-            tone: "destructive",
-            onSelect: () => setDeleteTarget(row),
-          });
-        }
-        return (
-          <RowActionsCell
-            onView={() =>
-              void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
-            }
-            onEdit={canEditProject(row, ctx) ? () => setEditTarget(row) : null}
-            onComplete={canComplete ? () => setCompleteTarget(row) : null}
-            completing={completeMutation.isPending && completeTarget?.id === row.id}
-            menuActions={menuActions}
-          />
-        );
-      },
+      className: "w-[140px] whitespace-nowrap",
+      headerClassName: "w-[140px] text-right",
+      cell: (row: ProjectRow) => rowActions(row),
     },
   ];
+
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -396,6 +423,9 @@ function ProjectsPage() {
       </div>
 
       <DataTable
+        className="hidden overflow-x-hidden sm:block"
+        tableClassName="table-fixed"
+        density="compact"
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
@@ -413,6 +443,74 @@ function ProjectsPage() {
           void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
         }
       />
+
+      <div className="flex flex-col gap-3 sm:hidden">
+        {projectsResult.isLoading ? (
+          <div className="rounded-card border border-border-default bg-surface p-4 text-body text-text-muted">
+            Đang tải danh sách dự án…
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="rounded-card border border-border-default bg-surface p-4 text-body text-text-muted">
+            {view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
+          </div>
+        ) : (
+          rows.map((row) => {
+            const value = timeProgress(row);
+            return (
+              <div
+                key={row.id}
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void navigate({ to: "/projects/$projectId", params: { projectId: row.id } });
+                  }
+                }}
+                className="cen-transition flex min-w-0 flex-col gap-2 rounded-card border border-border-default bg-surface p-3 shadow-level-1"
+              >
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-body font-medium text-text-primary">
+                      {row.name}
+                    </div>
+                    {row.objective ? (
+                      <div className="truncate text-helper text-text-muted">{row.objective}</div>
+                    ) : null}
+                  </div>
+                  <StatusBadge
+                    label={PROJECT_STATUS_LABEL[row.status]}
+                    tone={PROJECT_STATUS_TONE[row.status]}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption text-text-muted">
+                  <span className="truncate">Phụ trách: {row.ownerName ?? "Chưa chỉ định"}</span>
+                  <span className="truncate">
+                    Team: {row.teamIds.length === 0 ? "—" : row.teamIds.map(teamName).join(", ")}
+                  </span>
+                  <span className={isOverdue(row) ? "text-state-danger" : undefined}>
+                    Deadline: {formatDate(row.deadline)}
+                  </span>
+                  <span>Số CV: {taskCounts[row.id] ?? 0}</span>
+                </div>
+                {value !== null ? (
+                  <div className="flex items-center gap-2">
+                    <Progress value={value} className="h-1.5 min-w-0 flex-1" />
+                    <span className="shrink-0 text-caption tabular-nums text-text-muted">
+                      {value}%
+                    </span>
+                  </div>
+                ) : null}
+                <div className="flex justify-end">{rowActions(row)}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
 
 
       {access.userId ? (

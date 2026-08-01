@@ -55,6 +55,8 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   emptyDescription?: React.ReactNode | undefined;
   emptyAction?: React.ReactNode | undefined;
   caption?: string;
+  /** Extra classes on the <table> element, e.g. "table-fixed". */
+  tableClassName?: string;
 }
 
 const alignClass = {
@@ -84,6 +86,7 @@ function DataTableInner<T>(
     emptyDescription = "Nội dung sẽ hiển thị tại đây khi có dữ liệu.",
     emptyAction,
     caption,
+    tableClassName,
     className,
     ...props
   }: DataTableProps<T>,
@@ -135,7 +138,8 @@ function DataTableInner<T>(
 
   return (
     <TableContainer ref={ref} className={className} {...props}>
-      <Table>
+      <Table className={tableClassName}>
+
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader>
           <TableRow className="hover:bg-transparent">
