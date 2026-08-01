@@ -317,14 +317,34 @@ function TaskDetailPage() {
                 <span className="text-caption text-text-muted">{progress}%</span>
               </div>
             ) : null}
-            {task.is_archived ? (
+            {task.completed_at ? (
+              <InfoRow
+                label="Thời điểm hoàn thành"
+                value={
+                  <span className={isCompletedEarly(task) ? "text-state-success" : undefined}>
+                    {formatDateTime(task.completed_at)}
+                    {isCompletedEarly(task) ? " · Hoàn thành trước hạn" : ""}
+                  </span>
+                }
+              />
+            ) : null}
+            {pendingRequest ? (
               <div className="sm:col-span-2">
                 <InfoRow
-                  label="Trạng thái lưu trữ"
-                  value="Công việc đã được lưu trữ, chỉ xem lại lịch sử."
+                  label="Yêu cầu đổi deadline"
+                  value={`Đang chờ xử lý — đề xuất ${formatDateTime(pendingRequest.proposed_deadline)} (${pendingRequest.requesterName ?? "—"})`}
                 />
               </div>
             ) : null}
+            {isTaskManuallyArchived(task) ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Trạng thái lưu trữ"
+                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatDateTime(task.manually_archived_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                />
+              </div>
+            ) : null}
+
           </CardContent>
         </Card>
 
