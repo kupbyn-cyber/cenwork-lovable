@@ -125,13 +125,19 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
   const { data, error } = await supabase
     .from("projects")
     .select(SELECT)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapProject(row as RawProject));
 }
 
 export async function fetchProject(id: string): Promise<ProjectRow | null> {
-  const { data, error } = await supabase.from("projects").select(SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("projects")
+    .select(SELECT)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapProject(data as RawProject) : null;
 }
@@ -141,6 +147,30 @@ export const projectsQuery = () =>
 
 export const projectQuery = (id: string) =>
   queryOptions({ queryKey: ["project", id], queryFn: () => fetchProject(id) });
+
+/**
+ * Số công việc của từng dự án ("Số CV").
+ * Một truy vấn duy nhất cho cả danh sách: chỉ lấy `project_id` của Task còn hiệu lực.
+ * Task độc lập không được đếm; Task đã xóa mềm bị RLS loại khỏi kết quả.
+ */
+export async function fetchProjectTaskCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id,project_id")
+    .is("deleted_at", null)
+    .not("project_id", "is", null);
+  if (error) throw new Error(error.message);
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const projectId = row.project_id;
+    if (!projectId) continue;
+    counts[projectId] = (counts[projectId] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export const projectTaskCountsQuery = () =>
+  queryOptions({ queryKey: ["project-task-counts"], queryFn: fetchProjectTaskCounts });
 
 /** Danh sách nhân sự đang hoạt động mà người dùng hiện tại được nhìn thấy (RLS quyết định). */
 export interface PersonOption {

@@ -1,9 +1,10 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Archive, ArchiveRestore, CalendarClock, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable, TableCellStack } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,19 +17,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { cenToast } from "@/components/ui/toast";
 import { ProjectFormDrawer } from "@/components/project/project-form-drawer";
+import { RowActionsCell } from "@/components/common/row-actions-cell";
+import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
+import type { RowAction } from "@/components/common/row-actions-menu";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { facilitiesQuery, teamsQuery } from "@/lib/org-data";
+import { setManualArchive } from "@/lib/deadline-data";
+import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_ORDER,
   PROJECT_STATUS_TONE,
   activePeopleQuery,
+  canEditProject,
+  canManuallyArchiveProject,
+  canRequestProjectDeadline,
+  canRestoreProject,
   formatDate,
   isProjectArchived,
   isOverdue,
+  nextStatuses,
+  projectTaskCountsQuery,
   projectsQuery,
+  setProjectStatus,
   timeProgress,
+  type ProjectAccessContext,
   type ProjectRow,
 } from "@/lib/project-data";
 
@@ -57,8 +72,10 @@ const ALL = "__all__";
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const projectsResult = useQuery(projectsQuery());
+  const taskCountsResult = useQuery(projectTaskCountsQuery());
   const teamsResult = useQuery(teamsQuery());
   const facilitiesResult = useQuery(facilitiesQuery());
   const peopleResult = useQuery(activePeopleQuery());
@@ -71,11 +88,65 @@ function ProjectsPage() {
   const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
+  const [editTarget, setEditTarget] = React.useState<ProjectRow | null>(null);
+  const [completeTarget, setCompleteTarget] = React.useState<ProjectRow | null>(null);
+  const [deadlineTarget, setDeadlineTarget] = React.useState<ProjectRow | null>(null);
+  const [archiveTarget, setArchiveTarget] = React.useState<ProjectRow | null>(null);
+  const [restoreTarget, setRestoreTarget] = React.useState<ProjectRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<ProjectRow | null>(null);
 
   const teams = teamsResult.data ?? [];
   const facilities = facilitiesResult.data ?? [];
   const people = peopleResult.data ?? [];
+  const taskCounts = taskCountsResult.data ?? {};
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name ?? "—";
+
+  const ctx: ProjectAccessContext = {
+    userId: access.userId,
+    role: access.role,
+    leaderTeamId: access.leaderTeamId,
+  };
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+  };
+
+  const completeMutation = useMutation({
+    mutationFn: (project: ProjectRow) => setProjectStatus(project.id, "completed"),
+    onSuccess: () => {
+      refresh();
+      setCompleteTarget(null);
+      cenToast.success("Đã hoàn thành dự án.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (input: { id: string; archived: boolean }) =>
+      setManualArchive("project", input.id, input.archived),
+    onSuccess: (_data, input) => {
+      refresh();
+      setArchiveTarget(null);
+      setRestoreTarget(null);
+      cenToast.success(
+        input.archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (project: ProjectRow) => softDeleteEntity("project", project.id),
+    onSuccess: () => {
+      refresh();
+      setDeleteTarget(null);
+      cenToast.success("Đã xóa dự án khỏi danh sách vận hành.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
 
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -149,6 +220,70 @@ function ProjectsPage() {
           {formatDate(row.deadline)}
         </span>
       ),
+    },
+    {
+      id: "task-count",
+      header: "Số CV",
+      align: "right" as const,
+      className: "min-w-[80px] tabular-nums",
+      cell: (row: ProjectRow) => (
+        <span className="text-text-secondary">{taskCounts[row.id] ?? 0}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Hành động",
+      align: "right" as const,
+      className: "w-[1%] whitespace-nowrap",
+      headerClassName: "text-right",
+      cell: (row: ProjectRow) => {
+        const canComplete = nextStatuses(row, ctx).includes("completed");
+        const menuActions: RowAction[] = [];
+        if (canRequestProjectDeadline(row, ctx)) {
+          menuActions.push({
+            key: "deadline",
+            label: "Yêu cầu đổi deadline",
+            icon: CalendarClock,
+            onSelect: () => setDeadlineTarget(row),
+          });
+        }
+        if (canManuallyArchiveProject(row, ctx)) {
+          menuActions.push({
+            key: "archive",
+            label: "Đưa vào Lưu trữ",
+            icon: Archive,
+            onSelect: () => setArchiveTarget(row),
+          });
+        }
+        if (canRestoreProject(row, ctx)) {
+          menuActions.push({
+            key: "restore",
+            label: "Khôi phục khỏi Lưu trữ",
+            icon: ArchiveRestore,
+            onSelect: () => setRestoreTarget(row),
+          });
+        }
+        if (canSoftDelete(access.role)) {
+          menuActions.push({
+            key: "delete",
+            label: "Xóa",
+            icon: Trash2,
+            tone: "destructive",
+            onSelect: () => setDeleteTarget(row),
+          });
+        }
+        return (
+          <RowActionsCell
+            onView={() =>
+              void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
+            }
+            onEdit={canEditProject(row, ctx) ? () => setEditTarget(row) : null}
+            onComplete={canComplete ? () => setCompleteTarget(row) : null}
+            completing={completeMutation.isPending && completeTarget?.id === row.id}
+            menuActions={menuActions}
+          />
+        );
+      },
     },
   ];
 
@@ -312,6 +447,92 @@ function ProjectsPage() {
           }
         />
       ) : null}
+
+      {access.userId && editTarget ? (
+        <ProjectFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+          project={editTarget}
+          fullEdit={editTarget.status !== "idea" && editTarget.status !== "leader_review"}
+          currentUserId={access.userId}
+          teams={teams}
+          facilities={facilities}
+          people={people}
+        />
+      ) : null}
+
+      {deadlineTarget ? (
+        <DeadlineRequestModal
+          open
+          onOpenChange={(open) => {
+            if (!open) setDeadlineTarget(null);
+          }}
+          entityType="project"
+          entityId={deadlineTarget.id}
+          entityName={deadlineTarget.name}
+          currentDeadline={deadlineTarget.deadline}
+          dateOnly
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={completeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !completeMutation.isPending) setCompleteTarget(null);
+        }}
+        title="Xác nhận hoàn thành dự án?"
+        description={`Dự án "${completeTarget?.name ?? ""}" sẽ chuyển sang trạng thái Hoàn thành và vào khu vực Lưu trữ.`}
+        confirmLabel="Hoàn thành"
+        loading={completeMutation.isPending}
+        onConfirm={() => {
+          if (completeTarget) completeMutation.mutate(completeTarget);
+        }}
+      />
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setArchiveTarget(null);
+        }}
+        title="Đưa dự án vào Lưu trữ?"
+        description={`Dự án "${archiveTarget?.name ?? ""}" sẽ được ẩn khỏi danh sách đang hoạt động, trạng thái giữ nguyên.`}
+        confirmLabel="Lưu trữ"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (archiveTarget) archiveMutation.mutate({ id: archiveTarget.id, archived: true });
+        }}
+      />
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !archiveMutation.isPending) setRestoreTarget(null);
+        }}
+        title="Khôi phục dự án?"
+        description={`Dự án "${restoreTarget?.name ?? ""}" sẽ quay lại danh sách đang hoạt động.`}
+        confirmLabel="Khôi phục"
+        loading={archiveMutation.isPending}
+        onConfirm={() => {
+          if (restoreTarget) archiveMutation.mutate({ id: restoreTarget.id, archived: false });
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleteTarget(null);
+        }}
+        tone="destructive"
+        title="Xóa dự án?"
+        description={`Dự án "${deleteTarget?.name ?? ""}" và các công việc thuộc dự án sẽ bị ẩn khỏi toàn bộ danh sách vận hành. Hành động này chỉ Admin thực hiện và được ghi Audit Log.`}
+        confirmLabel="Xóa"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget);
+        }}
+      />
     </div>
   );
 }
