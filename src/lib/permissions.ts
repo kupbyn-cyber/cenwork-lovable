@@ -125,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "tasks.view",
     "tasks.create",
     "reports.view",
+    "reports.submit_daily",
     "reports.review_daily",
     "reports.review_weekly",
     "telegram.manage",
