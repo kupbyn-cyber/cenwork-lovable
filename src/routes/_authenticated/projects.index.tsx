@@ -25,6 +25,7 @@ import {
   PROJECT_STATUS_TONE,
   activePeopleQuery,
   formatDate,
+  isProjectArchived,
   isOverdue,
   projectsQuery,
   timeProgress,
