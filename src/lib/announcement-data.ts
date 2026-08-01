@@ -111,6 +111,50 @@ export function effectiveRecipientStatus(row: {
   return new Date(row.due_at).getTime() < Date.now() ? "overdue" : row.status;
 }
 
+/** Thông báo còn hiệu lực bắt buộc xác nhận (không thu hồi, không lưu trữ). */
+export function isAnnouncementActive(row: AnnouncementRow): boolean {
+  return row.status === "published" && !row.revoked_at && !row.archived_at;
+}
+
+/**
+ * Nghĩa vụ xác nhận còn tồn đọng của chính người dùng.
+ * Nguồn duy nhất cho Trang chủ, thanh nhắc và tab "Thông báo của tôi":
+ * chỉ recipient gốc chưa xác nhận mới được tính; người chỉ được tag không nằm ở đây.
+ */
+export function isPendingAck(row: InboxRow): boolean {
+  if (!isAnnouncementActive(row.announcement)) return false;
+  return row.status === "unread" || row.status === "reading";
+}
+
+/** Ưu tiên: quá hạn lâu nhất → gần đến hạn nhất → mới phát hành nhất. */
+export function pendingAckRows(
+  rows: InboxRow[] | undefined,
+  userId: string | undefined,
+): InboxRow[] {
+  if (!rows || !userId) return [];
+  return rows
+    .filter((row) => row.user_id === userId && isPendingAck(row))
+    .sort((a, b) => {
+      const diff = new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+      if (diff !== 0) return diff;
+      return (
+        new Date(b.announcement.published_at ?? b.announcement.created_at).getTime() -
+        new Date(a.announcement.published_at ?? a.announcement.created_at).getTime()
+      );
+    });
+}
+
+/** Các cache dùng chung phải làm mới sau khi xác nhận ở bất kỳ vị trí nào. */
+export const ANNOUNCEMENT_SYNC_KEYS = [
+  "announcement-inbox",
+  "announcement-overdue",
+  "announcement",
+  "announcement-recipients",
+  "announcement-answers",
+  "announcement-ack-stats",
+] as const;
+
+
 /** Thông báo tôi nhận. */
 export async function fetchInbox(): Promise<InboxRow[]> {
   const { data, error } = await supabase
