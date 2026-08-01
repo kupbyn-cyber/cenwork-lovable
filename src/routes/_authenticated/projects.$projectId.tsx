@@ -39,15 +39,22 @@ import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
   activePeopleQuery,
+  APPROVAL_ACTION_LABEL,
+  APPROVAL_STAGE_LABEL,
+  approvalStage,
   canApproveProjectDeadline,
-  canCmoDecide,
+  canDecideProject,
   canEditProject,
-  canLeaderDecide,
   canManuallyArchiveProject,
   canRequestProjectDeadline,
   canRestoreProject,
-  canSubmitIdea,
+  canSubmitProject,
+  decideProject,
   formatDate,
+  isProjectApproved,
+  isProjectRejected,
+  projectApprovalsQuery,
+  submitProject,
   isCompletedEarly,
   isOverdue,
   isProjectManuallyArchived,
@@ -96,12 +103,13 @@ function ProjectDetailPage() {
 
   const projectResult = useQuery(projectQuery(projectId));
   const historyResult = useQuery(projectHistoryQuery(projectId));
+  const approvalsResult = useQuery(projectApprovalsQuery(projectId));
   const teamsResult = useQuery(teamsQuery());
   const facilitiesResult = useQuery(facilitiesQuery());
   const peopleResult = useQuery(activePeopleQuery());
 
   const [editOpen, setEditOpen] = React.useState(false);
-  const [rejectFor, setRejectFor] = React.useState<"leader" | "cmo" | null>(null);
+  const [rejectOpen, setRejectOpen] = React.useState(false);
   const [rejectNote, setRejectNote] = React.useState("");
   const [rejectError, setRejectError] = React.useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
@@ -123,20 +131,59 @@ function ProjectDetailPage() {
   const requestsResult = useQuery(deadlineRequestsQuery("project", projectId));
   const pendingRequest = findPending(requestsResult.data, "project", projectId);
 
+  const invalidateProject = () => {
+    void queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-history", projectId] });
+    void queryClient.invalidateQueries({ queryKey: ["project-approvals", projectId] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  };
+
   const statusMutation = useMutation({
     mutationFn: (input: { status: ProjectStatus; note?: string | null }) =>
       setProjectStatus(projectId, input.status, input.note),
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-      void queryClient.invalidateQueries({ queryKey: ["projects"] });
-      void queryClient.invalidateQueries({ queryKey: ["project-history", projectId] });
-      void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      invalidateProject();
       cenToast.success(`Đã chuyển sang trạng thái: ${PROJECT_STATUS_LABEL[variables.status]}.`);
-      setRejectFor(null);
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  /** Gửi duyệt / gửi lại — database quyết định bước duyệt kế tiếp. */
+  const submitMutation = useMutation({
+    mutationFn: () => submitProject(projectId),
+    onSuccess: (next) => {
+      invalidateProject();
+      cenToast.success(
+        next === "planning"
+          ? "Dự án đã được duyệt."
+          : next === "proposal"
+            ? "Đã gửi CMO duyệt."
+            : "Đã gửi Leader duyệt.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const decideMutation = useMutation({
+    mutationFn: (input: { approve: boolean; reason?: string }) =>
+      decideProject(projectId, input.approve, input.reason ?? null),
+    onSuccess: (next, variables) => {
+      invalidateProject();
+      setRejectOpen(false);
       setRejectNote("");
+      setRejectError(null);
+      cenToast.success(
+        variables.approve
+          ? next === "planning"
+            ? "Đã duyệt dự án."
+            : "Đã duyệt và chuyển CMO."
+          : "Đã từ chối dự án.",
+      );
     },
     onError: (error: Error) => {
-      if (rejectFor) setRejectError(error.message);
+      if (rejectOpen) setRejectError(error.message);
       else cenToast.error(error.message);
     },
   });
@@ -197,48 +244,29 @@ function ProjectDetailPage() {
   const facilityName = (id: string) =>
     facilities.find((facility) => facility.id === id)?.name ?? "—";
   const progress = timeProgress(detail);
-  const busy = statusMutation.isPending;
+  const busy = statusMutation.isPending || submitMutation.isPending || decideMutation.isPending;
+  const stage = approvalStage(detail);
 
   const actions: React.ReactNode[] = [];
-  if (canSubmitIdea(detail, ctx)) {
+  if (canSubmitProject(detail, ctx)) {
     actions.push(
-      <Button
-        key="submit"
-        loading={busy}
-        onClick={() => statusMutation.mutate({ status: "leader_review" })}
-      >
+      <Button key="submit" loading={busy} onClick={() => submitMutation.mutate()}>
         <Send />
-        Gửi Leader xem xét
+        {isProjectRejected(detail) ? "Gửi duyệt lại" : "Gửi duyệt"}
       </Button>,
     );
   }
-  if (canLeaderDecide(detail, ctx)) {
+  if (canDecideProject(detail, ctx)) {
     actions.push(
       <Button
-        key="leader-approve"
+        key="approve"
         loading={busy}
-        onClick={() => statusMutation.mutate({ status: "proposal" })}
+        onClick={() => decideMutation.mutate({ approve: true })}
       >
         <Check />
-        Duyệt thành đề xuất
+        {stage === "leader" ? "Duyệt và chuyển CMO" : "Duyệt dự án"}
       </Button>,
-      <Button key="leader-reject" variant="outline" onClick={() => setRejectFor("leader")}>
-        <X />
-        Từ chối
-      </Button>,
-    );
-  }
-  if (canCmoDecide(detail, ctx)) {
-    actions.push(
-      <Button
-        key="cmo-approve"
-        loading={busy}
-        onClick={() => statusMutation.mutate({ status: "planning" })}
-      >
-        <Check />
-        Duyệt thành dự án
-      </Button>,
-      <Button key="cmo-reject" variant="outline" onClick={() => setRejectFor("cmo")}>
+      <Button key="reject" variant="outline" onClick={() => setRejectOpen(true)}>
         <X />
         Từ chối
       </Button>,
@@ -405,6 +433,23 @@ function ProjectDetailPage() {
                 />
               </div>
             ) : null}
+            {isProjectRejected(detail) && detail.rejection_reason ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Lý do từ chối"
+                  value={
+                    <span className="text-state-danger">
+                      {detail.rejection_reason}
+                      {detail.rejected_at ? ` · ${formatAuditTime(detail.rejected_at)}` : ""}
+                    </span>
+                  }
+                />
+              </div>
+            ) : null}
+            <InfoRow
+              label="Team phụ trách"
+              value={detail.responsible_team_id ? teamName(detail.responsible_team_id) : "—"}
+            />
             {detail.last_decision_note ? (
               <div className="sm:col-span-2">
                 <InfoRow label="Ghi chú quyết định gần nhất" value={detail.last_decision_note} />
@@ -446,12 +491,49 @@ function ProjectDetailPage() {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Lịch sử phê duyệt</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {approvalsResult.isLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : approvalsResult.isError ? (
+            <ErrorState
+              title="Không tải được lịch sử phê duyệt"
+              onRetry={() => void approvalsResult.refetch()}
+            />
+          ) : (approvalsResult.data ?? []).length === 0 ? (
+            <p className="text-body-sm text-text-muted">Dự án chưa được gửi duyệt lần nào.</p>
+          ) : (
+            <ol className="flex flex-col gap-3">
+              {(approvalsResult.data ?? []).map((entry) => (
+                <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
+                  <p className="text-body-sm text-text-primary">
+                    Vòng {entry.round} ·{" "}
+                    {APPROVAL_ACTION_LABEL[entry.action] ?? entry.action} ·{" "}
+                    {APPROVAL_STAGE_LABEL[entry.stage] ?? entry.stage}
+                  </p>
+                  <p className="text-caption text-text-muted">
+                    {entry.actorName ?? "—"} · {formatAuditTime(entry.created_at)}
+                  </p>
+                  {entry.reason ? (
+                    <p className="text-body-sm text-state-danger">Lý do: {entry.reason}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          )}
+        </CardContent>
+      </Card>
+
       {access.userId ? (
         <ProjectFormDrawer
           open={editOpen}
           onOpenChange={setEditOpen}
           project={detail}
-          fullEdit={detail.status !== "idea" && detail.status !== "leader_review"}
+          fullEdit={isProjectApproved(detail)}
+          currentUserRole={access.role}
           currentUserId={access.userId}
           teams={teams}
           facilities={facilities}
@@ -460,19 +542,19 @@ function ProjectDetailPage() {
       ) : null}
 
       <Modal
-        open={rejectFor !== null}
+        open={rejectOpen}
         onOpenChange={(open) => {
           if (busy) return;
           if (!open) {
-            setRejectFor(null);
+            setRejectOpen(false);
             setRejectError(null);
           }
         }}
         title="Từ chối và nêu lý do"
-        description="Nội dung không bị xóa; dự án quay lại bước trước và lịch sử được giữ nguyên."
+        description="Dự án chuyển sang trạng thái Bị từ chối; người tạo có thể sửa và gửi duyệt lại trên cùng bản ghi."
         footer={
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button variant="ghost" onClick={() => setRejectFor(null)} disabled={busy}>
+            <Button variant="ghost" onClick={() => setRejectOpen(false)} disabled={busy}>
               Hủy
             </Button>
             <Button
@@ -484,10 +566,7 @@ function ProjectDetailPage() {
                   return;
                 }
                 setRejectError(null);
-                statusMutation.mutate({
-                  status: rejectFor === "leader" ? "idea" : "leader_review",
-                  note: rejectNote.trim(),
-                });
+                decideMutation.mutate({ approve: false, reason: rejectNote.trim() });
               }}
             >
               Xác nhận từ chối
