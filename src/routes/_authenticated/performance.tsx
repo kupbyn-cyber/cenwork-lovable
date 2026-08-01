@@ -121,7 +121,7 @@ function PerformancePage() {
               <Button
                 key={key}
                 size="sm"
-                variant={preset === key ? "default" : "outline"}
+                variant={preset === key ? "primary" : "outline"}
                 onClick={() => applyPreset(key)}
               >
                 {label}
