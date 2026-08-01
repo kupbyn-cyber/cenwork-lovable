@@ -133,10 +133,11 @@ export async function decideDeadlineChange(input: {
   approve: boolean;
   note?: string | null;
 }) {
+  const note = input.note?.trim();
   const { error } = await supabase.rpc("deadline_change_decide", {
     _request: input.requestId,
     _approve: input.approve,
-    _note: input.note ?? undefined,
+    ...(note ? { _note: note } : {}),
   });
   if (error) throw new Error(error.message);
 }
