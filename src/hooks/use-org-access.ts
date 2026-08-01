@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { myAccessQuery, type MemberRow } from "@/lib/org-data";
 import {
   hasPermission,
+  isSystemAdminRole,
   PERMISSIONS,
   type AppRoleKey,
   type PermissionKey,
@@ -22,6 +23,8 @@ export function useOrgAccess() {
   const leaderTeamId = data?.leaderTeamId ?? null;
   const isAdmin = role === "admin";
   const isCmo = role === "cmo";
+  /** Admin và CMO: quản trị toàn hệ thống, không giới hạn theo Team. */
+  const isSystemAdmin = isSystemAdminRole(role);
   const isLeader = role === "leader";
   const can = (permission: PermissionKey) => hasPermission(role, permission);
 
@@ -31,21 +34,22 @@ export function useOrgAccess() {
     leaderTeamId,
     isAdmin,
     isCmo,
+    isSystemAdmin,
     isLeader,
     loading: isLoading,
     can,
     /** Admin và CMO được tạo tài khoản. */
     canCreateMember: can(PERMISSIONS.MEMBERS_CREATE),
-    /** Chỉ Admin được khóa/mở khóa. */
+    /** Admin và CMO được khóa/mở khóa. */
     canLockMember: can(PERMISSIONS.MEMBERS_LOCK),
-    /** Chỉ Admin và CMO được đổi vai trò và Team chính. */
+    /** Admin và CMO được đổi vai trò và Team chính. */
     canChangeRoleOrTeam: can(PERMISSIONS.ROLES_ASSIGN),
-    /** Admin quản lý Team và Cơ sở. */
+    /** Admin và CMO quản lý Team và Cơ sở. */
     canManageOrg: can(PERMISSIONS.ORG_MANAGE),
     canViewAudit: can(PERMISSIONS.AUDIT_VIEW),
     canManageSettings: can(PERMISSIONS.SETTINGS_ADMIN),
     canEditMember(member: MemberRow) {
-      if (isAdmin || isCmo) return true;
+      if (isSystemAdmin) return true;
       if (isLeader && leaderTeamId && member.primary_team_id === leaderTeamId) return true;
       return member.id === user?.id;
     },
