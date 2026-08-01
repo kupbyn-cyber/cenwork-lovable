@@ -60,6 +60,7 @@ function RecognitionsPage() {
         <TabsList>
           <TabsTrigger value="all">Toàn bộ</TabsTrigger>
           <TabsTrigger value="mine">Liên quan tới tôi</TabsTrigger>
+          <TabsTrigger value="stats">Thống kê</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
           <RecognitionFeed />
@@ -67,7 +68,11 @@ function RecognitionsPage() {
         <TabsContent value="mine">
           <RecognitionFeed personId={user?.id ?? null} />
         </TabsContent>
+        <TabsContent value="stats">
+          <RecognitionStatsPanel description="Chỉ hiển thị số lượng ghi nhận theo phạm vi bạn được xem; nội dung và người gửi không được thống kê." />
+        </TabsContent>
       </Tabs>
+
 
       <RecognitionFormModal open={open} onOpenChange={setOpen} />
     </div>
