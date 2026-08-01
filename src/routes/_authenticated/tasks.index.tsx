@@ -312,7 +312,7 @@ function TasksPage() {
           {
             id: "project",
             header: "Dự án",
-            ...col("w-[120px]"),
+            ...col("w-[112px]"),
             cell: (row: TaskRow) =>
               row.projectName ? (
                 <span className="block truncate text-text-secondary">{row.projectName}</span>
@@ -329,7 +329,7 @@ function TasksPage() {
           {
             id: "assignee",
             header: "Phụ trách",
-            ...col("w-[112px]"),
+            ...col("w-[104px]"),
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.assigneeName ?? "—"}</span>
             ),
@@ -341,7 +341,7 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            ...col("w-[96px]"),
+            ...col("w-[84px]"),
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.teamName ?? "—"}</span>
             ),
@@ -353,7 +353,7 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            ...col("w-[116px]"),
+            ...col("w-[136px]"),
             cell: (row: TaskRow) => (
               <span
                 className={cn(
@@ -372,7 +372,7 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            ...col("w-[92px]"),
+            ...col("w-[100px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_PRIORITY_LABEL[row.priority]}
@@ -387,7 +387,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            ...col("w-[112px]"),
+            ...col("w-[128px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
