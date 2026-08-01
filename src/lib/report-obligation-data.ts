@@ -145,17 +145,18 @@ export async function createRequirement(input: RequirementInput) {
 }
 
 export async function updateRequirement(id: string, input: Partial<RequirementInput>) {
-  const patch: Record<string, unknown> = {};
-  if (input.requiresAck !== undefined) patch["requires_ack"] = input.requiresAck;
-  if (input.requiresEvidence !== undefined) patch["requires_evidence"] = input.requiresEvidence;
-  if (input.isActive !== undefined) patch["is_active"] = input.isActive;
-  if (input.dueTime !== undefined) patch["due_time"] = input.dueTime;
-  if (input.openTime !== undefined) patch["open_time"] = input.openTime;
-  if (input.defaultReviewerId !== undefined) patch["default_reviewer_id"] = input.defaultReviewerId;
-  if (input.effectiveTo !== undefined) patch["effective_to"] = input.effectiveTo;
+  const patch: Database["public"]["Tables"]["report_requirements"]["Update"] = {};
+  if (input.requiresAck !== undefined) patch.requires_ack = input.requiresAck;
+  if (input.requiresEvidence !== undefined) patch.requires_evidence = input.requiresEvidence;
+  if (input.isActive !== undefined) patch.is_active = input.isActive;
+  if (input.dueTime !== undefined) patch.due_time = input.dueTime;
+  if (input.openTime !== undefined) patch.open_time = input.openTime;
+  if (input.defaultReviewerId !== undefined) patch.default_reviewer_id = input.defaultReviewerId;
+  if (input.effectiveTo !== undefined) patch.effective_to = input.effectiveTo;
   const { error } = await supabase.from("report_requirements").update(patch).eq("id", id);
   fail(error);
 }
+
 
 /* ================= Kỳ báo cáo ================= */
 
