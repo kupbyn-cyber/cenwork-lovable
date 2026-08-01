@@ -32,7 +32,13 @@ export const PERMISSIONS = {
   REPORTS_SUBMIT_WEEKLY: "reports.submit_weekly",
   REPORTS_REVIEW_WEEKLY: "reports.review_weekly",
   TELEGRAM_MANAGE: "telegram.manage",
+  MVP_VIEW: "mvp.view",
+  MVP_VOTE: "mvp.vote",
+  MVP_REVIEW: "mvp.review",
+  MVP_APPROVE: "mvp.approve",
+  MVP_MANAGE: "mvp.manage",
 } as const;
+
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
