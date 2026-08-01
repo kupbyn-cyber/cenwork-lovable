@@ -39,7 +39,6 @@ import {
 import { membersQuery } from "@/lib/org-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
 
-
 const TITLE = "Thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
   "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
@@ -83,8 +82,7 @@ function AnnouncementsPage() {
     [members.data],
   );
 
-  const matches = (title: string) =>
-    title.toLowerCase().includes(search.trim().toLowerCase());
+  const matches = (title: string) => title.toLowerCase().includes(search.trim().toLowerCase());
 
   const inboxRows = (inbox.data ?? []).filter(
     (row) =>
@@ -95,7 +93,6 @@ function AnnouncementsPage() {
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
   );
-
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -163,7 +160,6 @@ function AnnouncementsPage() {
               <TabsTrigger value="created">Thông báo đã gửi</TabsTrigger>
             </TabsList>
 
-
             <TabsContent value="inbox" className="mt-4">
               {inbox.isLoading ? (
                 <SkeletonCard lines={3} />
@@ -192,7 +188,6 @@ function AnnouncementsPage() {
                 </div>
               )}
             </TabsContent>
-
 
             <TabsContent value="created" className="mt-4">
               <DataTable<AnnouncementRow>

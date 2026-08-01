@@ -18,10 +18,7 @@ import { acknowledgeWithAnswers, type AnswerDraft } from "@/lib/announcement-int
 export function usePendingAnnouncements() {
   const { user } = useAuth();
   const inbox = useQuery(inboxQuery(user?.id));
-  const pending = React.useMemo(
-    () => pendingAckRows(inbox.data, user?.id),
-    [inbox.data, user?.id],
-  );
+  const pending = React.useMemo(() => pendingAckRows(inbox.data, user?.id), [inbox.data, user?.id]);
   return {
     userId: user?.id,
     pending,

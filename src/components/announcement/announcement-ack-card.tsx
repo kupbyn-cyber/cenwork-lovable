@@ -95,7 +95,10 @@ export function AnnouncementAckCard({ row, senderName, open, onOpenChange, compa
             </span>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <StatusBadge tone={RECIPIENT_STATUS_TONE[status]} label={RECIPIENT_STATUS_LABEL[status]} />
+            <StatusBadge
+              tone={RECIPIENT_STATUS_TONE[status]}
+              label={RECIPIENT_STATUS_LABEL[status]}
+            />
             <Button
               type="button"
               variant="ghost"

@@ -67,7 +67,6 @@ export interface AnnouncementRow {
   include_self: boolean;
 }
 
-
 export interface RecipientRow {
   id: string;
   announcement_id: string;
@@ -153,7 +152,6 @@ export const ANNOUNCEMENT_SYNC_KEYS = [
   "announcement-answers",
   "announcement-ack-stats",
 ] as const;
-
 
 /** Thông báo tôi nhận. */
 export async function fetchInbox(): Promise<InboxRow[]> {
@@ -259,7 +257,11 @@ export async function fetchAckStats(ids: string[]): Promise<Record<string, AckSt
     .select("announcement_id,status,due_at")
     .in("announcement_id", ids);
   fail(error);
-  const rows = (data ?? []) as { announcement_id: string; status: RecipientStatus; due_at: string }[];
+  const rows = (data ?? []) as {
+    announcement_id: string;
+    status: RecipientStatus;
+    due_at: string;
+  }[];
   const stats: Record<string, AckStat> = {};
   for (const row of rows) {
     const stat = (stats[row.announcement_id] ??= { total: 0, completed: 0, overdue: 0 });
@@ -277,7 +279,6 @@ export const ackStatsQuery = (ids: string[]) =>
     queryFn: () => fetchAckStats(ids),
     enabled: ids.length > 0,
   });
-
 
 export interface DraftInput {
   id?: string;
