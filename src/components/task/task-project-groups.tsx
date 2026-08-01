@@ -62,7 +62,7 @@ export function TaskProjectGroups({
         return (
           <section
             key={group.key}
-            className="min-w-0 overflow-hidden rounded-card border border-border-subtle bg-surface-raised"
+            className="min-w-0 overflow-hidden rounded-card border border-border-default bg-surface"
           >
             <div className="flex min-w-0 items-center gap-3 px-3 py-2.5 sm:px-4">
               <button
@@ -120,7 +120,7 @@ export function TaskProjectGroups({
             </div>
 
             {expanded ? (
-              <div id={panelId} className="min-w-0 border-t border-border-subtle">
+              <div id={panelId} className="min-w-0 border-t border-border-default">
                 {group.tasks.length === 0 ? (
                   <p className="px-4 py-4 text-body-sm text-text-muted">Chưa có công việc</p>
                 ) : (
