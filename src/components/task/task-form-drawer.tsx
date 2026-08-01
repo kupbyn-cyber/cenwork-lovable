@@ -21,7 +21,7 @@ import {
   utcToHanoiInputs,
 } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
-import type { PersonOption, ProjectRow } from "@/lib/project-data";
+import { isProjectApproved, type PersonOption, type ProjectRow } from "@/lib/project-data";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
