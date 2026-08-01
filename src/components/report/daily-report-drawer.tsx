@@ -112,7 +112,14 @@ export function DailyReportDrawer({
 
   const tasks = taskRefs.data ?? [];
 
+  function closeThanks() {
+    const id = thanksReportId;
+    setThanksReportId(null);
+    if (id) onSaved?.(id);
+  }
+
   return (
+    <>
     <DrawerPanel
       open={open}
       onOpenChange={onOpenChange}
