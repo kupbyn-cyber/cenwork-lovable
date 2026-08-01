@@ -356,7 +356,7 @@ export function PersonDetailDrawer({
             {person.recognition.categories.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {person.recognition.categories.map((category) => (
-                  <Badge key={category.key} variant="secondary">
+                  <Badge key={category.key} variant="neutral">
                     {category.label}: {category.count}
                   </Badge>
                 ))}
