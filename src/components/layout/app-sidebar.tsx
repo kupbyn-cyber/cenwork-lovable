@@ -153,12 +153,13 @@ export function AppSidebar({
     >
       <div
         className={cn(
-          "flex h-14 shrink-0 items-center border-b border-border-default px-3",
+          "cen-brand-glow flex h-14 shrink-0 items-center border-b border-border-default px-3",
           collapsed ? "justify-center" : "justify-between gap-2",
         )}
       >
         <CenLogo collapsed={collapsed} />
       </div>
+
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <SidebarNav collapsed={collapsed} />
