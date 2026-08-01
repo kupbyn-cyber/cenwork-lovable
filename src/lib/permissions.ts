@@ -149,8 +149,10 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "announcements.view",
     "announcements.create",
     "mvp.manage",
+    "mvp.review",
+    "mvp.approve",
   ],
-  // CMO là quản trị toàn hệ thống, ngang quyền Admin (xem SYSTEM_ADMIN_ROLES).
+  // CMO ngang quyền Admin — đồng bộ ngay dưới đây, không duy trì danh sách riêng.
   cmo: [],
   leader: [
     "members.view",
@@ -195,8 +197,5 @@ export function hasPermission(role: AppRoleKey | null, permission: PermissionKey
 
 export const PERMISSION_DENIED_MESSAGE = "Bạn không có quyền thực hiện thao tác này.";
 
-// Admin và CMO ngang quyền: đồng bộ để CMO không bao giờ thiếu quyền của Admin.
-ROLE_PERMISSIONS.admin = Array.from(
-  new Set<PermissionKey>([...ROLE_PERMISSIONS.admin, "mvp.review", "mvp.approve", "reports.submit_weekly"]),
-);
+// CMO ngang quyền Admin: đồng bộ một chiều để CMO không bao giờ thiếu quyền mới của Admin.
 ROLE_PERMISSIONS.cmo = [...ROLE_PERMISSIONS.admin];
