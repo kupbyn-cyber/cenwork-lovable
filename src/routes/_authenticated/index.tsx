@@ -239,10 +239,48 @@ function Dashboard() {
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <PageHeader
-        title={`${greeting()}, ${me?.display_name ?? "bạn"}`}
-        description={`Hôm nay ${formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo cáo trong phạm vi bạn được xem.`}
-      />
+      <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default shadow-level-2">
+        <div className="relative z-10 flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <img src="/brand/logo-mark.svg" alt="" aria-hidden className="size-6 object-contain" />
+              <span className="text-caption tracking-[0.24em] text-accent-yellow/80 uppercase">
+                Marketing Command Center
+              </span>
+            </div>
+            <h1 className="mt-2 text-h1 font-semibold text-text-primary">
+              {greeting()}, {me?.display_name ?? "bạn"}
+            </h1>
+            <p className="mt-1 max-w-2xl text-body text-text-secondary">
+              Hôm nay {formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo
+              cáo trong phạm vi bạn được xem.
+            </p>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Bộ lọc thời gian"
+            className="flex shrink-0 gap-1 self-start rounded-control border border-border-default bg-background/60 p-1 backdrop-blur lg:self-auto"
+          >
+            {RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                aria-pressed={range === option.key}
+                onClick={() => setRange(option.key)}
+                className={
+                  range === option.key
+                    ? "cen-transition rounded-badge bg-brand-primary px-3 py-1.5 text-label font-medium text-brand-foreground"
+                    : "cen-transition rounded-badge px-3 py-1.5 text-label text-text-secondary hover:bg-surface-subtle hover:text-text-primary"
+                }
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
 
       <DailyActionHub />
       <QuickActions />
