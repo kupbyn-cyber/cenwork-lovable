@@ -142,6 +142,32 @@ function Dashboard() {
     (row) => row.team_id === access.leaderTeamId && row.week_start === thisWeek,
   );
 
+  /**
+   * Hành động nhanh Báo cáo ngày: nhãn và đích đến bám theo trạng thái báo cáo
+   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở form.
+   */
+  const canSubmitDaily = access.can("reports.submit_daily");
+  const dailyDraft =
+    myTodayReport && (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
+      ? myTodayReport
+      : null;
+  const dailyActionLabel = !myTodayReport
+    ? "Gửi báo cáo ngày"
+    : dailyDraft
+      ? "Tiếp tục báo cáo ngày"
+      : "Xem báo cáo hôm nay";
+
+  function openDailyAction() {
+    if (myTodayReport && !dailyDraft) {
+      void navigate({
+        to: "/reports/daily/$reportId",
+        params: { reportId: myTodayReport.id },
+      });
+      return;
+    }
+    setDailyOpen(true);
+  }
+
   const loading =
     projectsResult.isLoading || tasksResult.isLoading || dailyResult.isLoading || weeklyResult.isLoading;
 
@@ -160,6 +186,15 @@ function Dashboard() {
       <PageHeader
         title="Bảng điều hành"
         description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
+        actions={
+          canSubmitDaily ? (
+            <Button onClick={openDailyAction} disabled={dailyResult.isError}>
+              <FileText />
+              {dailyActionLabel}
+            </Button>
+          ) : null
+        }
+
       />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
