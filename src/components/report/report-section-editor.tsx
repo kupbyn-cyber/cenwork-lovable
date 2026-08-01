@@ -212,7 +212,7 @@ export function ReportSectionEditor({
 
       {editable ? (
         <div className="mt-3 flex justify-end">
-          <Button size="sm" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+          <Button size="sm" loading={save.isPending} disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
             Lưu nội dung
           </Button>
         </div>
@@ -244,6 +244,7 @@ export function ReportSectionEditor({
                       size="sm"
                       variant="ghost"
                       aria-label="Gỡ nguồn tham chiếu"
+                      loading={detach.isPending && detach.variables === link.id}
                       disabled={detach.isPending}
                       onClick={() => detach.mutate(link.id)}
                     >
@@ -277,6 +278,7 @@ export function ReportSectionEditor({
                     <Button
                       size="sm"
                       variant="secondary"
+                      loading={attach.isPending && attach.variables === item.id}
                       disabled={attach.isPending}
                       onClick={() => attach.mutate(item.id)}
                     >
