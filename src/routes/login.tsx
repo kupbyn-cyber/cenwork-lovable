@@ -141,7 +141,10 @@ function LoginPage() {
         </div>
 
 
-        <div className="mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl">
+        <div
+          className="cen-anim-rise mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl"
+          style={{ animationDelay: "520ms" }}
+        >
           <h2 className="text-h4 text-text-primary">Đăng nhập</h2>
           <p className="mt-1 text-helper text-text-muted">
             Sử dụng tài khoản nội bộ đã được cấp để truy cập hệ thống.
