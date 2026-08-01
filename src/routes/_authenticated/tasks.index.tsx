@@ -25,7 +25,16 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
-import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
+import {
+  activePeopleQuery,
+  isProjectApproved,
+  isProjectArchived,
+  projectsQuery,
+} from "@/lib/project-data";
+import {
+  TaskProjectGroups,
+  type TaskGroup,
+} from "@/components/task/task-project-groups";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
