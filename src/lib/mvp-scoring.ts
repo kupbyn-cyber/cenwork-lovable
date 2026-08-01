@@ -217,6 +217,216 @@ export const MVP_MIN_COMMITTED_TASKS = 1;
 export const MVP_EXPECTED_DAILY_REPORTS = 5;
 export const MVP_VOTE_MIN_REASON = 20;
 
+/* ========= Xác nhận thông báo bắt buộc đúng hạn (nhóm Kỷ luật) ========= */
+
+/** Phiên bản công thức — lưu kèm snapshot để truy vết khi kỳ đã khóa. */
+export const MVP_ANNOUNCEMENT_FORMULA_VERSION = "announcement-v1";
+
+/** Tối thiểu số giờ làm việc từ lúc nhận đến hạn thì thông báo mới được tính. */
+export const MVP_ANNOUNCEMENT_MIN_WORK_HOURS = 4;
+
+/** Giờ làm việc CEN: Thứ Hai–Thứ Sáu, 08:00–17:00 giờ Hà Nội. */
+const WORK_DAY_START = 8;
+const WORK_DAY_END = 17;
+const HANOI_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/** Số giờ làm việc giữa hai mốc thời gian, theo múi giờ Hà Nội. */
+export function workingHoursBetween(fromIso: string, toIso: string): number {
+  const from = new Date(fromIso).getTime();
+  const to = new Date(toIso).getTime();
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return 0;
+  const step = 15 * 60 * 1000;
+  const capped = Math.min(to, from + 90 * 24 * 60 * 60 * 1000);
+  let hours = 0;
+  for (let t = from; t < capped; t += step) {
+    const local = new Date(t + HANOI_OFFSET_MS);
+    const day = local.getUTCDay();
+    const hour = local.getUTCHours() + local.getUTCMinutes() / 60;
+    if (day >= 1 && day <= 5 && hour >= WORK_DAY_START && hour < WORK_DAY_END) {
+      hours += step / 3_600_000;
+    }
+  }
+  return Math.round(hours * 100) / 100;
+}
+
+export type MvpAnnouncementBucket =
+  | "on_time"
+  | "late_12"
+  | "late_24"
+  | "late_48"
+  | "missed"
+  | "excluded";
+
+export const MVP_ANNOUNCEMENT_BUCKET_LABEL: Record<MvpAnnouncementBucket, string> = {
+  on_time: "Đúng hạn",
+  late_12: "Trễ ≤ 12 giờ",
+  late_24: "Trễ 12–24 giờ",
+  late_48: "Trễ 24–48 giờ",
+  missed: "Trễ > 48 giờ hoặc chưa xác nhận",
+  excluded: "Không tính",
+};
+
+/** Hệ số theo số giờ trễ so với hạn xác nhận. */
+export function announcementCoefficient(lateHours: number | null): {
+  bucket: MvpAnnouncementBucket;
+  coefficient: number;
+} {
+  if (lateHours === null) return { bucket: "missed", coefficient: 0 };
+  if (lateHours <= 0) return { bucket: "on_time", coefficient: 1 };
+  if (lateHours <= 12) return { bucket: "late_12", coefficient: 0.75 };
+  if (lateHours <= 24) return { bucket: "late_24", coefficient: 0.5 };
+  if (lateHours <= 48) return { bucket: "late_48", coefficient: 0.25 };
+  return { bucket: "missed", coefficient: 0 };
+}
+
+/** Một bản ghi người nhận thông báo bắt buộc xác nhận trong kỳ. */
+export interface MvpAnnouncementInput {
+  announcementId: string;
+  title: string;
+  /** Hạn xác nhận của chính người nhận này. */
+  dueAt: string | null;
+  /** Thời điểm người nhận được đưa vào danh sách. */
+  receivedAt: string | null;
+  acknowledgedAt: string | null;
+  isRevoked: boolean;
+  /** Miễn trừ hợp lệ: nghỉ phép, lỗi hệ thống được Admin xác nhận… */
+  isExempt: boolean;
+  exemptReason: string | null;
+  /** Hạn bị đổi sau khi đã quá hạn — loại khỏi mẫu số. */
+  dueChangedAfterOverdue?: boolean;
+}
+
+export interface MvpAnnouncementEvaluation {
+  announcementId: string;
+  title: string;
+  dueAt: string | null;
+  acknowledgedAt: string | null;
+  lateHours: number | null;
+  coefficient: number | null;
+  bucket: MvpAnnouncementBucket;
+  excluded: boolean;
+  excludeReason: string | null;
+}
+
+export interface MvpAnnouncementSummary {
+  version: string;
+  counted: number;
+  excluded: number;
+  onTime: number;
+  late12: number;
+  late24: number;
+  late48: number;
+  missed: number;
+  coefficientSum: number;
+  score: number;
+  isApplicable: boolean;
+  notApplicableReason: string | null;
+  evaluations: MvpAnnouncementEvaluation[];
+}
+
+/**
+ * Chấm điểm xác nhận thông báo: 2 × tổng hệ số ÷ số thông báo hợp lệ.
+ * `lockAt` là mốc khóa kỳ — chưa xác nhận tính tới mốc này là hệ số 0.
+ */
+export function evaluateAnnouncements(
+  items: MvpAnnouncementInput[],
+  lockAt: string,
+  maxPoints: number = MVP_CRITERION_MAX.announcement,
+): MvpAnnouncementSummary {
+  const evaluations: MvpAnnouncementEvaluation[] = items.map((item) => {
+    const base = {
+      announcementId: item.announcementId,
+      title: item.title,
+      dueAt: item.dueAt,
+      acknowledgedAt: item.acknowledgedAt,
+    };
+    const exclude = (reason: string): MvpAnnouncementEvaluation => ({
+      ...base,
+      lateHours: null,
+      coefficient: null,
+      bucket: "excluded",
+      excluded: true,
+      excludeReason: reason,
+    });
+
+    if (item.isRevoked) return exclude("Thông báo đã bị thu hồi");
+    if (item.isExempt) return exclude(item.exemptReason ?? "Được miễn trừ hợp lệ");
+    if (item.dueChangedAfterOverdue) return exclude("Hạn xác nhận bị thay đổi sau khi đã quá hạn");
+    if (!item.dueAt || Number.isNaN(new Date(item.dueAt).getTime())) {
+      return exclude("Thiếu hoặc sai dữ liệu hạn xác nhận");
+    }
+    if (!item.receivedAt || Number.isNaN(new Date(item.receivedAt).getTime())) {
+      return exclude("Thiếu hoặc sai dữ liệu thời điểm nhận");
+    }
+    if (new Date(item.receivedAt).getTime() > new Date(item.dueAt).getTime()) {
+      return exclude("Được thêm làm người nhận sau hạn xác nhận");
+    }
+    const workHours = workingHoursBetween(item.receivedAt, item.dueAt);
+    if (workHours < MVP_ANNOUNCEMENT_MIN_WORK_HOURS) {
+      return exclude(`Chỉ có ${workHours} giờ làm việc để xử lý (tối thiểu ${MVP_ANNOUNCEMENT_MIN_WORK_HOURS})`);
+    }
+
+    const due = new Date(item.dueAt).getTime();
+    const ack =
+      item.acknowledgedAt && !Number.isNaN(new Date(item.acknowledgedAt).getTime())
+        ? new Date(item.acknowledgedAt).getTime()
+        : null;
+    if (ack === null) {
+      const lockTime = new Date(lockAt).getTime();
+      const lateHours = Math.max(0, (lockTime - due) / 3_600_000);
+      const graded = announcementCoefficient(lateHours <= 0 ? null : lateHours);
+      // Chưa xác nhận khi khóa kỳ: nếu vẫn còn hạn thì chưa tính là trễ.
+      if (lateHours <= 0) {
+        return exclude("Chưa tới hạn xác nhận tại thời điểm khóa kỳ");
+      }
+      return {
+        ...base,
+        lateHours: Math.round(lateHours * 10) / 10,
+        coefficient: graded.coefficient,
+        bucket: graded.bucket,
+        excluded: false,
+        excludeReason: null,
+      };
+    }
+
+    const lateHours = (ack - due) / 3_600_000;
+    const graded = announcementCoefficient(lateHours);
+    return {
+      ...base,
+      lateHours: Math.round(lateHours * 10) / 10,
+      coefficient: graded.coefficient,
+      bucket: graded.bucket,
+      excluded: false,
+      excludeReason: null,
+    };
+  });
+
+  const counted = evaluations.filter((row) => !row.excluded);
+  const coefficientSum = counted.reduce((sum, row) => sum + (row.coefficient ?? 0), 0);
+  const countBucket = (bucket: MvpAnnouncementBucket) =>
+    counted.filter((row) => row.bucket === bucket).length;
+
+  return {
+    version: MVP_ANNOUNCEMENT_FORMULA_VERSION,
+    counted: counted.length,
+    excluded: evaluations.length - counted.length,
+    onTime: countBucket("on_time"),
+    late12: countBucket("late_12"),
+    late24: countBucket("late_24"),
+    late48: countBucket("late_48"),
+    missed: countBucket("missed"),
+    coefficientSum: Math.round(coefficientSum * 100) / 100,
+    score:
+      counted.length > 0
+        ? Math.round((maxPoints * coefficientSum) / counted.length * 10) / 10
+        : 0,
+    isApplicable: counted.length > 0,
+    notApplicableReason:
+      counted.length > 0 ? null : "Không có thông báo bắt buộc xác nhận hợp lệ trong kỳ",
+    evaluations,
+  };
+}
+
 /* ================= Đầu vào và kết quả tính điểm ================= */
 
 export interface MvpTaskInput {
@@ -237,6 +447,10 @@ export interface MvpScoreInput {
   /** Số phiếu của người được bầu nhiều nhất trong kỳ (chuẩn hóa tương đối). */
   topVotes: number;
   review: { quality: number; proactive: number; teamwork: number } | null;
+  /** Thông báo bắt buộc xác nhận gửi tới nhân sự trong kỳ. */
+  announcements?: MvpAnnouncementInput[];
+  /** Mốc khóa kỳ dùng để chấm thông báo chưa xác nhận. */
+  announcementLockAt?: string;
 }
 
 export interface MvpComponentResult {
@@ -244,10 +458,11 @@ export interface MvpComponentResult {
   maxPoints: number;
   earnedPoints: number;
   formula: string;
-  sourceData: Record<string, number | string | boolean | null>;
+  sourceData: Record<string, unknown>;
   isApplicable: boolean;
   notApplicableReason: string | null;
 }
+
 
 export interface MvpScoreResult {
   components: MvpComponentResult[];
