@@ -19,6 +19,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { createMemberAccount, setMemberRole } from "@/lib/org.functions";
 import { isSystemAdminRole, roleRequiresTeam } from "@/lib/permissions";
 import {
+  JOB_TITLES,
   ROLE_LABEL,
   replaceCollaboratorTeams,
   updateMemberProfile,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/org-data";
 
 const NO_TEAM = "__none__";
+const NO_JOB_TITLE = "__no_job__";
 const ROLES: AppRole[] = ["admin", "cmo", "leader", "member"];
 
 export interface MemberFormDrawerProps {
@@ -148,6 +150,11 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         next.email = "Email không đúng định dạng.";
       if (form.password.length < 8) next.password = "Mật khẩu khởi tạo tối thiểu 8 ký tự.";
     }
+    if (
+      form.jobTitle &&
+      !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number])
+    )
+      next.jobTitle = "Chức danh cũ không hợp lệ, vui lòng chọn lại.";
     if (form.phoneNumber.trim() && !/^[0-9+][0-9 .()-]{7,19}$/.test(form.phoneNumber.trim()))
       next.phoneNumber = "Số điện thoại không hợp lệ (8–20 ký tự số).";
     if (form.birthday && !/^\d{4}-\d{2}-\d{2}$/.test(form.birthday))
