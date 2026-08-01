@@ -1,13 +1,17 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { FileText } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
+
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
