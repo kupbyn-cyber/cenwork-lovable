@@ -142,6 +142,29 @@ export const projectsQuery = () =>
 export const projectQuery = (id: string) =>
   queryOptions({ queryKey: ["project", id], queryFn: () => fetchProject(id) });
 
+/**
+ * Số công việc của từng dự án ("Số CV").
+ * Một truy vấn duy nhất cho cả danh sách: chỉ lấy `project_id` của Task còn hiệu lực.
+ * Task độc lập không được đếm; Task đã xóa mềm bị RLS loại khỏi kết quả.
+ */
+export async function fetchProjectTaskCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id,project_id")
+    .not("project_id", "is", null);
+  if (error) throw new Error(error.message);
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const projectId = row.project_id;
+    if (!projectId) continue;
+    counts[projectId] = (counts[projectId] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export const projectTaskCountsQuery = () =>
+  queryOptions({ queryKey: ["project-task-counts"], queryFn: fetchProjectTaskCounts });
+
 /** Danh sách nhân sự đang hoạt động mà người dùng hiện tại được nhìn thấy (RLS quyết định). */
 export interface PersonOption {
   id: string;
