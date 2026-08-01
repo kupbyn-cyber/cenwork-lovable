@@ -171,18 +171,146 @@ function TasksPage() {
     view,
   ]);
 
+  /** Nhóm theo Dự án; không lặp lại cột Dự án trong từng dòng. */
+  const groups = React.useMemo<TaskGroup[]>(() => {
+    const hasFilter =
+      search.trim() !== "" ||
+      statusFilter !== ALL ||
+      priorityFilter !== ALL ||
+      assigneeFilter !== ALL ||
+      projectFilter !== ALL ||
+      teamFilter !== ALL;
+
+    const byProject = new Map<string, TaskRow[]>();
+    for (const task of rows) {
+      const key = task.project_id ?? NO_PROJECT;
+      const list = byProject.get(key);
+      if (list) list.push(task);
+      else byProject.set(key, [task]);
+    }
+
+    const teamName = (teamId: string | null) =>
+      teamId ? (teams.find((team) => team.id === teamId)?.name ?? null) : null;
+
+    const allowProjectTask = canCreateProjectTask(ctx) && access.can("tasks.create");
+    const allowStandaloneTask = access.can("tasks.create");
+
+    const sortTasks = (list: TaskRow[]) =>
+      [...list].sort((a, b) => {
+        const overdue = Number(isTaskOverdue(b)) - Number(isTaskOverdue(a));
+        if (overdue !== 0) return overdue;
+        const deadline = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        if (deadline !== 0) return deadline;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+
+    const build = (
+      key: string,
+      projectId: string | null,
+      name: string,
+      team: string | null,
+      list: TaskRow[],
+      canAdd: boolean,
+    ): TaskGroup => ({
+      key,
+      projectId,
+      name,
+      teamName: team,
+      tasks: sortTasks(list),
+      activeCount: list.filter((task) => task.status !== "done").length,
+      overdueCount: list.filter((task) => isTaskOverdue(task)).length,
+      doneCount: list.filter((task) => task.status === "done").length,
+      canAdd,
+    });
+
+    const result: TaskGroup[] = [];
+
+    for (const project of projects) {
+      if (projectFilter !== ALL && projectFilter !== project.id) continue;
+      const list = byProject.get(project.id) ?? [];
+      const addable =
+        allowProjectTask && isProjectApproved(project) && !isProjectArchived(project);
+      if (list.length === 0) {
+        // Sau khi lọc, không hiển thị nhóm rỗng; chỉ giữ nhóm rỗng ở danh sách gốc.
+        if (hasFilter || view === "archived" || !isProjectApproved(project)) continue;
+        if (isProjectArchived(project)) continue;
+      }
+      result.push(
+        build(
+          project.id,
+          project.id,
+          project.name,
+          teamName(project.responsible_team_id),
+          list,
+          addable,
+        ),
+      );
+    }
+
+    // Dự án ngoài danh sách hiển thị (ví dụ chỉ thấy Task) vẫn gom được theo tên.
+    for (const [key, list] of byProject) {
+      if (key === NO_PROJECT) continue;
+      if (result.some((group) => group.key === key)) continue;
+      if (projectFilter !== ALL && projectFilter !== key) continue;
+      const first = list[0]!;
+      result.push(
+        build(key, key, first.projectName ?? "Dự án", teamName(first.team_id), list, false),
+      );
+    }
+
+    if (projectFilter === ALL || projectFilter === NO_PROJECT) {
+      const standalone = byProject.get(NO_PROJECT) ?? [];
+      if (standalone.length > 0 || (!hasFilter && view === "active")) {
+        result.push(
+          build(NO_PROJECT, null, "Công việc độc lập", null, standalone, allowStandaloneTask),
+        );
+      }
+    }
+
+    const rank = (group: TaskGroup) => {
+      if (group.overdueCount > 0) return 0;
+      if (group.tasks.length > 0) return 1;
+      return 2;
+    };
+    return result.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "vi"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    rows,
+    projects,
+    teams,
+    projectFilter,
+    search,
+    statusFilter,
+    priorityFilter,
+    assigneeFilter,
+    teamFilter,
+    view,
+    access.role,
+    access.userId,
+  ]);
+
+  /** Mặc định chỉ mở nhóm có Task quá hạn (hệ thống chưa có ngưỡng "sắp đến hạn"). */
+  const [expandedKeys, setExpandedKeys] = React.useState<string[]>([]);
+  const initialisedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (initialisedRef.current || tasksResult.isLoading || groups.length === 0) return;
+    initialisedRef.current = true;
+    setExpandedKeys(groups.filter((group) => group.overdueCount > 0).map((group) => group.key));
+  }, [groups, tasksResult.isLoading]);
+
+  const toggleGroup = (key: string) =>
+    setExpandedKeys((keys) =>
+      keys.includes(key) ? keys.filter((item) => item !== key) : [...keys, key],
+    );
+
   const columns = [
     {
       id: "name",
       header: "Công việc",
       className: "min-w-[220px]",
-      cell: (row: TaskRow) => (
-        <TableCellStack
-          primary={row.name}
-          secondary={row.projectName ?? "Công việc độc lập"}
-        />
-      ),
+      cell: (row: TaskRow) => <TableCellStack primary={row.name} />,
     },
+
     {
       id: "assignee",
       header: "Người phụ trách",
