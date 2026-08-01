@@ -347,6 +347,23 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {canSubmitDaily && access.userId ? (
+        <DailyReportDrawer
+          open={dailyOpen}
+          onOpenChange={setDailyOpen}
+          report={dailyDraft}
+          authorId={access.userId}
+          teamId={
+            (membersResult.data ?? []).find((member) => member.id === access.userId)
+              ?.primary_team_id ?? null
+          }
+          onSaved={(id) =>
+            void navigate({ to: "/reports/daily/$reportId", params: { reportId: id } })
+          }
+        />
+      ) : null}
     </div>
+
   );
 }
