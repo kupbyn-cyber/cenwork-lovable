@@ -18,7 +18,6 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnnouncementFormDrawer } from "@/components/announcement/announcement-form-drawer";
-import { OverdueAnnouncementBanner } from "@/components/announcement/overdue-banner";
 import { useAuth } from "@/hooks/use-auth";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -79,8 +78,6 @@ function AnnouncementsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <OverdueAnnouncementBanner />
-
       <PageHeader
         title="Thông báo nội bộ"
         description="Thông báo do người dùng chủ động soạn và yêu cầu người nhận xác nhận."

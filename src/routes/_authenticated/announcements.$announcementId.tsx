@@ -5,7 +5,6 @@ import { toast } from "sonner";
 
 import { AnnouncementBody } from "@/components/announcement/announcement-body";
 import { AnnouncementProgress } from "@/components/announcement/announcement-progress";
-import { OverdueAnnouncementBanner } from "@/components/announcement/overdue-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
@@ -133,8 +132,6 @@ function AnnouncementDetailPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <OverdueAnnouncementBanner />
-
       <PageHeader
         title={row.title || "(Chưa có tiêu đề)"}
         description={
