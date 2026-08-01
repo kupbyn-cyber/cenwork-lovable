@@ -103,12 +103,7 @@ export async function resolveAudienceUserIds(
   for (const id of await usersOfTeams(supabase, [...new Set(manualTeams)])) result.add(id);
 
   if (criteria.includeSelf) result.add(userId);
-  else if (!criteria.userIds.includes(userId)) {
-    // Người tạo không tự động là người nhận khi chỉ khớp qua tiêu chí "Tất cả"/Team.
-    if (!criteria.allUsers && !criteria.allTeams && criteria.teamIds.length === 0) {
-      result.delete(userId);
-    }
-  }
+  else if (!criteria.userIds.includes(userId)) result.delete(userId);
 
   return [...result];
 }
