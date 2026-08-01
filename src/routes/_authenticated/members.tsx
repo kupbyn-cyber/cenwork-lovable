@@ -293,31 +293,51 @@ function MembersPage() {
       id: "actions",
       header: "Thao tác",
       align: "right" as const,
-      className: "min-w-[120px]",
+      className: "min-w-[110px] w-[110px]",
       cell: (row: MemberRow) => (
         <TableRowActions>
-          {access.canEditMember(row) ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => {
-                setEditing(row);
-                setDrawerOpen(true);
-              }}
-            >
-              <Pencil /> Sửa
-            </Button>
+          {/* Chỉ Admin và CMO được sửa thông tin thành viên. */}
+          {access.isSystemAdmin ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  aria-label={`Sửa thông tin ${row.display_name}`}
+                  onClick={() => {
+                    setEditing(row);
+                    setDrawerOpen(true);
+                  }}
+                >
+                  <Pencil />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Sửa thông tin</TooltipContent>
+            </Tooltip>
           ) : null}
           {access.canLockMember && row.id !== access.userId ? (
-            <Button variant="ghost" size="sm" type="button" onClick={() => setLockTarget(row)}>
-              {row.status === "active" ? <Lock /> : <Unlock />}
-              {row.status === "active" ? "Khóa" : "Mở khóa"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  aria-label={row.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                  onClick={() => setLockTarget(row)}
+                >
+                  {row.status === "active" ? <Lock /> : <Unlock />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {row.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+              </TooltipContent>
+            </Tooltip>
           ) : null}
         </TableRowActions>
       ),
     },
+
   ];
 
   return (
