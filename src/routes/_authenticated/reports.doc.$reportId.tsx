@@ -131,6 +131,17 @@ function ReportDocPage() {
     onError: (error: Error) => cenToast.error("Không gửi được", { description: error.message }),
   });
 
+  const archive = useMutation({
+    mutationFn: () => setReportArchived(reportId, true, archiveReason.trim()),
+    onSuccess: () => {
+      setArchiveOpen(false);
+      setArchiveReason("");
+      invalidate();
+      cenToast.success("Đã lưu trữ báo cáo");
+    },
+    onError: (error: Error) => cenToast.error("Không lưu trữ được", { description: error.message }),
+  });
+
   const decide = useMutation({
     mutationFn: (input: { id: string; approve: boolean }) =>
       decideReopen(input.id, input.approve, reviewNote.trim() || null),
@@ -192,6 +203,11 @@ function ReportDocPage() {
             {editable ? (
               <Button size="sm" disabled={submit.isPending} onClick={() => submit.mutate()}>
                 {doc.first_submitted_at ? "Gửi lại" : "Gửi báo cáo"}
+              </Button>
+            ) : null}
+            {(access.isCmo || access.isAdmin) && (doc.status === "confirmed" || doc.status === "published") ? (
+              <Button size="sm" variant="secondary" onClick={() => setArchiveOpen(true)}>
+                Lưu trữ
               </Button>
             ) : null}
             {isAuthor && doc.status === "confirmed" && !pendingReopen ? (
