@@ -192,9 +192,12 @@ function Dashboard() {
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
-        title="Bảng điều hành"
-        description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
+        title={`${greeting()}, ${me?.display_name ?? "bạn"}`}
+        description={`Hôm nay ${formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo cáo trong phạm vi bạn được xem.`}
       />
+
+      <DailyActionHub />
+      <QuickActions />
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">

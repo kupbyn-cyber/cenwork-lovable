@@ -21,6 +21,7 @@ import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTelegramRouteImport } from './routes/_authenticated/telegram'
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
+import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as AuthenticatedAnnouncementsAnnouncementIdRouteImport } from './routes/_authenticated/announcements.$announcementId'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
@@ -95,6 +96,11 @@ const AuthenticatedThemePreviewRoute =
     path: '/theme-preview',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAnnouncementsIndexRoute =
   AuthenticatedAnnouncementsIndexRouteImport.update({
     id: '/announcements/',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/telegram': typeof AuthenticatedTelegramRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
+  '/today': typeof AuthenticatedTodayRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/telegram': typeof AuthenticatedTelegramRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
+  '/today': typeof AuthenticatedTodayRoute
   '/': typeof AuthenticatedIndexRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/telegram': typeof AuthenticatedTelegramRoute
   '/_authenticated/theme-preview': typeof AuthenticatedThemePreviewRoute
+  '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
   '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/telegram'
     | '/theme-preview'
+    | '/today'
     | '/announcements/$announcementId'
     | '/mvp/$cycleId'
     | '/projects/$projectId'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/telegram'
     | '/theme-preview'
+    | '/today'
     | '/'
     | '/announcements/$announcementId'
     | '/mvp/$cycleId'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/telegram'
     | '/_authenticated/theme-preview'
+    | '/_authenticated/today'
     | '/_authenticated/'
     | '/_authenticated/announcements/$announcementId'
     | '/_authenticated/mvp/$cycleId'
@@ -401,6 +413,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedThemePreviewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/today': {
+      id: '/_authenticated/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof AuthenticatedTodayRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/announcements/': {
       id: '/_authenticated/announcements/'
       path: '/announcements'
@@ -490,6 +509,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTelegramRoute: typeof AuthenticatedTelegramRoute
   AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
+  AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAnnouncementsAnnouncementIdRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRoute
   AuthenticatedMvpCycleIdRoute: typeof AuthenticatedMvpCycleIdRoute
@@ -513,6 +533,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTelegramRoute: AuthenticatedTelegramRoute,
   AuthenticatedThemePreviewRoute: AuthenticatedThemePreviewRoute,
+  AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAnnouncementsAnnouncementIdRoute:
     AuthenticatedAnnouncementsAnnouncementIdRoute,
