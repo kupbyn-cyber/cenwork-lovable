@@ -154,9 +154,10 @@ function AnnouncementsPage() {
             }}
           >
             <TabsList>
-              <TabsTrigger value="inbox">Tôi nhận</TabsTrigger>
-              <TabsTrigger value="created">Tôi đã tạo</TabsTrigger>
+              <TabsTrigger value="inbox">Thông báo của tôi</TabsTrigger>
+              <TabsTrigger value="created">Thông báo đã gửi</TabsTrigger>
             </TabsList>
+
 
             <TabsContent value="inbox" className="mt-4">
               <DataTable<InboxRow>
