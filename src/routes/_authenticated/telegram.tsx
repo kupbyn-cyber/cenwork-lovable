@@ -365,6 +365,9 @@ function TelegramPage() {
     },
   ];
 
+  const memberById = new Map((members.data ?? []).map((row) => [row.id, row]));
+  const teamNameById = new Map((teams.data ?? []).map((row) => [row.id, row.name]));
+
   const outboxColumns = [
     {
       id: "created",
@@ -373,12 +376,49 @@ function TelegramPage() {
       cell: (row: TelegramOutboxRow) => formatHanoiDateTime(row.created_at),
     },
     {
+      id: "type",
+      header: "Loại tin",
+      className: "min-w-[140px]",
+      cell: (row: TelegramOutboxRow) => (
+        <StatusBadge
+          tone={row.message_type === "daily_report" ? "progress" : "neutral"}
+          label={MESSAGE_TYPE_LABEL[row.message_type] ?? row.message_type}
+        />
+      ),
+    },
+    {
+      id: "subject",
+      header: "Liên quan",
+      className: "min-w-[180px]",
+      cell: (row: TelegramOutboxRow) => {
+        const member = row.target_id ? memberById.get(row.target_id) : undefined;
+        const teamName = member?.primary_team_id
+          ? teamNameById.get(member.primary_team_id)
+          : undefined;
+        return (
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate">{member?.display_name ?? "—"}</span>
+            {row.message_type === "daily_report" ? (
+              <span className="truncate text-caption text-text-muted">
+                {teamName ?? "Chưa có Team"}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
       id: "target",
       header: "Đích gửi",
-      className: "min-w-[150px]",
+      className: "min-w-[170px]",
       cell: (row: TelegramOutboxRow) => (
         <span className="text-text-secondary">
-          {row.target_type === "team" ? "Team" : "Cá nhân"} · {maskChatId(row.chat_id)}
+          {row.message_type === "daily_report"
+            ? "Topic Báo cáo ngày"
+            : row.target_type === "team"
+              ? "Topic Team"
+              : "Telegram cá nhân"}{" "}
+          · {maskChatId(row.chat_id)}
           {row.topic_id ? ` · topic ${row.topic_id}` : ""}
         </span>
       ),
@@ -386,7 +426,7 @@ function TelegramPage() {
     {
       id: "message",
       header: "Nội dung",
-      className: "min-w-[260px]",
+      className: "min-w-[240px]",
       cell: (row: TelegramOutboxRow) => (
         <span className="line-clamp-2 min-w-0 break-words text-body-sm">{row.message}</span>
       ),
@@ -394,7 +434,7 @@ function TelegramPage() {
     {
       id: "status",
       header: "Trạng thái",
-      className: "min-w-[160px]",
+      className: "min-w-[180px]",
       cell: (row: TelegramOutboxRow) => (
         <div className="flex min-w-0 flex-col gap-1">
           <StatusBadge
@@ -402,6 +442,11 @@ function TelegramPage() {
             label={DELIVERY_STATUS_LABEL[row.status as DeliveryStatus]}
           />
           <span className="text-caption text-text-muted">Số lần thử: {row.attempts}</span>
+          {row.sent_at ? (
+            <span className="text-caption text-text-muted">
+              Gửi lúc: {formatHanoiDateTime(row.sent_at)}
+            </span>
+          ) : null}
           {row.last_error ? (
             <span className="min-w-0 break-words text-caption text-state-danger">
               {row.last_error}
@@ -410,7 +455,36 @@ function TelegramPage() {
         </div>
       ),
     },
+    {
+      id: "actions",
+      header: "Thao tác",
+      className: "min-w-[120px]",
+      cell: (row: TelegramOutboxRow) =>
+        row.status === "sent" ? (
+          <span className="text-caption text-text-muted">Đã gửi</span>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            loading={retry.isPending && retryId === row.id}
+            onClick={() => {
+              setRetryId(row.id);
+              retry.mutate(row.id);
+            }}
+          >
+            <RefreshCw />
+            Gửi lại
+          </Button>
+        ),
+    },
   ];
+
+  const filteredOutbox = (outbox.data ?? []).filter(
+    (row) =>
+      (typeFilter === "all" || row.message_type === typeFilter) &&
+      (statusFilter === "all" || row.status === statusFilter),
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
