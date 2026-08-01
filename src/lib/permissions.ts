@@ -57,6 +57,7 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "reports.review_daily": "Duyệt báo cáo ngày",
   "reports.submit_weekly": "Gửi báo cáo tuần của Team",
   "reports.review_weekly": "Duyệt báo cáo tuần",
+  "telegram.manage": "Quản lý kết nối Telegram",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
