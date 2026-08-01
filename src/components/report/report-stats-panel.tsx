@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable, TableCellStack } from "@/components/ui/data-table";
+import { DataTable, TableCellStack, type DataTableColumn } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
@@ -91,7 +91,7 @@ function StatCard({
 
 function GroupTable({ title, rows }: { title: string; rows: ReportStatsGroup[] }) {
   if (rows.length === 0) return null;
-  const columns = [
+  const columns: DataTableColumn<ReportStatsGroup>[] = [
     {
       id: "label",
       header: title,
@@ -196,7 +196,7 @@ export function ReportStatsPanel() {
     );
   }
 
-  const attentionColumns = [
+  const attentionColumns: DataTableColumn<ReportObligationRow>[] = [
     {
       id: "who",
       header: "Người phải gửi",
