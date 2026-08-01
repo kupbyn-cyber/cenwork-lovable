@@ -47,7 +47,10 @@ export function DailyReportDrawer({
   onSaved,
 }: DailyReportDrawerProps) {
   const queryClient = useQueryClient();
+  /** Id báo cáo vừa gửi thành công — chỉ dùng để hiện modal cảm ơn một lần. */
+  const [thanksReportId, setThanksReportId] = React.useState<string | null>(null);
   const [reportDate, setReportDate] = React.useState(hanoiToday());
+
   const [results, setResults] = React.useState("");
   const [blockers, setBlockers] = React.useState("");
   const [nextPlan, setNextPlan] = React.useState("");
