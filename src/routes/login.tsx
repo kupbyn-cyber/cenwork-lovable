@@ -58,6 +58,8 @@ function LoginPage() {
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [succeeded, setSucceeded] = React.useState(false);
+
 
   // Ghi nhớ đăng nhập: chỉ lưu email ở trình duyệt, không lưu mật khẩu.
   React.useEffect(() => {
