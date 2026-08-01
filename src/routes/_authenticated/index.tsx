@@ -153,7 +153,13 @@ function Dashboard() {
       ? myTodayReport
       : null;
   const dailySent = Boolean(myTodayReport && !dailyDraft);
-  const dailyActionLabel = dailySent ? "Xem báo cáo hôm nay" : "Xem và gửi báo cáo";
+  const dailyActionLabel = dailyResult.isLoading
+    ? "Đang kiểm tra báo cáo…"
+    : dailySent
+      ? "Xem báo cáo hôm nay"
+      : dailyDraft
+        ? "Xem và gửi báo cáo"
+        : "Gửi báo cáo ngày";
 
   const me = (membersResult.data ?? []).find((member) => member.id === access.userId);
   const myTeamName =
@@ -171,8 +177,7 @@ function Dashboard() {
     setDailyOpen(true);
   }
 
-  const loading =
-    projectsResult.isLoading || tasksResult.isLoading || dailyResult.isLoading || weeklyResult.isLoading;
+  const loading = projectsResult.isLoading || tasksResult.isLoading || weeklyResult.isLoading;
 
   if (loading) {
     return (
@@ -336,20 +341,22 @@ function Dashboard() {
                 )}
               </div>
             ) : null}
-            {canSubmitDaily ? (
+            {access.loading || canSubmitDaily ? (
               <Button
                 className="self-start"
                 onClick={openDailyAction}
-                loading={dailyResult.isLoading}
-                disabled={dailyResult.isError}
+                loading={dailyResult.isLoading || access.loading}
+                disabled={dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)}
               >
                 <FileText />
                 {dailyActionLabel}
               </Button>
             ) : null}
-            <Link to="/reports" className="cen-transition text-label text-brand-primary hover:underline">
-              Mở trang Báo cáo
-            </Link>
+            {!membersResult.isLoading && !membersResult.isError && !me ? (
+              <p className="text-helper text-state-danger">
+                Tài khoản chưa được liên kết với hồ sơ thành viên.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </div>
