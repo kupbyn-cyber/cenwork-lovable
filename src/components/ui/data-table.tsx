@@ -55,6 +55,8 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   emptyDescription?: React.ReactNode | undefined;
   emptyAction?: React.ReactNode | undefined;
   caption?: string;
+  /** Extra classes on the <table> element, e.g. "table-fixed". */
+  tableClassName?: string;
 }
 
 const alignClass = {
