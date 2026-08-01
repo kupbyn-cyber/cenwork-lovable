@@ -16,21 +16,21 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 export function CenLogo({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <span
+      <img
+        src="/brand/logo-mark.svg"
+        alt=""
         aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-control bg-brand-primary text-label font-bold text-brand-foreground"
-      >
-        C
-      </span>
+        className="size-8 shrink-0 object-contain"
+      />
       {!collapsed ? (
         <span className="min-w-0 truncate">
           <span className="block truncate text-label font-bold tracking-wide text-text-primary">
             CEN 1.0
           </span>
-          <span className="block truncate text-caption text-text-muted">Command Center</span>
+          <span className="block truncate text-caption text-text-muted">Trung tâm điều hành</span>
         </span>
       ) : (
-        <span className="sr-only">CEN 1.0 Command Center</span>
+        <span className="sr-only">CEN 1.0 Trung tâm điều hành</span>
       )}
     </div>
   );
