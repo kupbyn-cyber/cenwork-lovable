@@ -202,37 +202,53 @@ function MembersPage() {
     {
       id: "telegram",
       header: "Telegram",
-      className: "min-w-[170px]",
+      className: "min-w-[70px] w-[70px]",
+      align: "center" as const,
       cell: (row: MemberRow) => {
-        const tone =
-          row.telegram_test_status === "success"
-            ? "success"
-            : row.telegram_test_status === "failed" || !row.telegram_user_id
-              ? "error"
-              : "neutral";
-        const label =
-          row.telegram_test_status === "success"
-            ? "Đã test thành công"
-            : row.telegram_test_status === "failed"
-              ? "Test lỗi"
-              : row.telegram_user_id
-                ? "Chưa test"
-                : "Chưa có Telegram ID";
+        const canTest = access.canEditMember(row);
+        const status = row.telegram_test_status;
+        const isSuccess = status === "success";
+        const isFailed = status === "failed";
+
+        const colorClass = isSuccess
+          ? "text-state-success hover:bg-state-success-surface hover:text-state-success"
+          : isFailed
+            ? "text-state-danger hover:bg-state-danger-surface hover:text-state-danger"
+            : "text-text-muted hover:bg-surface-subtle hover:text-text-secondary";
+
+        const tooltipLabel = isSuccess
+          ? "Đã test thành công"
+          : isFailed
+            ? "Test lỗi"
+            : row.telegram_user_id
+              ? "Chưa test"
+              : "Chưa có Telegram ID";
+
+        const button = (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            className={cn(colorClass)}
+            loading={telegramTest.isPending && testingId === row.id}
+            disabled={telegramTest.isPending || !canTest}
+            onClick={() => telegramTest.mutate(row.id)}
+            aria-label={tooltipLabel}
+          >
+            <Send />
+          </Button>
+        );
+
         return (
-          <div className="flex min-w-0 flex-col items-start gap-1.5">
-            <StatusBadge label={label} tone={tone} />
-            {access.canEditMember(row) ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                loading={telegramTest.isPending && testingId === row.id}
-                disabled={telegramTest.isPending}
-                onClick={() => telegramTest.mutate(row.id)}
-              >
-                <Send /> Test
-              </Button>
-            ) : null}
+          <div className="flex justify-center">
+            {canTest ? (
+              <Tooltip>
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent>{tooltipLabel}</TooltipContent>
+              </Tooltip>
+            ) : (
+              button
+            )}
           </div>
         );
       },
