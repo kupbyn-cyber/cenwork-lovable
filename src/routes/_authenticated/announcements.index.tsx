@@ -84,8 +84,11 @@ function AnnouncementsPage() {
 
   const matches = (title: string) => title.toLowerCase().includes(search.trim().toLowerCase());
 
+  // Chỉ nghĩa vụ của chính người dùng: RLS cho phép người gửi/quản trị đọc cả bản ghi
+  // của người khác, nhưng tab này là lịch sử cá nhân.
   const inboxRows = (inbox.data ?? []).filter(
     (row) =>
+      row.user_id === user?.id &&
       matches(row.announcement.title) &&
       (status === "all" || effectiveRecipientStatus(row) === status),
   );
