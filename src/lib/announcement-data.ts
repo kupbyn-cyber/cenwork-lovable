@@ -37,6 +37,14 @@ export const RECIPIENT_STATUS_TONE: Record<
   exempt: "warning",
 };
 
+export type ResultVisibility = "none" | "after_submit" | "after_due";
+
+export const RESULT_VISIBILITY_LABEL: Record<ResultVisibility, string> = {
+  none: "Không công khai cho người nhận",
+  after_submit: "Công khai sau khi người nhận gửi câu trả lời",
+  after_due: "Công khai sau khi hết hạn",
+};
+
 export interface AnnouncementRow {
   id: string;
   created_by: string;
@@ -47,13 +55,22 @@ export interface AnnouncementRow {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  comments_enabled: boolean;
+  result_visibility: ResultVisibility;
+  current_version: number;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  archived_at: string | null;
+  last_minor_edit_at: string | null;
 }
+
 
 export interface RecipientRow {
   id: string;
   announcement_id: string;
   user_id: string;
   status: RecipientStatus;
+  version: number;
   due_at: string;
   first_opened_at: string | null;
   read_completed_at: string | null;
@@ -73,9 +90,10 @@ export interface TargetRow {
 }
 
 const ANNOUNCEMENT_COLUMNS =
-  "id,created_by,title,body,status,due_at,published_at,created_at,updated_at";
+  "id,created_by,title,body,status,due_at,published_at,created_at,updated_at," +
+  "comments_enabled,result_visibility,current_version,revoked_at,revoke_reason,archived_at,last_minor_edit_at";
 const RECIPIENT_COLUMNS =
-  "id,announcement_id,user_id,status,due_at,first_opened_at,read_completed_at,acknowledged_at,is_late,exempt_reason";
+  "id,announcement_id,user_id,status,version,due_at,first_opened_at,read_completed_at,acknowledged_at,is_late,exempt_reason";
 
 function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -109,7 +127,7 @@ export async function fetchMyAnnouncements(userId: string): Promise<Announcement
     .eq("created_by", userId)
     .order("created_at", { ascending: false });
   fail(error);
-  return (data ?? []) as AnnouncementRow[];
+  return (data ?? []) as unknown as AnnouncementRow[];
 }
 
 export async function fetchAnnouncement(id: string): Promise<AnnouncementRow | null> {
@@ -119,7 +137,7 @@ export async function fetchAnnouncement(id: string): Promise<AnnouncementRow | n
     .eq("id", id)
     .maybeSingle();
   fail(error);
-  return (data ?? null) as AnnouncementRow | null;
+  return (data ?? null) as unknown as AnnouncementRow | null;
 }
 
 export async function fetchTargets(id: string): Promise<TargetRow[]> {
@@ -186,6 +204,8 @@ export interface DraftInput {
   dueAt: string | null;
   userIds: string[];
   teamIds: string[];
+  commentsEnabled: boolean;
+  resultVisibility: ResultVisibility;
 }
 
 /** Lưu Nháp: Nháp có thể chưa hoàn chỉnh nên không ràng buộc nội dung. */
@@ -194,7 +214,13 @@ export async function saveDraft(input: DraftInput, createdBy: string): Promise<s
   if (id) {
     const { error } = await supabase
       .from("announcements")
-      .update({ title: input.title, body: input.body, due_at: input.dueAt })
+      .update({
+        title: input.title,
+        body: input.body,
+        due_at: input.dueAt,
+        comments_enabled: input.commentsEnabled,
+        result_visibility: input.resultVisibility,
+      })
       .eq("id", id);
     fail(error);
   } else {
@@ -205,6 +231,8 @@ export async function saveDraft(input: DraftInput, createdBy: string): Promise<s
         title: input.title,
         body: input.body,
         due_at: input.dueAt,
+        comments_enabled: input.commentsEnabled,
+        result_visibility: input.resultVisibility,
       })
       .select("id")
       .single();

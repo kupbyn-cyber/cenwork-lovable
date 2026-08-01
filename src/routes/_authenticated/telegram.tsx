@@ -43,6 +43,7 @@ import {
   type TelegramUserLinkRow,
 } from "@/lib/telegram-data";
 import { dispatchTelegramQueue } from "@/lib/telegram.functions";
+import { enqueueAnnouncementReminders } from "@/lib/announcement.functions";
 
 const TITLE = "Kết nối Telegram — CEN 1.0";
 const DESCRIPTION =
@@ -134,6 +135,15 @@ function TelegramPage() {
       cenToast.success(
         `Đã xử lý ${result.processed} tin: ${result.sent} thành công, ${result.failed} lỗi.`,
       );
+      void queryClient.invalidateQueries({ queryKey: ["telegram-outbox"] });
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const reminders = useMutation({
+    mutationFn: () => enqueueAnnouncementReminders(),
+    onSuccess: () => {
+      cenToast.success("Đã xếp hàng nhắc hạn thông báo nội bộ.");
       void queryClient.invalidateQueries({ queryKey: ["telegram-outbox"] });
     },
     onError: (error: Error) => cenToast.error(error.message),
@@ -305,11 +315,22 @@ function TelegramPage() {
         title="Kết nối Telegram"
         description="Ánh xạ tài khoản CEN với Telegram và theo dõi hàng đợi gửi tin."
         actions={
-          <Button type="button" loading={dispatch.isPending} onClick={() => dispatch.mutate()}>
-            <Send />
-            Gửi hàng đợi
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              loading={reminders.isPending}
+              onClick={() => reminders.mutate()}
+            >
+              Xếp nhắc hạn thông báo
+            </Button>
+            <Button type="button" loading={dispatch.isPending} onClick={() => dispatch.mutate()}>
+              <Send />
+              Gửi hàng đợi
+            </Button>
+          </div>
         }
+
       />
 
       <Tabs defaultValue="users">

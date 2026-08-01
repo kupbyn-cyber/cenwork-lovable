@@ -14,6 +14,375 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_answers: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          id: string
+          option_ids: string[]
+          question_id: string
+          submitted_at: string | null
+          text_answer: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          id?: string
+          option_ids?: string[]
+          question_id: string
+          submitted_at?: string | null
+          text_answer?: string | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          id?: string
+          option_ids?: string[]
+          question_id?: string
+          submitted_at?: string | null
+          text_answer?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_answers_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "announcement_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_comment_edits: {
+        Row: {
+          comment_id: string
+          created_at: string
+          edited_by: string | null
+          id: string
+          previous_body: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          previous_body: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          previous_body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_comment_edits_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "announcement_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comment_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_comment_mentions: {
+        Row: {
+          announcement_id: string
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_comment_mentions_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "announcement_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comment_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_comments: {
+        Row: {
+          announcement_id: string
+          author_id: string
+          body: string
+          created_at: string
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          is_edited: boolean
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          announcement_id: string
+          author_id: string
+          body: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_edited?: boolean
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          announcement_id?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_edited?: boolean
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_comments_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "announcement_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_question_options: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          id: string
+          label: string
+          position: number
+          question_id: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          question_id: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_question_options_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "announcement_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_questions: {
+        Row: {
+          announcement_id: string
+          content: string
+          created_at: string
+          id: string
+          is_required: boolean
+          max_select: number | null
+          min_select: number | null
+          position: number
+          question_type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          announcement_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          max_select?: number | null
+          min_select?: number | null
+          position?: number
+          question_type: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          announcement_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          max_select?: number | null
+          min_select?: number | null
+          position?: number
+          question_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_questions_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_recipient_history: {
+        Row: {
+          acknowledged_at: string | null
+          announcement_id: string
+          created_at: string
+          due_at: string
+          exempt_reason: string | null
+          first_opened_at: string | null
+          id: string
+          is_late: boolean
+          read_completed_at: string | null
+          status: Database["public"]["Enums"]["announcement_recipient_status"]
+          user_id: string
+          version: number
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          announcement_id: string
+          created_at?: string
+          due_at: string
+          exempt_reason?: string | null
+          first_opened_at?: string | null
+          id?: string
+          is_late?: boolean
+          read_completed_at?: string | null
+          status: Database["public"]["Enums"]["announcement_recipient_status"]
+          user_id: string
+          version: number
+        }
+        Update: {
+          acknowledged_at?: string | null
+          announcement_id?: string
+          created_at?: string
+          due_at?: string
+          exempt_reason?: string | null
+          first_opened_at?: string | null
+          id?: string
+          is_late?: boolean
+          read_completed_at?: string | null
+          status?: Database["public"]["Enums"]["announcement_recipient_status"]
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_recipient_history_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_recipient_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_recipients: {
         Row: {
           acknowledged_at: string | null
@@ -28,6 +397,7 @@ export type Database = {
           status: Database["public"]["Enums"]["announcement_recipient_status"]
           updated_at: string
           user_id: string
+          version: number
         }
         Insert: {
           acknowledged_at?: string | null
@@ -42,6 +412,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["announcement_recipient_status"]
           updated_at?: string
           user_id: string
+          version?: number
         }
         Update: {
           acknowledged_at?: string | null
@@ -56,6 +427,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["announcement_recipient_status"]
           updated_at?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -68,6 +440,96 @@ export type Database = {
           {
             foreignKeyName: "announcement_recipients_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_reminders: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reminders_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_revisions: {
+        Row: {
+          after_data: Json | null
+          announcement_id: string
+          before_data: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string
+          version: number
+        }
+        Insert: {
+          after_data?: Json | null
+          announcement_id: string
+          before_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason: string
+          version: number
+        }
+        Update: {
+          after_data?: Json | null
+          announcement_id?: string
+          before_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_revisions_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_revisions_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -106,47 +568,148 @@ export type Database = {
           },
         ]
       }
+      announcement_versions: {
+        Row: {
+          announcement_id: string
+          body: string
+          change_summary: string | null
+          comments_enabled: boolean
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          reason: string | null
+          result_visibility: string
+          title: string
+          version: number
+        }
+        Insert: {
+          announcement_id: string
+          body: string
+          change_summary?: string | null
+          comments_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          reason?: string | null
+          result_visibility?: string
+          title: string
+          version: number
+        }
+        Update: {
+          announcement_id?: string
+          body?: string
+          change_summary?: string | null
+          comments_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          reason?: string | null
+          result_visibility?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_versions_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           body: string
+          comments_enabled: boolean
           created_at: string
           created_by: string
+          current_version: number
           deleted_at: string | null
           due_at: string | null
           id: string
+          last_minor_edit_at: string | null
           published_at: string | null
+          result_visibility: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           status: Database["public"]["Enums"]["announcement_status"]
           title: string
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           body?: string
+          comments_enabled?: boolean
           created_at?: string
           created_by: string
+          current_version?: number
           deleted_at?: string | null
           due_at?: string | null
           id?: string
+          last_minor_edit_at?: string | null
           published_at?: string | null
+          result_visibility?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           status?: Database["public"]["Enums"]["announcement_status"]
           title?: string
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           body?: string
+          comments_enabled?: boolean
           created_at?: string
           created_by?: string
+          current_version?: number
           deleted_at?: string | null
           due_at?: string | null
           id?: string
+          last_minor_edit_at?: string | null
           published_at?: string | null
+          result_visibility?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           status?: Database["public"]["Enums"]["announcement_status"]
           title?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "announcements_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "announcements_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_revoked_by_fkey"
+            columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1516,7 +2079,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      announcement_acknowledge: {
+        Args: { _a: string; _answers: Json }
+        Returns: undefined
+      }
       announcement_author: { Args: { _announcement: string }; Returns: string }
+      announcement_comments_open: { Args: { _a: string }; Returns: boolean }
+      announcement_current_version: { Args: { _a: string }; Returns: number }
+      announcement_duplicate: { Args: { _a: string }; Returns: string }
+      announcement_enqueue_reminders: { Args: never; Returns: number }
+      announcement_is_active: { Args: { _a: string }; Returns: boolean }
+      announcement_minor_revision: {
+        Args: { _a: string; _body: string; _reason: string; _title: string }
+        Returns: undefined
+      }
+      announcement_new_version: {
+        Args: {
+          _a: string
+          _body: string
+          _change_summary: string
+          _comments_enabled: boolean
+          _due_at: string
+          _questions: Json
+          _reason: string
+          _result_visibility: string
+          _title: string
+        }
+        Returns: number
+      }
+      announcement_revoke: {
+        Args: { _a: string; _reason: string }
+        Returns: undefined
+      }
+      announcement_set_archived: {
+        Args: { _a: string; _archived: boolean }
+        Returns: undefined
+      }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_assign_task: {
@@ -1524,15 +2122,18 @@ export type Database = {
         Returns: boolean
       }
       can_create_task: { Args: { _project: string }; Returns: boolean }
+      can_edit_announcement: { Args: { _a: string }; Returns: boolean }
       can_edit_project_row: { Args: { _project: string }; Returns: boolean }
       can_edit_task_row: { Args: { _task: string }; Returns: boolean }
       can_manage_mvp_cycle: { Args: never; Returns: boolean }
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
+      can_moderate_announcement: { Args: never; Returns: boolean }
       can_review_daily_report: { Args: { _author: string }; Returns: boolean }
       can_review_mvp: { Args: { _subject: string }; Returns: boolean }
       can_review_weekly_report: { Args: never; Returns: boolean }
+      can_view_announcement: { Args: { _a: string }; Returns: boolean }
       can_view_daily_report: {
         Args: { _author: string; _team: string }
         Returns: boolean
