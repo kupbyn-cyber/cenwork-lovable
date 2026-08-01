@@ -127,7 +127,7 @@ export async function fetchMyAnnouncements(userId: string): Promise<Announcement
     .eq("created_by", userId)
     .order("created_at", { ascending: false });
   fail(error);
-  return (data ?? []) as AnnouncementRow[];
+  return (data ?? []) as unknown as AnnouncementRow[];
 }
 
 export async function fetchAnnouncement(id: string): Promise<AnnouncementRow | null> {
@@ -137,7 +137,7 @@ export async function fetchAnnouncement(id: string): Promise<AnnouncementRow | n
     .eq("id", id)
     .maybeSingle();
   fail(error);
-  return (data ?? null) as AnnouncementRow | null;
+  return (data ?? null) as unknown as AnnouncementRow | null;
 }
 
 export async function fetchTargets(id: string): Promise<TargetRow[]> {
