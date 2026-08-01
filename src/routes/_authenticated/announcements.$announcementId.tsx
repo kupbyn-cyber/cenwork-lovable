@@ -171,13 +171,11 @@ function AnnouncementDetailPage() {
   const active = row.status === "published" && !revoked && !archived;
   const answerError = validateAnswers(questions, drafts);
 
+  const duePassed = row.due_at ? new Date(row.due_at).getTime() < Date.now() : false;
   const canSeeResults =
     canModerate ||
-    row.result_visibility === "after_submit"
-      ? canModerate || done
-      : row.result_visibility === "after_due"
-        ? canModerate || (row.due_at ? new Date(row.due_at).getTime() < Date.now() : false)
-        : canModerate;
+    (row.result_visibility === "after_submit" && done) ||
+    (row.result_visibility === "after_due" && duePassed);
 
   const questionDrafts: QuestionDraft[] = questions.map((question) => ({
     type: question.question_type,
