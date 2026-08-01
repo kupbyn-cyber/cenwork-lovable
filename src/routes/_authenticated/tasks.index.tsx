@@ -387,7 +387,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            ...col("w-[128px]"),
+            ...col("w-[112px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
