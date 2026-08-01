@@ -452,7 +452,7 @@ html[data-motion="off"] :is(.cen-press, .cen-press-subtle, .cen-hover-lift) {
 }
 
 @utility cen-flash {
-  animation: cen-flash-in var(--cen-dur-5, 280ms) var(--ease-exit) 3 both;
+  animation: cen-flash-in 900ms var(--ease-exit) 1 both;
 }
 
 @media (prefers-reduced-motion: reduce) {
