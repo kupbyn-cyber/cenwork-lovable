@@ -116,11 +116,31 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         .select("subject_id,quality_score,proactive_score,teamwork_score")
         .eq("cycle_id", cycleId)
         .eq("status", "submitted"),
+      // Thông báo bắt buộc xác nhận có hạn rơi trong kỳ — tái dùng dữ liệu M6.1/M6.2.
+      supabase
+        .from("announcement_recipients")
+        .select(
+          "announcement_id,user_id,status,due_at,acknowledged_at,exempt_reason,created_at," +
+            "announcement:announcements(id,title,status,due_at,revoked_at)",
+        )
+        .gte("due_at", from)
+        .lte("due_at", to),
     ]);
 
-  for (const result of [cycleTasks, profiles, leaderRoles, teams, dailyReports, weeklyReports, votes, reviews]) {
+  for (const result of [
+    cycleTasks,
+    profiles,
+    leaderRoles,
+    teams,
+    dailyReports,
+    weeklyReports,
+    votes,
+    reviews,
+    announcementRecipients,
+  ]) {
     if (result.error) throw new Error(result.error.message);
   }
+
 
   const tasksByUser = new Map<string, MvpTaskInput[]>();
   for (const raw of (cycleTasks.data ?? []) as Record<string, unknown>[]) {
