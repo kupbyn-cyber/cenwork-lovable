@@ -95,9 +95,7 @@ type RawProject = Record<string, unknown>;
 
 function mapProject(raw: RawProject): ProjectRow {
   const owner = raw["owner"] as { display_name: string } | null;
-  const creator = raw["creator"] as
-    | { display_name: string; primary_team_id: string | null }
-    | null;
+  const creator = raw["creator"] as { display_name: string; primary_team_id: string | null } | null;
   const teams = (raw["project_teams"] ?? []) as { team_id: string }[];
   const members = (raw["project_members"] ?? []) as {
     user_id: string;
@@ -158,8 +156,7 @@ export async function fetchProject(id: string): Promise<ProjectRow | null> {
   return data ? mapProject(data as RawProject) : null;
 }
 
-export const projectsQuery = () =>
-  queryOptions({ queryKey: ["projects"], queryFn: fetchProjects });
+export const projectsQuery = () => queryOptions({ queryKey: ["projects"], queryFn: fetchProjects });
 
 export const projectQuery = (id: string) =>
   queryOptions({ queryKey: ["project", id], queryFn: () => fetchProject(id) });
@@ -253,8 +250,8 @@ export function isProjectRejected(project: ProjectRow) {
 export function isResponsibleLeader(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(
     ctx.leaderTeamId &&
-      project.responsible_team_id &&
-      ctx.leaderTeamId === project.responsible_team_id,
+    project.responsible_team_id &&
+    ctx.leaderTeamId === project.responsible_team_id,
   );
 }
 
@@ -403,7 +400,9 @@ export const APPROVAL_STAGE_LABEL: Record<string, string> = {
 export async function fetchProjectApprovals(projectId: string): Promise<ProjectApprovalEntry[]> {
   const { data, error } = await supabase
     .from("project_approvals")
-    .select("id,round,stage,action,actor_role,from_status,to_status,reason,created_at,actor:profiles(display_name)")
+    .select(
+      "id,round,stage,action,actor_role,from_status,to_status,reason,created_at,actor:profiles(display_name)",
+    )
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);

@@ -73,14 +73,12 @@ export const createProject = createServerFn({ method: "POST" })
       check(memberError);
     }
     if (data.facilityIds.length > 0) {
-      const { error: facilityError } = await context.supabase
-        .from("project_facilities")
-        .insert(
-          data.facilityIds.map((facilityId) => ({
-            project_id: projectId,
-            facility_id: facilityId,
-          })),
-        );
+      const { error: facilityError } = await context.supabase.from("project_facilities").insert(
+        data.facilityIds.map((facilityId) => ({
+          project_id: projectId,
+          facility_id: facilityId,
+        })),
+      );
       check(facilityError);
     }
 

@@ -36,7 +36,7 @@ const NO_TEAM = "__none__";
 export interface ProjectFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** null = tạo ý tưởng mới. */
+  /** null = tạo dự án mới. */
   project: ProjectRow | null;
   /** Cho phép sửa Owner, thời gian, Team, thành viên và Cơ sở. */
   fullEdit: boolean;
@@ -135,8 +135,7 @@ export function ProjectFormDrawer({
             teamIds: state.teamIds,
             memberIds: state.memberIds,
             facilityIds: state.facilityIds,
-            responsibleTeamId:
-              state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
+            responsibleTeamId: state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
             submit: true,
           },
         });
@@ -150,8 +149,7 @@ export function ProjectFormDrawer({
         ownerId: fullEdit ? (state.ownerId === NO_OWNER ? null : state.ownerId) : project.owner_id,
         startDate: fullEdit ? state.startDate || null : project.start_date,
         deadline: fullEdit ? state.deadline || null : project.deadline,
-        responsibleTeamId:
-          state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
+        responsibleTeamId: state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
       });
 
       if (fullEdit) {
@@ -409,7 +407,9 @@ export function ProjectFormDrawer({
             </fieldset>
 
             <fieldset className="flex flex-col gap-2">
-              <legend className="text-label font-medium text-text-secondary">Cơ sở liên quan</legend>
+              <legend className="text-label font-medium text-text-secondary">
+                Cơ sở liên quan
+              </legend>
               <div className="flex flex-col gap-2 rounded-card border border-border-default p-3">
                 {activeFacilities.length === 0 ? (
                   <p className="text-body-sm text-text-muted">Chưa có Cơ sở đang hoạt động.</p>

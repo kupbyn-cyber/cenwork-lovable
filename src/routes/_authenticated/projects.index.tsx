@@ -260,7 +260,10 @@ function ProjectsPage() {
       className: "w-[112px]",
       headerClassName: "w-[112px]",
       cell: (row: ProjectRow) => (
-        <StatusBadge label={PROJECT_STATUS_LABEL[row.status]} tone={PROJECT_STATUS_TONE[row.status]} />
+        <StatusBadge
+          label={PROJECT_STATUS_LABEL[row.status]}
+          tone={PROJECT_STATUS_TONE[row.status]}
+        />
       ),
     },
     {
@@ -269,10 +272,7 @@ function ProjectsPage() {
       className: "hidden w-[130px] lg:table-cell",
       headerClassName: "hidden w-[130px] lg:table-cell",
       cell: (row: ProjectRow) => (
-        <div
-          className="truncate text-text-secondary"
-          title={row.ownerName ?? "Chưa chỉ định"}
-        >
+        <div className="truncate text-text-secondary" title={row.ownerName ?? "Chưa chỉ định"}>
           {row.ownerName ?? "Chưa chỉ định"}
         </div>
       ),
@@ -337,7 +337,6 @@ function ProjectsPage() {
       cell: (row: ProjectRow) => rowActions(row),
     },
   ];
-
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -416,7 +415,10 @@ function ProjectsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex flex-wrap rounded-md border border-border-subtle p-1" role="tablist">
+        <div
+          className="inline-flex flex-wrap rounded-md border border-border-subtle p-1"
+          role="tablist"
+        >
           {(
             [
               ["active", "Đang hoạt động"],
@@ -524,8 +526,6 @@ function ProjectsPage() {
           })
         )}
       </div>
-
-
 
       {access.userId ? (
         <ProjectFormDrawer

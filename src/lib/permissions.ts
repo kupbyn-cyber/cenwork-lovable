@@ -42,7 +42,6 @@ export const PERMISSIONS = {
   ANNOUNCEMENTS_CREATE: "announcements.create",
 } as const;
 
-
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<PermissionKey, string> = {

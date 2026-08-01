@@ -198,13 +198,10 @@ function ProjectDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       setArchiveOpen(false);
       setRestoreOpen(false);
-      cenToast.success(
-        archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.",
-      );
+      cenToast.success(archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.");
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
-
 
   if (projectResult.isLoading) {
     return (
@@ -258,11 +255,7 @@ function ProjectDetailPage() {
   }
   if (canDecideProject(detail, ctx)) {
     actions.push(
-      <Button
-        key="approve"
-        loading={busy}
-        onClick={() => decideMutation.mutate({ approve: true })}
-      >
+      <Button key="approve" loading={busy} onClick={() => decideMutation.mutate({ approve: true })}>
         <Check />
         {stage === "leader" ? "Duyệt và chuyển CMO" : "Duyệt dự án"}
       </Button>,
@@ -329,7 +322,6 @@ function ProjectDetailPage() {
     actions.push(<RowActionsMenu key="more" actions={menuActions} />);
   }
 
-
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
@@ -387,10 +379,7 @@ function ProjectDetailPage() {
               label="Thành viên tham gia"
               value={detail.memberNames.length ? detail.memberNames.join(", ") : "—"}
             />
-            <InfoRow
-              label="Cập nhật gần nhất"
-              value={formatAuditTime(detail.updated_at)}
-            />
+            <InfoRow label="Cập nhật gần nhất" value={formatAuditTime(detail.updated_at)} />
             <div className="sm:col-span-2">
               <InfoRow
                 label="Mô tả / kế hoạch"
@@ -455,7 +444,6 @@ function ProjectDetailPage() {
                 <InfoRow label="Ghi chú quyết định gần nhất" value={detail.last_decision_note} />
               </div>
             ) : null}
-
           </CardContent>
         </Card>
 
@@ -510,8 +498,7 @@ function ProjectDetailPage() {
               {(approvalsResult.data ?? []).map((entry) => (
                 <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
                   <p className="text-body-sm text-text-primary">
-                    Vòng {entry.round} ·{" "}
-                    {APPROVAL_ACTION_LABEL[entry.action] ?? entry.action} ·{" "}
+                    Vòng {entry.round} · {APPROVAL_ACTION_LABEL[entry.action] ?? entry.action} ·{" "}
                     {APPROVAL_STAGE_LABEL[entry.stage] ?? entry.stage}
                   </p>
                   <p className="text-caption text-text-muted">
@@ -622,7 +609,6 @@ function ProjectDetailPage() {
         request={pendingRequest}
         entityName={detail.name}
       />
-
     </div>
   );
 }

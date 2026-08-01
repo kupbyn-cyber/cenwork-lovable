@@ -15,11 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
-import {
-  hanoiStartOfDayMs,
-  hanoiToUtcISO,
-  utcToHanoiInputs,
-} from "@/lib/datetime";
+import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import { isProjectApproved, type PersonOption, type ProjectRow } from "@/lib/project-data";
 import {
@@ -97,7 +93,6 @@ function initialState(
   };
 }
 
-
 function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
 }
@@ -119,9 +114,7 @@ export function TaskFormDrawer({
   const allowOthers = canAssignToOthers(ctx);
   const allowProject = canCreateProjectTask(ctx);
 
-  const [form, setForm] = React.useState<FormState>(() =>
-    initialState(task, ctx, lockedProjectId),
-  );
+  const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
 
@@ -216,7 +209,6 @@ export function TaskFormDrawer({
     }
     return next;
   }
-
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -384,12 +376,7 @@ export function TaskFormDrawer({
               />
             )}
           </FormField>
-          <FormField
-            id="task-deadline"
-            label="Deadline"
-            required
-            error={errors.deadlineDate}
-          >
+          <FormField id="task-deadline" label="Deadline" required error={errors.deadlineDate}>
             {(control) => (
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -458,33 +445,31 @@ export function TaskFormDrawer({
             helperText="Người tham gia xem được công việc nhưng không phải người phụ trách."
           >
             {() => (
-
-            <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
-              {people.length === 0 ? (
-                <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
-              ) : (
-                people
-                  .filter((person) => person.id !== form.assigneeId)
-                  .map((person) => (
-                    <label key={person.id} className="flex items-center gap-2 text-body-sm">
-                      <Checkbox
-                        checked={form.participantIds.includes(person.id)}
-                        onCheckedChange={() =>
-                          setForm({
-                            ...form,
-                            participantIds: toggle(form.participantIds, person.id),
-                          })
-                        }
-                        aria-label={person.display_name}
-                      />
-                      <span className="min-w-0 break-words">{person.display_name}</span>
-                    </label>
-                  ))
-              )}
-            </div>
+              <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
+                {people.length === 0 ? (
+                  <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
+                ) : (
+                  people
+                    .filter((person) => person.id !== form.assigneeId)
+                    .map((person) => (
+                      <label key={person.id} className="flex items-center gap-2 text-body-sm">
+                        <Checkbox
+                          checked={form.participantIds.includes(person.id)}
+                          onCheckedChange={() =>
+                            setForm({
+                              ...form,
+                              participantIds: toggle(form.participantIds, person.id),
+                            })
+                          }
+                          aria-label={person.display_name}
+                        />
+                        <span className="min-w-0 break-words">{person.display_name}</span>
+                      </label>
+                    ))
+                )}
+              </div>
             )}
           </FormField>
-
         ) : null}
       </form>
     </Modal>
