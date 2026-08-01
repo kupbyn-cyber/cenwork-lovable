@@ -367,7 +367,7 @@ export async function decideProject(
   const { data, error } = await supabase.rpc("project_decide", {
     _project: projectId,
     _approve: approve,
-    _reason: reason ?? undefined,
+    ...(reason ? { _reason: reason } : {}),
   });
   if (error) throw new Error(error.message);
   return data as ProjectStatus;
