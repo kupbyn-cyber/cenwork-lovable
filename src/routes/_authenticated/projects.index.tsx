@@ -892,7 +892,9 @@ function ProjectsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         project={null}
-        ctx={ctx}
+        fullEdit={access.isSystemAdmin || access.isLeader}
+        currentUserRole={access.role}
+        currentUserId={access.userId ?? ""}
         teams={teams}
         facilities={facilities}
         people={people}
@@ -901,7 +903,9 @@ function ProjectsPage() {
         open={editTarget !== null}
         onOpenChange={(open) => !open && setEditTarget(null)}
         project={editTarget}
-        ctx={ctx}
+        fullEdit={access.isSystemAdmin || access.isLeader}
+        currentUserRole={access.role}
+        currentUserId={access.userId ?? ""}
         teams={teams}
         facilities={facilities}
         people={people}
@@ -1063,16 +1067,24 @@ function ProjectsPage() {
           </>
         }
       >
-        <FormField label="Lý do từ chối" required error={rejectError}>
-          <Textarea
-            value={rejectNote}
-            onChange={(event) => {
-              setRejectNote(event.target.value);
-              setRejectError(null);
-            }}
-            rows={4}
-            placeholder="Nêu rõ nội dung cần chỉnh sửa"
-          />
+        <FormField
+          id="project-reject-note"
+          label="Lý do từ chối"
+          required
+          error={rejectError ?? undefined}
+        >
+          {(control) => (
+            <Textarea
+              {...control}
+              rows={4}
+              value={rejectNote}
+              onChange={(event) => {
+                setRejectNote(event.target.value);
+                setRejectError(null);
+              }}
+              placeholder="Nêu rõ nội dung cần chỉnh sửa"
+            />
+          )}
         </FormField>
       </Modal>
 
