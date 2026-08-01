@@ -89,6 +89,7 @@ function LoginPage() {
 
     if (error) {
       setSubmitting(false);
+      setSucceeded(false);
       setFormError("Email hoặc mật khẩu không đúng.");
       return;
     }
@@ -96,8 +97,12 @@ function LoginPage() {
     if (remember) window.localStorage.setItem(REMEMBER_KEY, email.trim());
     else window.localStorage.removeItem(REMEMBER_KEY);
 
+    // Chỉ khi thành công: loading đổi thành dấu tích ngắn rồi mới chuyển trang.
+    setSucceeded(true);
+    await new Promise((resolve) => setTimeout(resolve, 550));
     await navigate({ to: safeRedirect(search.redirect), replace: true });
   }
+
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
