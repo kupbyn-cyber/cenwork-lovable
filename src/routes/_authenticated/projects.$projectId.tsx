@@ -85,6 +85,9 @@ function ProjectDetailPage() {
   const [rejectNote, setRejectNote] = React.useState("");
   const [rejectError, setRejectError] = React.useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [restoreOpen, setRestoreOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
+  const [decisionOpen, setDecisionOpen] = React.useState(false);
 
   const project = projectResult.data ?? null;
   const teams = teamsResult.data ?? [];
@@ -97,6 +100,9 @@ function ProjectDetailPage() {
     leaderTeamId: access.leaderTeamId,
   };
 
+  const requestsResult = useQuery(deadlineRequestsQuery("project", projectId));
+  const pendingRequest = findPending(requestsResult.data, "project", projectId);
+
   const statusMutation = useMutation({
     mutationFn: (input: { status: ProjectStatus; note?: string | null }) =>
       setProjectStatus(projectId, input.status, input.note),
@@ -108,13 +114,30 @@ function ProjectDetailPage() {
       cenToast.success(`Đã chuyển sang trạng thái: ${PROJECT_STATUS_LABEL[variables.status]}.`);
       setRejectFor(null);
       setRejectNote("");
-      setArchiveOpen(false);
     },
     onError: (error: Error) => {
       if (rejectFor) setRejectError(error.message);
       else cenToast.error(error.message);
     },
   });
+
+  const manualArchiveMutation = useMutation({
+    mutationFn: (archived: boolean) => setManualArchive("project", projectId, archived),
+    onSuccess: (_data, archived) => {
+      void queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      void queryClient.invalidateQueries({ queryKey: ["project-history", projectId] });
+      void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      setArchiveOpen(false);
+      setRestoreOpen(false);
+      cenToast.success(
+        archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
 
   if (projectResult.isLoading) {
     return (
