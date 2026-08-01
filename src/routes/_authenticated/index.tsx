@@ -185,14 +185,6 @@ function Dashboard() {
       <PageHeader
         title="Bảng điều hành"
         description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
-        actions={
-          canSubmitDaily ? (
-            <Button onClick={openDailyAction} disabled={dailyResult.isError}>
-              <FileText />
-              {dailyActionLabel}
-            </Button>
-          ) : null
-        }
       />
 
       {canSubmitDaily && dailyResult.isError ? (
