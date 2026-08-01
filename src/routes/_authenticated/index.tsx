@@ -144,18 +144,17 @@ function Dashboard() {
 
   /**
    * Hành động nhanh Báo cáo ngày: nhãn và đích đến bám theo trạng thái báo cáo
-   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở form.
+   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở bản xem trước.
    */
   const canSubmitDaily = access.can("reports.submit_daily");
   const dailyDraft =
     myTodayReport && (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
       ? myTodayReport
       : null;
-  const dailyActionLabel = !myTodayReport
-    ? "Gửi báo cáo ngày"
-    : dailyDraft
-      ? "Tiếp tục báo cáo ngày"
-      : "Xem báo cáo hôm nay";
+  const dailySent = Boolean(myTodayReport && !dailyDraft);
+  const dailyActionLabel = dailySent ? "Xem báo cáo hôm nay" : "Xem và gửi báo cáo";
+
+  const me = (membersResult.data ?? []).find((member) => member.id === access.userId);
 
   function openDailyAction() {
     if (myTodayReport && !dailyDraft) {
