@@ -209,11 +209,10 @@ function LoginPage() {
               fullWidth
               loading={submitting && !succeeded}
               disabled={succeeded}
-              className="cen-transition cen-dur-1 transform-gpu hover:brightness-110 active:scale-[0.98]"
             >
               {succeeded ? (
                 <>
-                  <Check className="animate-in zoom-in-50 duration-200" aria-hidden />
+                  <Check aria-hidden />
                   Đã xác thực
                 </>
               ) : (
