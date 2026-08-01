@@ -114,11 +114,11 @@
   --ease-enter: cubic-bezier(0, 0, 0, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
-  --duration-instant: 80ms;
-  --duration-fast: 120ms;
-  --duration-base: 180ms;
-  --duration-slow: 240ms;
-  --duration-slowest: 280ms;
+  --cen-dur-1: 80ms;
+  --cen-dur-2: 120ms;
+  --cen-dur-3: 180ms;
+  --cen-dur-4: 240ms;
+  --cen-dur-5: 280ms;
 }
 
 :root {
