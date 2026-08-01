@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, FolderPlus, ListPlus, Megaphone, Users } from "lucide-react";
+import { ClipboardList, FolderPlus, ListPlus, Megaphone, Sparkles, Users } from "lucide-react";
 import type { LinkProps } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
