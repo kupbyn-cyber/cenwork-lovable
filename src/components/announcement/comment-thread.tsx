@@ -136,6 +136,28 @@ export function CommentThread({
 
   const canWrite = commentsEnabled && active && !readOnly;
 
+  /** Gợi ý nhắc tên theo ký tự @ đang gõ, giới hạn trong phạm vi thông báo. */
+  const suggestions = React.useMemo(() => {
+    if (mentionQuery === null) return [];
+    const keyword = mentionQuery.trim().toLowerCase();
+    return mentionCandidates
+      .filter((candidate) => candidate.name.toLowerCase().includes(keyword))
+      .slice(0, 6);
+  }, [mentionQuery, mentionCandidates]);
+
+  function handleBodyChange(value: string) {
+    setBody(value);
+    const match = /@([^@\s]{0,30})$/.exec(value);
+    setMentionQuery(match ? (match[1] ?? "") : null);
+  }
+
+  function applyMention(candidate: { id: string; name: string }) {
+    setBody((prev) => prev.replace(/@([^@\s]{0,30})$/, `@${candidate.name} `));
+    setMentionIds((prev) => (prev.includes(candidate.id) ? prev : [...prev, candidate.id]));
+    setMentionQuery(null);
+  }
+
+
   function renderComment(row: CommentRow, isReply: boolean) {
     const mine = row.author_id === user?.id;
     const mentioned = mentionsByComment.get(row.id) ?? [];
