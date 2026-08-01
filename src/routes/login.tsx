@@ -160,6 +160,9 @@ function LoginPage() {
         <p className="mt-4 text-center text-caption text-text-muted">
           Tài khoản do quản trị hệ thống cấp. Hệ thống không hỗ trợ tự đăng ký.
         </p>
+        <p className="mt-2 text-center text-caption text-text-muted">
+          © 2026 CEN WORK · Product Owner: Đức Bùi — CMO
+        </p>
       </div>
     </main>
   );
