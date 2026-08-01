@@ -9,18 +9,11 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/integrations/supabase/client";
+import { safeRedirect } from "@/lib/safe-redirect";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
 });
-
-/** Chỉ chấp nhận đường dẫn nội bộ, tránh open redirect. */
-export function safeRedirect(value: string | undefined): string {
-  if (!value) return "/";
-  if (!value.startsWith("/") || value.startsWith("//")) return "/";
-  if (value.startsWith("/login")) return "/";
-  return value;
-}
 
 export const Route = createFileRoute("/login")({
   ssr: false,
