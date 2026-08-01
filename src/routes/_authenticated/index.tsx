@@ -215,6 +215,8 @@ function Dashboard() {
 
       <DailyActionHub />
       <QuickActions />
+      <RoleInsights />
+
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
