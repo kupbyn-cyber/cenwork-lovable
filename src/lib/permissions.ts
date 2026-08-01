@@ -180,6 +180,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "organization.view",
     "projects.view",
     "projects.create",
+    // Member là người phụ trách Task: phải xem và tự nhận việc (RLS/trigger đã cho phép).
+    "tasks.view",
+    "tasks.create",
     "reports.view",
     "reports.submit_daily",
     "mvp.view",
