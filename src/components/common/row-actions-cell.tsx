@@ -45,10 +45,9 @@ function ActionIcon({
           variant="ghost"
           size="icon-sm"
           label={label}
-          title={undefined as unknown as string}
-          disabled={disabled || loading}
-          loading={loading}
-          className={tone === "success" ? "text-state-success" : undefined}
+          disabled={Boolean(disabled) || Boolean(loading)}
+          loading={Boolean(loading)}
+          {...(tone === "success" ? { className: "text-state-success" } : {})}
           onClick={(event) => {
             event.stopPropagation();
             onSelect();
