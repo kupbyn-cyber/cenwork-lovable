@@ -86,6 +86,7 @@ function DataTableInner<T>(
     emptyDescription = "Nội dung sẽ hiển thị tại đây khi có dữ liệu.",
     emptyAction,
     caption,
+    tableClassName,
     className,
     ...props
   }: DataTableProps<T>,
