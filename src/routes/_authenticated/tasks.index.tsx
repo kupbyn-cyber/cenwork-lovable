@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
+import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
 import { TaskCardList } from "@/components/task/task-card-list";
@@ -181,16 +182,6 @@ function TasksPage() {
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
-  const completeMutation = useMutation({
-    mutationFn: (task: TaskRow) => setTaskStatus(task.id, "done"),
-    onSuccess: () => {
-      refresh();
-      setCompleteTarget(null);
-      cenToast.success("Đã đánh dấu công việc hoàn thành.");
-    },
-    onError: (error: Error) => cenToast.error(error.message),
-  });
-
   const archiveMutation = useMutation({
     mutationFn: (input: { id: string; archived: boolean }) =>
       setManualArchive("task", input.id, input.archived),
@@ -287,7 +278,7 @@ function TasksPage() {
         onView={() => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
         onEdit={canEditTask(row, ctx) ? () => setEditTarget(row) : null}
         onComplete={canComplete ? () => setCompleteTarget(row) : null}
-        completing={completeMutation.isPending && completeTarget?.id === row.id}
+        completing={completeTarget?.id === row.id}
         menuActions={menuActions}
       />
     );
@@ -654,17 +645,14 @@ function TasksPage() {
         />
       ) : null}
 
-      <ConfirmDialog
-        open={completeTarget !== null}
+      <TaskCompleteDialog
+        task={completeTarget}
         onOpenChange={(open) => {
-          if (!open && !completeMutation.isPending) setCompleteTarget(null);
+          if (!open) setCompleteTarget(null);
         }}
-        title="Xác nhận hoàn thành công việc?"
-        description={`Công việc "${completeTarget?.name ?? ""}" sẽ chuyển sang trạng thái Hoàn thành và vào khu vực Lưu trữ.`}
-        confirmLabel="Hoàn thành"
-        loading={completeMutation.isPending}
-        onConfirm={() => {
-          if (completeTarget) completeMutation.mutate(completeTarget);
+        onCompleted={() => {
+          refresh();
+          setCompleteTarget(null);
         }}
       />
 

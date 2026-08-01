@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
 import { ProjectAccordionItem } from "@/components/project/project-accordion-item";
 import { ProjectFormDrawer } from "@/components/project/project-form-drawer";
+import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskCardList } from "@/components/task/task-card-list";
 import { RowActionsCell } from "@/components/common/row-actions-cell";
@@ -276,16 +277,6 @@ function ProjectsPage() {
   });
 
   /* ---------- Mutation Task ---------- */
-  const taskCompleteMutation = useMutation({
-    mutationFn: (task: TaskRow) => setTaskStatus(task.id, "done"),
-    onSuccess: () => {
-      refresh();
-      setTaskCompleteTarget(null);
-      cenToast.success("Đã hoàn thành công việc.");
-    },
-    onError: (error: Error) => cenToast.error(error.message),
-  });
-
   const taskArchiveMutation = useMutation({
     mutationFn: (input: { id: string; archived: boolean }) =>
       setManualArchive("task", input.id, input.archived),
@@ -454,7 +445,7 @@ function ProjectsPage() {
         onView={() => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
         onEdit={canEditTask(task, taskCtx) ? () => setTaskEditTarget(task) : null}
         onComplete={canComplete ? () => setTaskCompleteTarget(task) : null}
-        completing={taskCompleteMutation.isPending && taskCompleteTarget?.id === task.id}
+        completing={taskCompleteTarget?.id === task.id}
         menuActions={menuActions}
       />
     );
@@ -991,14 +982,15 @@ function ProjectsPage() {
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
       />
 
-      <ConfirmDialog
-        open={taskCompleteTarget !== null}
-        onOpenChange={(open) => !open && setTaskCompleteTarget(null)}
-        title="Hoàn thành công việc?"
-        description={`Công việc "${taskCompleteTarget?.name ?? ""}" sẽ chuyển sang trạng thái hoàn thành.`}
-        confirmLabel="Hoàn thành"
-        loading={taskCompleteMutation.isPending}
-        onConfirm={() => taskCompleteTarget && taskCompleteMutation.mutate(taskCompleteTarget)}
+      <TaskCompleteDialog
+        task={taskCompleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setTaskCompleteTarget(null);
+        }}
+        onCompleted={() => {
+          refresh();
+          setTaskCompleteTarget(null);
+        }}
       />
 
       <ConfirmDialog
