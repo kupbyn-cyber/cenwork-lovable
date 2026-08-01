@@ -14,6 +14,145 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_recipients: {
+        Row: {
+          acknowledged_at: string | null
+          announcement_id: string
+          created_at: string
+          due_at: string
+          exempt_reason: string | null
+          first_opened_at: string | null
+          id: string
+          is_late: boolean
+          read_completed_at: string | null
+          status: Database["public"]["Enums"]["announcement_recipient_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          announcement_id: string
+          created_at?: string
+          due_at: string
+          exempt_reason?: string | null
+          first_opened_at?: string | null
+          id?: string
+          is_late?: boolean
+          read_completed_at?: string | null
+          status?: Database["public"]["Enums"]["announcement_recipient_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          announcement_id?: string
+          created_at?: string
+          due_at?: string
+          exempt_reason?: string | null
+          first_opened_at?: string | null
+          id?: string
+          is_late?: boolean
+          read_completed_at?: string | null
+          status?: Database["public"]["Enums"]["announcement_recipient_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_recipients_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_targets: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          id: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["announcement_target_type"]
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["announcement_target_type"]
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["announcement_target_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_targets_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          due_at: string | null
+          id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["announcement_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          due_at?: string | null
+          id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["announcement_status"]
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          due_at?: string | null
+          id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["announcement_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -1377,6 +1516,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_announce_to_team: { Args: { _team: string }; Returns: boolean }
+      can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_assign_task: {
         Args: { _person: string; _project: string; _team: string }
         Returns: boolean
@@ -1415,6 +1556,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      has_overdue_announcement: { Args: { _user: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1467,7 +1609,14 @@ export type Database = {
       }
     }
     Enums: {
-      account_status: "active" | "locked"
+      account_status: "active" | "locked" | "resigned"
+      announcement_recipient_status:
+        | "unread"
+        | "reading"
+        | "completed"
+        | "exempt"
+      announcement_status: "draft" | "published"
+      announcement_target_type: "user" | "team"
       app_role: "admin" | "cmo" | "leader" | "member"
       delivery_status: "pending" | "sent" | "failed"
       mvp_award_status: "proposed" | "approved" | "not_awarded" | "published"
@@ -1630,7 +1779,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_status: ["active", "locked"],
+      account_status: ["active", "locked", "resigned"],
+      announcement_recipient_status: [
+        "unread",
+        "reading",
+        "completed",
+        "exempt",
+      ],
+      announcement_status: ["draft", "published"],
+      announcement_target_type: ["user", "team"],
       app_role: ["admin", "cmo", "leader", "member"],
       delivery_status: ["pending", "sent", "failed"],
       mvp_award_status: ["proposed", "approved", "not_awarded", "published"],
