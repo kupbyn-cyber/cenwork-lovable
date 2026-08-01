@@ -179,9 +179,10 @@ function TelegramPage() {
       header: "Trạng thái",
       className: "min-w-[120px]",
       cell: (row: TelegramUserLinkRow) => (
-        <StatusBadge tone={row.is_active ? "success" : "neutral"}>
-          {row.is_active ? "Đang bật" : "Đang tắt"}
-        </StatusBadge>
+        <StatusBadge
+          tone={row.is_active ? "success" : "neutral"}
+          label={row.is_active ? "Đang bật" : "Đang tắt"}
+        />
       ),
     },
     {
@@ -228,9 +229,10 @@ function TelegramPage() {
       header: "Trạng thái",
       className: "min-w-[120px]",
       cell: (row: TelegramTeamLinkRow) => (
-        <StatusBadge tone={row.is_active ? "success" : "neutral"}>
-          {row.is_active ? "Đang bật" : "Đang tắt"}
-        </StatusBadge>
+        <StatusBadge
+          tone={row.is_active ? "success" : "neutral"}
+          label={row.is_active ? "Đang bật" : "Đang tắt"}
+        />
       ),
     },
     {
@@ -282,9 +284,10 @@ function TelegramPage() {
       className: "min-w-[160px]",
       cell: (row: TelegramOutboxRow) => (
         <div className="flex min-w-0 flex-col gap-1">
-          <StatusBadge tone={DELIVERY_STATUS_TONE[row.status as DeliveryStatus]}>
-            {DELIVERY_STATUS_LABEL[row.status as DeliveryStatus]}
-          </StatusBadge>
+          <StatusBadge
+            tone={DELIVERY_STATUS_TONE[row.status as DeliveryStatus]}
+            label={DELIVERY_STATUS_LABEL[row.status as DeliveryStatus]}
+          />
           <span className="text-caption text-text-muted">Số lần thử: {row.attempts}</span>
           {row.last_error ? (
             <span className="min-w-0 break-words text-caption text-state-danger">
