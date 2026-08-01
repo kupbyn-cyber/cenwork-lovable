@@ -22,6 +22,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTelegramRouteImport } from './routes/_authenticated/telegram'
 import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authenticated/theme-preview'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
+import { Route as AuthenticatedMvpCycleIdRouteImport } from './routes/_authenticated/mvp.$cycleId'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
@@ -97,6 +98,11 @@ const AuthenticatedMvpIndexRoute = AuthenticatedMvpIndexRouteImport.update({
   path: '/mvp/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMvpCycleIdRoute = AuthenticatedMvpCycleIdRouteImport.update({
+  id: '/mvp/$cycleId',
+  path: '/mvp/$cycleId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProjectsIndexRoute =
   AuthenticatedProjectsIndexRouteImport.update({
     id: '/projects/',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/telegram': typeof AuthenticatedTelegramRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
+  '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/mvp/': typeof AuthenticatedMvpIndexRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/telegram': typeof AuthenticatedTelegramRoute
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/': typeof AuthenticatedIndexRoute
+  '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/mvp': typeof AuthenticatedMvpIndexRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/_authenticated/telegram': typeof AuthenticatedTelegramRoute
   '/_authenticated/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/_authenticated/mvp/': typeof AuthenticatedMvpIndexRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/telegram'
     | '/theme-preview'
+    | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/mvp/'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/telegram'
     | '/theme-preview'
     | '/'
+    | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/mvp'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/_authenticated/telegram'
     | '/_authenticated/theme-preview'
     | '/_authenticated/'
+    | '/_authenticated/mvp/$cycleId'
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
     | '/_authenticated/mvp/'
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMvpIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mvp/$cycleId': {
+      id: '/_authenticated/mvp/$cycleId'
+      path: '/mvp/$cycleId'
+      fullPath: '/mvp/$cycleId'
+      preLoaderRoute: typeof AuthenticatedMvpCycleIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/': {
       id: '/_authenticated/projects/'
       path: '/projects'
@@ -432,6 +451,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTelegramRoute: typeof AuthenticatedTelegramRoute
   AuthenticatedThemePreviewRoute: typeof AuthenticatedThemePreviewRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedMvpCycleIdRoute: typeof AuthenticatedMvpCycleIdRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedTasksTaskIdRoute: typeof AuthenticatedTasksTaskIdRoute
   AuthenticatedMvpIndexRoute: typeof AuthenticatedMvpIndexRoute
@@ -452,6 +472,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTelegramRoute: AuthenticatedTelegramRoute,
   AuthenticatedThemePreviewRoute: AuthenticatedThemePreviewRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedMvpCycleIdRoute: AuthenticatedMvpCycleIdRoute,
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedTasksTaskIdRoute: AuthenticatedTasksTaskIdRoute,
   AuthenticatedMvpIndexRoute: AuthenticatedMvpIndexRoute,

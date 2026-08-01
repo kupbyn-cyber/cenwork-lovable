@@ -5,6 +5,7 @@ import {
   Building2,
   FolderKanban,
   ListChecks,
+  Trophy,
   ClipboardList,
   LayoutDashboard,
   Bell,
@@ -76,6 +77,13 @@ export const navGroups: NavGroup[] = [
         to: "/reports",
         icon: ClipboardList,
         permissionKey: "reports.view",
+      },
+      {
+        key: "mvp",
+        label: "MVP và danh hiệu",
+        to: "/mvp",
+        icon: Trophy,
+        permissionKey: "mvp.view",
       },
       {
         key: "notifications",
