@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createFileRoute, redirect, useNavigate, useSearch } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,8 @@ function LoginPage() {
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [succeeded, setSucceeded] = React.useState(false);
+
 
   // Ghi nhớ đăng nhập: chỉ lưu email ở trình duyệt, không lưu mật khẩu.
   React.useEffect(() => {
@@ -89,6 +92,7 @@ function LoginPage() {
 
     if (error) {
       setSubmitting(false);
+      setSucceeded(false);
       setFormError("Email hoặc mật khẩu không đúng.");
       return;
     }
@@ -96,37 +100,52 @@ function LoginPage() {
     if (remember) window.localStorage.setItem(REMEMBER_KEY, email.trim());
     else window.localStorage.removeItem(REMEMBER_KEY);
 
+    // Chỉ khi thành công: loading đổi thành dấu tích ngắn rồi mới chuyển trang.
+    setSucceeded(true);
+    await new Promise((resolve) => setTimeout(resolve, 550));
     await navigate({ to: safeRedirect(search.redirect), replace: true });
   }
 
+
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
-      {/* Vùng thương hiệu: gradient + glow, không phủ lên form */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 cen-hairlines opacity-70"
-        style={{
-          background:
-            "radial-gradient(70% 55% at 50% -5%, oklch(0.30 0.045 160 / 85%), transparent 70%), radial-gradient(45% 40% at 88% 100%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%)",
-        }}
-      />
+      {/* Vùng thương hiệu: gradient + glow trôi rất chậm, không phủ lên form */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="cen-anim-aurora cen-hairlines absolute -inset-[8%] opacity-60"
+          style={{
+            background:
+              "radial-gradient(70% 55% at 50% -5%, oklch(0.30 0.045 160 / 85%), transparent 70%), radial-gradient(45% 40% at 88% 100%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%)",
+          }}
+        />
+      </div>
 
       <div className="relative w-full max-w-[26rem]">
         <div className="cen-brand-glow flex flex-col items-center text-center">
           <img
             src="/brand/logo-mark.svg"
             alt="Logo CEN WORK"
-            className="size-16 shrink-0 object-contain drop-shadow-[0_6px_24px_oklch(0.7101_0.1541_53.2/25%)]"
+            className="cen-anim-logo size-16 shrink-0 object-contain drop-shadow-[0_6px_24px_oklch(0.7101_0.1541_53.2/25%)]"
           />
-          <h1 className="mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase">
+          <h1
+            className="cen-anim-rise mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase"
+            style={{ animationDelay: "380ms" }}
+          >
             CEN WORK
           </h1>
-          <p className="mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase">
+          <p
+            className="cen-anim-rise mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase"
+            style={{ animationDelay: "460ms" }}
+          >
             Marketing Command Center
           </p>
         </div>
 
-        <div className="mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl">
+
+        <div
+          className="cen-anim-rise mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl"
+          style={{ animationDelay: "520ms" }}
+        >
           <h2 className="text-h4 text-text-primary">Đăng nhập</h2>
           <p className="mt-1 text-helper text-text-muted">
             Sử dụng tài khoản nội bộ đã được cấp để truy cập hệ thống.
@@ -201,9 +220,23 @@ function LoginPage() {
               </p>
             ) : null}
 
-            <Button type="submit" fullWidth loading={submitting}>
-              Đăng nhập
+            <Button
+              type="submit"
+              fullWidth
+              loading={submitting && !succeeded}
+              disabled={succeeded}
+              className="cen-transition hover:brightness-110 active:scale-[0.98]"
+            >
+              {succeeded ? (
+                <>
+                  <Check className="animate-in zoom-in-50 duration-200" aria-hidden />
+                  Đã xác thực
+                </>
+              ) : (
+                "Đăng nhập"
+              )}
             </Button>
+
           </form>
         </div>
 
