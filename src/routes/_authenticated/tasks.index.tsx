@@ -535,22 +535,36 @@ function TasksPage() {
       </div>
 
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        getRowId={(row) => row.id}
-        loading={tasksResult.isLoading}
-        error={tasksResult.isError}
-        onRetry={() => void tasksResult.refetch()}
-        errorTitle="Không tải được danh sách công việc"
-        emptyTitle={view === "archived" ? "Chưa có công việc lưu trữ" : "Chưa có công việc nào"}
-        emptyDescription={
-          view === "archived"
-            ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành."
-            : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
-        }
-        onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
-      />
+      {tasksResult.isLoading || tasksResult.isError || groups.length === 0 ? (
+        <DataTable
+          columns={columns}
+          data={[]}
+          getRowId={(row) => row.id}
+          loading={tasksResult.isLoading}
+          error={tasksResult.isError}
+          onRetry={() => void tasksResult.refetch()}
+          errorTitle="Không tải được danh sách công việc"
+          emptyTitle={view === "archived" ? "Chưa có công việc lưu trữ" : "Chưa có công việc nào"}
+          emptyDescription={
+            view === "archived"
+              ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành."
+              : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
+          }
+        />
+      ) : (
+        <TaskProjectGroups
+          groups={groups}
+          columns={columns}
+          expandedKeys={expandedKeys}
+          onToggle={toggleGroup}
+          onAdd={(group) => {
+            setQuickAddProjectId(group.projectId);
+            setCreateOpen(true);
+          }}
+          onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
+        />
+      )}
+
 
       {access.userId ? (
         <TaskFormDrawer
