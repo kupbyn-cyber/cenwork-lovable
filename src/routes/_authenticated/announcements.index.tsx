@@ -66,6 +66,7 @@ function AnnouncementsPage() {
   const [status, setStatus] = React.useState("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AnnouncementRow | null>(null);
+  const [openCardId, setOpenCardId] = React.useState<string | null>(null);
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
