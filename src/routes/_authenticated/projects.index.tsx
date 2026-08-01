@@ -72,8 +72,10 @@ const ALL = "__all__";
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const projectsResult = useQuery(projectsQuery());
+  const taskCountsResult = useQuery(projectTaskCountsQuery());
   const teamsResult = useQuery(teamsQuery());
   const facilitiesResult = useQuery(facilitiesQuery());
   const peopleResult = useQuery(activePeopleQuery());
@@ -86,11 +88,65 @@ function ProjectsPage() {
   const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
+  const [editTarget, setEditTarget] = React.useState<ProjectRow | null>(null);
+  const [completeTarget, setCompleteTarget] = React.useState<ProjectRow | null>(null);
+  const [deadlineTarget, setDeadlineTarget] = React.useState<ProjectRow | null>(null);
+  const [archiveTarget, setArchiveTarget] = React.useState<ProjectRow | null>(null);
+  const [restoreTarget, setRestoreTarget] = React.useState<ProjectRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<ProjectRow | null>(null);
 
   const teams = teamsResult.data ?? [];
   const facilities = facilitiesResult.data ?? [];
   const people = peopleResult.data ?? [];
+  const taskCounts = taskCountsResult.data ?? {};
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name ?? "—";
+
+  const ctx: ProjectAccessContext = {
+    userId: access.userId,
+    role: access.role,
+    leaderTeamId: access.leaderTeamId,
+  };
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+  };
+
+  const completeMutation = useMutation({
+    mutationFn: (project: ProjectRow) => setProjectStatus(project.id, "completed"),
+    onSuccess: () => {
+      refresh();
+      setCompleteTarget(null);
+      cenToast.success("Đã hoàn thành dự án.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (input: { id: string; archived: boolean }) =>
+      setManualArchive("project", input.id, input.archived),
+    onSuccess: (_data, input) => {
+      refresh();
+      setArchiveTarget(null);
+      setRestoreTarget(null);
+      cenToast.success(
+        input.archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (project: ProjectRow) => softDeleteEntity("project", project.id),
+    onSuccess: () => {
+      refresh();
+      setDeleteTarget(null);
+      cenToast.success("Đã xóa dự án khỏi danh sách vận hành.");
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
 
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
