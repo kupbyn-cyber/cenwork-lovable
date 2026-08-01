@@ -20,6 +20,9 @@ import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
 import { ReportConfigPanel } from "@/components/report/report-config-panel";
 import { ReportObligationsPanel } from "@/components/report/report-obligations-panel";
+import { ReportDocList } from "@/components/report/report-doc-list";
+import { TeamSummaryPanel } from "@/components/report/team-summary-panel";
+
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -295,11 +298,20 @@ function ReportsPage() {
         <TabsList>
           <TabsTrigger value="daily">Báo cáo ngày</TabsTrigger>
           <TabsTrigger value="weekly">Báo cáo tuần</TabsTrigger>
+          <TabsTrigger value="workflow">Xử lý báo cáo</TabsTrigger>
+          <TabsTrigger value="summary">Tổng hợp Team</TabsTrigger>
           {canViewObligations ? (
             <TabsTrigger value="obligations">Nghĩa vụ</TabsTrigger>
           ) : null}
           {canConfigReports ? <TabsTrigger value="config">Cấu hình</TabsTrigger> : null}
         </TabsList>
+        <TabsContent value="workflow" className="flex flex-col gap-3">
+          <ReportDocList />
+        </TabsContent>
+        <TabsContent value="summary" className="flex flex-col gap-3">
+          <TeamSummaryPanel />
+        </TabsContent>
+
         <TabsContent value="daily" className="flex flex-col gap-3">
           <span className="text-caption text-text-muted">{dailyRows.length} báo cáo ngày</span>
           <DataTable

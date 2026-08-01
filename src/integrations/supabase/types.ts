@@ -2087,6 +2087,83 @@ export type Database = {
           },
         ]
       }
+      report_links: {
+        Row: {
+          created_at: string
+          evidence_text: string | null
+          id: string
+          link_type: Database["public"]["Enums"]["report_link_kind"]
+          project_id: string | null
+          report_id: string
+          section_id: string | null
+          snapshot: Json
+          snapshot_version: number
+          summary: string | null
+          task_id: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          evidence_text?: string | null
+          id?: string
+          link_type: Database["public"]["Enums"]["report_link_kind"]
+          project_id?: string | null
+          report_id: string
+          section_id?: string | null
+          snapshot?: Json
+          snapshot_version?: number
+          summary?: string | null
+          task_id?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          evidence_text?: string | null
+          id?: string
+          link_type?: Database["public"]["Enums"]["report_link_kind"]
+          project_id?: string | null
+          report_id?: string
+          section_id?: string | null
+          snapshot?: Json
+          snapshot_version?: number
+          summary?: string | null
+          task_id?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_links_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_links_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "report_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_non_working_days: {
         Row: {
           created_at: string
@@ -2301,6 +2378,70 @@ export type Database = {
           },
         ]
       }
+      report_reopen_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          planned_changes: string
+          reason: string
+          report_id: string
+          requested_by: string
+          status: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          planned_changes: string
+          reason: string
+          report_id: string
+          requested_by: string
+          status?: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          planned_changes?: string
+          reason?: string
+          report_id?: string
+          requested_by?: string
+          status?: Database["public"]["Enums"]["report_exemption_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_reopen_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reopen_requests_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reopen_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_requirements: {
         Row: {
           applies_all_teams: boolean
@@ -2460,6 +2601,299 @@ export type Database = {
           },
           {
             foreignKeyName: "report_reviewer_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_reviews: {
+        Row: {
+          action: Database["public"]["Enums"]["report_review_action"]
+          actor_id: string
+          body: string | null
+          created_at: string
+          id: string
+          report_id: string | null
+          round: number
+          summary_id: string | null
+          version: number | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["report_review_action"]
+          actor_id: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          round?: number
+          summary_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["report_review_action"]
+          actor_id?: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          round?: number
+          summary_id?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_reviews_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_reviews_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_sections: {
+        Row: {
+          blockers: string | null
+          created_at: string
+          done_work: string | null
+          id: string
+          next_plan: string | null
+          no_backlog_flag: boolean
+          no_work_flag: boolean
+          no_work_reason: string | null
+          position: number
+          report_id: string
+          results: string | null
+          support_needed: string | null
+          team_id: string | null
+          unfinished: string | null
+          updated_at: string
+        }
+        Insert: {
+          blockers?: string | null
+          created_at?: string
+          done_work?: string | null
+          id?: string
+          next_plan?: string | null
+          no_backlog_flag?: boolean
+          no_work_flag?: boolean
+          no_work_reason?: string | null
+          position?: number
+          report_id: string
+          results?: string | null
+          support_needed?: string | null
+          team_id?: string | null
+          unfinished?: string | null
+          updated_at?: string
+        }
+        Update: {
+          blockers?: string | null
+          created_at?: string
+          done_work?: string | null
+          id?: string
+          next_plan?: string | null
+          no_backlog_flag?: boolean
+          no_work_flag?: boolean
+          no_work_reason?: string | null
+          position?: number
+          report_id?: string
+          results?: string | null
+          support_needed?: string | null
+          team_id?: string | null
+          unfinished?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_sections_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_sections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_versions: {
+        Row: {
+          content_snapshot: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          report_id: string
+          source_snapshot: Json
+          submission_kind: Database["public"]["Enums"]["report_submission_kind"]
+          version: number
+        }
+        Insert: {
+          content_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          report_id: string
+          source_snapshot?: Json
+          submission_kind: Database["public"]["Enums"]["report_submission_kind"]
+          version: number
+        }
+        Update: {
+          content_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          report_id?: string
+          source_snapshot?: Json
+          submission_kind?: Database["public"]["Enums"]["report_submission_kind"]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_versions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          author_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          current_version: number
+          due_at: string | null
+          first_submitted_at: string | null
+          id: string
+          last_submitted_at: string | null
+          legacy_daily_id: string | null
+          legacy_weekly_id: string | null
+          obligation_id: string | null
+          period_id: string | null
+          period_key: string
+          project_id: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requires_ack: boolean
+          reviewer_id: string | null
+          revision_round: number
+          status: Database["public"]["Enums"]["report_doc_status"]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          current_version?: number
+          due_at?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          last_submitted_at?: string | null
+          legacy_daily_id?: string | null
+          legacy_weekly_id?: string | null
+          obligation_id?: string | null
+          period_id?: string | null
+          period_key: string
+          project_id?: string | null
+          report_type: Database["public"]["Enums"]["report_kind"]
+          requires_ack?: boolean
+          reviewer_id?: string | null
+          revision_round?: number
+          status?: Database["public"]["Enums"]["report_doc_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          current_version?: number
+          due_at?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          last_submitted_at?: string | null
+          legacy_daily_id?: string | null
+          legacy_weekly_id?: string | null
+          obligation_id?: string | null
+          period_id?: string | null
+          period_key?: string
+          project_id?: string | null
+          report_type?: Database["public"]["Enums"]["report_kind"]
+          requires_ack?: boolean
+          reviewer_id?: string | null
+          revision_round?: number
+          status?: Database["public"]["Enums"]["report_doc_status"]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: true
+            referencedRelation: "report_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "report_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -2688,6 +3122,123 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_summary_versions: {
+        Row: {
+          content_snapshot: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          summary_id: string
+          system_snapshot: Json
+          version: number
+        }
+        Insert: {
+          content_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          summary_id: string
+          system_snapshot?: Json
+          version: number
+        }
+        Update: {
+          content_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          summary_id?: string
+          system_snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_summary_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_summary_versions_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "team_weekly_summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_weekly_summaries: {
+        Row: {
+          blockers: string | null
+          created_at: string
+          current_version: number
+          highlights: string | null
+          id: string
+          leader_id: string
+          next_priorities: string | null
+          published_at: string | null
+          status: Database["public"]["Enums"]["report_doc_status"]
+          submission_note: string | null
+          support_needed: string | null
+          system_snapshot: Json
+          team_id: string
+          unfinished: string | null
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          blockers?: string | null
+          created_at?: string
+          current_version?: number
+          highlights?: string | null
+          id?: string
+          leader_id: string
+          next_priorities?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["report_doc_status"]
+          submission_note?: string | null
+          support_needed?: string | null
+          system_snapshot?: Json
+          team_id: string
+          unfinished?: string | null
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          blockers?: string | null
+          created_at?: string
+          current_version?: number
+          highlights?: string | null
+          id?: string
+          leader_id?: string
+          next_priorities?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["report_doc_status"]
+          submission_note?: string | null
+          support_needed?: string | null
+          system_snapshot?: Json
+          team_id?: string
+          unfinished?: string | null
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_weekly_summaries_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_weekly_summaries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -3195,8 +3746,14 @@ export type Database = {
           total_count: number
         }[]
       }
+      report_add_working_days: {
+        Args: { _days: number; _from: string }
+        Returns: string
+      }
       report_cmo_id: { Args: never; Returns: string }
       report_config_manager: { Args: never; Returns: boolean }
+      report_content_snapshot: { Args: { _report: string }; Returns: Json }
+      report_current_reviewer: { Args: { _report: string }; Returns: string }
       report_decide_exemption: {
         Args: { _approve: boolean; _note?: string; _request: string }
         Returns: undefined
@@ -3205,6 +3762,8 @@ export type Database = {
         Args: { _team: string; _user: string }
         Returns: string
       }
+      report_doc_editable: { Args: { _report: string }; Returns: boolean }
+      report_doc_visible: { Args: { _report: string }; Returns: boolean }
       report_effective_reviewer: {
         Args: {
           _at?: string
@@ -3214,14 +3773,47 @@ export type Database = {
         }
         Returns: string
       }
+      report_ensure: { Args: { _obligation: string }; Returns: string }
+      report_exempt_obligation: {
+        Args: { _obligation: string; _reason: string }
+        Returns: undefined
+      }
       report_generate_daily: { Args: { _day?: string }; Returns: Json }
+      report_generate_project: { Args: { _day?: string }; Returns: Json }
       report_generate_weekly: { Args: { _week_start?: string }; Returns: Json }
       report_is_non_working: {
         Args: { _day: string; _team: string; _user: string }
         Returns: boolean
       }
+      report_link_snapshot: { Args: { _link: string }; Returns: Json }
       report_refresh_reviewers: { Args: never; Returns: number }
+      report_reopen_decide: {
+        Args: { _approve: boolean; _note: string; _request: string }
+        Returns: Database["public"]["Enums"]["report_doc_status"]
+      }
+      report_reopen_request: {
+        Args: { _planned: string; _reason: string; _report: string }
+        Returns: string
+      }
+      report_review: {
+        Args: {
+          _action: Database["public"]["Enums"]["report_review_action"]
+          _body: string
+          _report: string
+        }
+        Returns: Database["public"]["Enums"]["report_doc_status"]
+      }
+      report_section_visible: { Args: { _section: string }; Returns: boolean }
+      report_submit: {
+        Args: { _report: string }
+        Returns: Database["public"]["Enums"]["report_doc_status"]
+      }
+      report_suggest_sources: { Args: { _report: string }; Returns: Json }
       report_team_leader: { Args: { _team: string }; Returns: boolean }
+      report_transfer_author: {
+        Args: { _new_author: string; _reason: string; _report: string }
+        Returns: undefined
+      }
       report_upsert_obligations: { Args: { _period: string }; Returns: number }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
@@ -3231,6 +3823,16 @@ export type Database = {
         Args: { _entity_id: string; _entity_type: string }
         Returns: undefined
       }
+      team_summary_ensure: {
+        Args: { _team: string; _week_start: string }
+        Returns: string
+      }
+      team_summary_feedback: {
+        Args: { _body: string; _request_revision: boolean; _summary: string }
+        Returns: undefined
+      }
+      team_summary_publish: { Args: { _summary: string }; Returns: undefined }
+      team_summary_visible: { Args: { _summary: string }; Returns: boolean }
       write_audit: {
         Args: {
           _action: string
@@ -3292,10 +3894,28 @@ export type Database = {
         | "initiative"
         | "teamwork"
       recognition_report_status: "open" | "dismissed" | "actioned"
+      report_doc_status:
+        | "draft"
+        | "submitted"
+        | "pending_review"
+        | "revision_required"
+        | "confirmed"
+        | "reopened"
+        | "published"
       report_exemption_status: "pending" | "approved" | "rejected"
-      report_kind: "daily" | "weekly" | "project"
+      report_kind: "daily" | "weekly" | "project" | "project_closure"
+      report_link_kind: "task" | "project" | "url" | "text"
       report_period_status: "scheduled" | "open" | "closed"
+      report_review_action:
+        | "comment"
+        | "request_revision"
+        | "confirm"
+        | "reopen_request"
+        | "reopen_approve"
+        | "reopen_reject"
+        | "summary_feedback"
       report_status: "draft" | "submitted" | "changes_requested" | "approved"
+      report_submission_kind: "initial" | "resubmit" | "reopen"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
     }
@@ -3479,10 +4099,30 @@ export const Constants = {
         "teamwork",
       ],
       recognition_report_status: ["open", "dismissed", "actioned"],
+      report_doc_status: [
+        "draft",
+        "submitted",
+        "pending_review",
+        "revision_required",
+        "confirmed",
+        "reopened",
+        "published",
+      ],
       report_exemption_status: ["pending", "approved", "rejected"],
-      report_kind: ["daily", "weekly", "project"],
+      report_kind: ["daily", "weekly", "project", "project_closure"],
+      report_link_kind: ["task", "project", "url", "text"],
       report_period_status: ["scheduled", "open", "closed"],
+      report_review_action: [
+        "comment",
+        "request_revision",
+        "confirm",
+        "reopen_request",
+        "reopen_approve",
+        "reopen_reject",
+        "summary_feedback",
+      ],
       report_status: ["draft", "submitted", "changes_requested", "approved"],
+      report_submission_kind: ["initial", "resubmit", "reopen"],
       task_priority: ["low", "medium", "high"],
       task_status: ["not_started", "in_progress", "review", "done"],
     },
