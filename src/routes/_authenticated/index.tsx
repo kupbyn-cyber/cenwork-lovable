@@ -332,6 +332,17 @@ function Dashboard() {
                 )}
               </div>
             ) : null}
+            {canSubmitDaily ? (
+              <Button
+                className="self-start"
+                onClick={openDailyAction}
+                loading={dailyResult.isLoading}
+                disabled={dailyResult.isError}
+              >
+                <FileText />
+                {dailyActionLabel}
+              </Button>
+            ) : null}
             <Link to="/reports" className="cen-transition text-label text-brand-primary hover:underline">
               Mở trang Báo cáo
             </Link>
