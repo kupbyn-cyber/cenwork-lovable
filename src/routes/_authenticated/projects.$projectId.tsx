@@ -1,7 +1,16 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArchiveRestore, ArrowLeft, Check, Pencil, Send, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  CalendarClock,
+  Check,
+  Pencil,
+  Send,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,21 +25,32 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
+import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
+import {
+  DeadlineDecisionModal,
+  DeadlineRequestModal,
+} from "@/components/common/deadline-request-modal";
 import { ProjectFormDrawer } from "@/components/project/project-form-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
+import { deadlineRequestsQuery, findPending, setManualArchive } from "@/lib/deadline-data";
 import { facilitiesQuery, teamsQuery } from "@/lib/org-data";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
   activePeopleQuery,
-  canArchive,
+  canApproveProjectDeadline,
   canCmoDecide,
   canEditProject,
   canLeaderDecide,
+  canManuallyArchiveProject,
+  canRequestProjectDeadline,
+  canRestoreProject,
   canSubmitIdea,
   formatDate,
+  isCompletedEarly,
   isOverdue,
+  isProjectManuallyArchived,
   nextStatuses,
   projectHistoryQuery,
   projectQuery,
