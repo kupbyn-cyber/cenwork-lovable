@@ -23,6 +23,13 @@ export const DELIVERY_STATUS_TONE: Record<DeliveryStatus, "warning" | "success" 
   failed: "error",
 };
 
+export type OutboxMessageType = "daily_report" | "notification";
+
+export const MESSAGE_TYPE_LABEL: Record<string, string> = {
+  daily_report: "Báo cáo ngày",
+  notification: "Thông báo cá nhân",
+};
+
 export interface TelegramOutboxRow {
   id: string;
   target_type: string;
@@ -35,6 +42,9 @@ export interface TelegramOutboxRow {
   last_error: string | null;
   sent_at: string | null;
   created_at: string;
+  message_type: string;
+  report_id: string | null;
+  telegram_message_id: string | null;
 }
 
 export interface TelegramMemberRow {
