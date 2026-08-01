@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, roleRequiresTeam } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 
 /**
@@ -32,6 +32,11 @@ export const createMemberAccount = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => createMemberSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MEMBERS_CREATE);
+
+    // Leader/Member bắt buộc thuộc Team; Admin/CMO quản trị toàn hệ thống nên Team không bắt buộc.
+    if (roleRequiresTeam(data.role) && !data.primaryTeamId) {
+      throw new Error("Vai trò Leader và Member bắt buộc thuộc một Team chính.");
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -90,6 +95,16 @@ export const setMemberRole = createServerFn({ method: "POST" })
     );
     if (data.userId === context.userId) {
       throw new Error("Không thể tự thay đổi vai trò của chính mình.");
+    }
+    if (roleRequiresTeam(data.role)) {
+      const { data: profile } = await context.supabase
+        .from("profiles")
+        .select("primary_team_id")
+        .eq("id", data.userId)
+        .maybeSingle();
+      if (!profile?.primary_team_id) {
+        throw new Error("Phải gán Team chính trước khi chuyển sang vai trò Leader hoặc Member.");
+      }
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
