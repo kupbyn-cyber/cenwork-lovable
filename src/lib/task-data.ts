@@ -69,6 +69,10 @@ export interface TaskRow {
   status: TaskStatus;
   is_archived: boolean;
   completed_at: string | null;
+  result_text: string | null;
+  result_updated_at: string | null;
+  result_updated_by: string | null;
+  resultUpdatedByName: string | null;
   manually_archived_at: string | null;
   manually_archived_by: string | null;
   created_by: string;
@@ -82,10 +86,12 @@ export interface TaskRow {
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
   is_archived,completed_at,manually_archived_at,manually_archived_by,
+  result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   project:projects(id,name,owner_id,manually_archived_at),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
+  resultAuthor:profiles!tasks_result_updated_by_fkey(id,display_name),
   team:teams(id,name),
   task_participants(user_id,profiles(display_name))
 `;
@@ -102,6 +108,7 @@ function mapTask(raw: RawTask): TaskRow {
     | { display_name: string; primary_team_id: string | null }
     | null;
   const creator = raw["creator"] as { display_name: string } | null;
+  const resultAuthor = raw["resultAuthor"] as { display_name: string } | null;
   const team = raw["team"] as { name: string } | null;
   const participants = (raw["task_participants"] ?? []) as {
     user_id: string;
@@ -127,6 +134,10 @@ function mapTask(raw: RawTask): TaskRow {
     status: raw["status"] as TaskStatus,
     is_archived: Boolean(raw["is_archived"]),
     completed_at: (raw["completed_at"] as string | null) ?? null,
+    result_text: (raw["result_text"] as string | null) ?? null,
+    result_updated_at: (raw["result_updated_at"] as string | null) ?? null,
+    result_updated_by: (raw["result_updated_by"] as string | null) ?? null,
+    resultUpdatedByName: resultAuthor?.display_name ?? null,
     manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
     manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
@@ -319,6 +330,59 @@ export async function setTaskStatus(id: string, status: TaskStatus) {
   const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
   fail(error);
 }
+
+/**
+ * Hoàn thành công việc: bắt buộc kèm Kết quả công việc.
+ * Kết quả mới thay kết quả hiện tại; bản cũ được database giữ trong lịch sử.
+ */
+export async function completeTaskWithResult(id: string, result: string) {
+  const text = result.trim();
+  if (!text) throw new Error("Cần nhập Kết quả công việc trước khi hoàn thành.");
+  const { error } = await supabase
+    .from("tasks")
+    .update({ result_text: text, status: "done" })
+    .eq("id", id);
+  fail(error);
+}
+
+/** Cập nhật riêng kết quả (không đổi trạng thái). */
+export async function updateTaskResult(id: string, result: string) {
+  const text = result.trim();
+  if (!text) throw new Error("Cần nhập Kết quả công việc.");
+  const { error } = await supabase.from("tasks").update({ result_text: text }).eq("id", id);
+  fail(error);
+}
+
+export interface TaskResultEntry {
+  id: string;
+  result_text: string;
+  created_at: string;
+  created_by: string | null;
+  authorName: string | null;
+}
+
+export async function fetchTaskResults(taskId: string): Promise<TaskResultEntry[]> {
+  const { data, error } = await supabase
+    .from("task_results")
+    .select("id,result_text,created_at,created_by,author:profiles(display_name)")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const raw = row as Record<string, unknown>;
+    const author = raw["author"] as { display_name: string } | null;
+    return {
+      id: raw["id"] as string,
+      result_text: raw["result_text"] as string,
+      created_at: raw["created_at"] as string,
+      created_by: (raw["created_by"] as string | null) ?? null,
+      authorName: author?.display_name ?? null,
+    };
+  });
+}
+
+export const taskResultsQuery = (taskId: string) =>
+  queryOptions({ queryKey: ["task-results", taskId], queryFn: () => fetchTaskResults(taskId) });
 
 /** Không xóa cứng: chỉ lưu trữ để giữ nguyên lịch sử. */
 export async function setTaskArchived(id: string, archived: boolean) {
