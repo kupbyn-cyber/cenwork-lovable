@@ -378,11 +378,39 @@ function ProjectDetailPage() {
                 <span className="text-caption text-text-muted">{progress}%</span>
               </div>
             ) : null}
+            {detail.completed_at ? (
+              <InfoRow
+                label="Thời điểm hoàn thành"
+                value={
+                  <span className={isCompletedEarly(detail) ? "text-state-success" : undefined}>
+                    {formatAuditTime(detail.completed_at)}
+                    {isCompletedEarly(detail) ? " · Hoàn thành trước hạn" : ""}
+                  </span>
+                }
+              />
+            ) : null}
+            {pendingRequest ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Yêu cầu đổi deadline"
+                  value={`Đang chờ xử lý — đề xuất ${formatAuditTime(pendingRequest.proposed_deadline)} (${pendingRequest.requesterName ?? "—"})`}
+                />
+              </div>
+            ) : null}
+            {isProjectManuallyArchived(detail) ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Trạng thái lưu trữ"
+                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatAuditTime(detail.manually_archived_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                />
+              </div>
+            ) : null}
             {detail.last_decision_note ? (
               <div className="sm:col-span-2">
                 <InfoRow label="Ghi chú quyết định gần nhất" value={detail.last_decision_note} />
               </div>
             ) : null}
+
           </CardContent>
         </Card>
 
