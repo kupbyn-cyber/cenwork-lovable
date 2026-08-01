@@ -193,14 +193,53 @@ export function canChangeTaskStatus(task: TaskRow, ctx: TaskAccessContext) {
   return canEditTask(task, ctx);
 }
 
-/** Chỉ Task đã hoàn thành cuối cùng (đã xác nhận) mới được lưu trữ thủ công. */
-export function canArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
-  return !task.is_archived && task.status === "done" && canManageTask(task, ctx);
+/** Lưu trữ thủ công: chỉ Admin và CMO, không đổi trạng thái nghiệp vụ. */
+export function isTaskManuallyArchived(task: TaskRow) {
+  return task.manually_archived_at !== null;
 }
 
-/** Task thuộc khu vực Lưu trữ: chỉ khi đã hoàn thành cuối cùng (đã xác nhận). */
+export function canManuallyArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
+  return privileged(ctx) && !isTaskManuallyArchived(task);
+}
+
+/** Chỉ dữ liệu lưu trữ thủ công mới được khôi phục; dữ liệu hoàn thành thì không. */
+export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
+  return privileged(ctx) && isTaskManuallyArchived(task);
+}
+
+/**
+ * Task thuộc khu vực Lưu trữ khi đã hoàn thành cuối cùng, được lưu trữ thủ công,
+ * hoặc thuộc dự án đang được lưu trữ thủ công.
+ */
 export function isTaskArchived(task: TaskRow) {
-  return task.status === "done";
+  return (
+    task.status === "done" ||
+    isTaskManuallyArchived(task) ||
+    task.projectManuallyArchivedAt !== null
+  );
+}
+
+/** Hoàn thành trước hạn: dữ liệu suy ra từ completed_at và deadline, không phải trạng thái. */
+export function isCompletedEarly(task: TaskRow) {
+  if (!task.completed_at) return false;
+  return new Date(task.completed_at).getTime() < new Date(task.deadline).getTime();
+}
+
+/** Người phụ trách được gửi yêu cầu đổi deadline; người có quyền duyệt cũng được gửi. */
+export function canRequestTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskArchived(task)) return false;
+  return isTaskAssignee(task, ctx) || canApproveTaskDeadline(task, ctx);
+}
+
+/** Duyệt: Admin, CMO, Project Owner của dự án chứa Task, Leader đúng phạm vi. */
+export function canApproveTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
+  if (privileged(ctx)) return true;
+  if (ctx.userId && task.projectOwnerId === ctx.userId) return true;
+  if (ctx.leaderTeamId) {
+    if (task.team_id === ctx.leaderTeamId) return true;
+    if (task.assigneeTeamId === ctx.leaderTeamId) return true;
+  }
+  return false;
 }
 
 /** Chỉ CMO, Admin, Leader hoặc Project Owner được gắn Task vào dự án. */
