@@ -84,17 +84,45 @@ function greeting(): string {
   return "Chào buổi tối";
 }
 
-function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
+const METRIC_TONE = {
+  brand: "before:bg-brand-primary",
+  yellow: "before:bg-accent-yellow",
+  orange: "before:bg-accent-orange",
+  danger: "before:bg-state-danger",
+} as const;
+
+function Metric({
+  label,
+  value,
+  hint,
+  tone = "brand",
+}: {
+  label: string;
+  value: number | string;
+  hint?: string;
+  tone?: keyof typeof METRIC_TONE;
+}) {
   return (
-    <Card density="compact">
-      <CardContent className="flex flex-col gap-1 pt-(--card-pad)">
+    <Card
+      density="compact"
+      className={`relative overflow-hidden before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[''] ${METRIC_TONE[tone]}`}
+    >
+      <CardContent className="flex flex-col gap-1 pt-(--card-pad) pl-4">
         <span className="text-caption tracking-[0.12em] text-text-muted uppercase">{label}</span>
-        <span className="text-h2 font-semibold text-text-primary">{value}</span>
+        <span className="cen-kpi text-text-primary">{value}</span>
         {hint ? <span className="text-helper text-text-muted">{hint}</span> : null}
       </CardContent>
     </Card>
   );
 }
+
+const RANGE_OPTIONS = [
+  { key: "today", label: "Hôm nay", days: 1 },
+  { key: "week", label: "Tuần này", days: 7 },
+  { key: "month", label: "Tháng này", days: 30 },
+] as const;
+type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
+
 
 function Dashboard() {
   const access = useOrgAccess();
