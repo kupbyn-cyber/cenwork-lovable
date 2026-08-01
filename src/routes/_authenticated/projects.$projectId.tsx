@@ -221,14 +221,43 @@ function ProjectDetailPage() {
       </Button>,
     );
   }
-  if (canArchive(detail, ctx)) {
+  if (pendingRequest && canApproveProjectDeadline(ctx)) {
     actions.push(
-      <Button key="archive" variant="ghost" onClick={() => setArchiveOpen(true)}>
-        <ArchiveRestore />
-        Lưu trữ
+      <Button key="decide" variant="secondary" onClick={() => setDecisionOpen(true)}>
+        <CalendarClock />
+        Duyệt đổi deadline
       </Button>,
     );
   }
+  const menuActions: RowAction[] = [];
+  if (canRequestProjectDeadline(detail, ctx) && !pendingRequest) {
+    menuActions.push({
+      key: "deadline",
+      label: "Yêu cầu đổi deadline",
+      icon: CalendarClock,
+      onSelect: () => setRequestOpen(true),
+    });
+  }
+  if (canManuallyArchiveProject(detail, ctx)) {
+    menuActions.push({
+      key: "archive",
+      label: "Đưa vào Lưu trữ",
+      icon: Archive,
+      onSelect: () => setArchiveOpen(true),
+    });
+  }
+  if (canRestoreProject(detail, ctx)) {
+    menuActions.push({
+      key: "restore",
+      label: "Khôi phục",
+      icon: ArchiveRestore,
+      onSelect: () => setRestoreOpen(true),
+    });
+  }
+  if (menuActions.length > 0) {
+    actions.push(<RowActionsMenu key="more" actions={menuActions} />);
+  }
+
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
