@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArrowLeft, Pencil } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, CalendarClock, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +20,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
+import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
+import {
+  DeadlineDecisionModal,
+  DeadlineRequestModal,
+} from "@/components/common/deadline-request-modal";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
+import {
+  deadlineRequestsQuery,
+  findPending,
+  setManualArchive,
+} from "@/lib/deadline-data";
 import { teamsQuery } from "@/lib/org-data";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
@@ -31,13 +41,17 @@ import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
-  canArchiveTask,
+  canApproveTaskDeadline,
   canChangeTaskStatus,
   canEditTask,
+  canManuallyArchiveTask,
+  canRequestTaskDeadline,
+  canRestoreTask,
   formatDate,
   formatDateTime,
+  isCompletedEarly,
+  isTaskManuallyArchived,
   isTaskOverdue,
-  setTaskArchived,
   setTaskStatus,
   taskHistoryQuery,
   taskQuery,
