@@ -294,25 +294,30 @@ function TasksPage() {
 
   const show = (id: OptionalColumnId) => columns.includes(id);
 
+  const col = (width: string) => ({ className: `${width} px-3`, headerClassName: `${width} px-3` });
+
   const tableColumns = [
     {
       id: "name",
       header: "Công việc",
-      className: "min-w-[180px] px-3",
-      cell: (row: TaskRow) => <TableCellStack primary={row.name} />,
+      className: "px-3",
+      headerClassName: "px-3",
+      cell: (row: TaskRow) => (
+        <span className="block truncate font-medium text-text-primary">{row.name}</span>
+      ),
     },
     ...(show("project")
       ? [
           {
             id: "project",
             header: "Dự án",
-            className: "px-3",
+            ...col("w-[132px]"),
             cell: (row: TaskRow) =>
               row.projectName ? (
                 <span className="block truncate text-text-secondary">{row.projectName}</span>
               ) : (
                 <Badge variant="outline" className="font-normal">
-                  Công việc độc lập
+                  Độc lập
                 </Badge>
               ),
           },
@@ -322,8 +327,8 @@ function TasksPage() {
       ? [
           {
             id: "assignee",
-            header: "Người phụ trách",
-            className: "w-[130px] max-w-[130px] px-3",
+            header: "Phụ trách",
+            ...col("w-[124px]"),
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.assigneeName ?? "—"}</span>
             ),
@@ -335,7 +340,7 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            className: "w-[120px] max-w-[120px] px-3",
+            ...col("w-[108px]"),
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.teamName ?? "—"}</span>
             ),
@@ -347,9 +352,14 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            className: "w-[130px] whitespace-nowrap px-3",
+            ...col("w-[124px]"),
             cell: (row: TaskRow) => (
-              <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
+              <span
+                className={cn(
+                  "block truncate",
+                  isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary",
+                )}
+              >
                 {formatDateTime(row.deadline)}
               </span>
             ),
@@ -361,7 +371,7 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            className: "px-3",
+            ...col("w-[104px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_PRIORITY_LABEL[row.priority]}
@@ -376,7 +386,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            className: "w-[150px] max-w-[150px] px-3",
+            ...col("w-[128px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
@@ -390,8 +400,8 @@ function TasksPage() {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
-      className: "w-[1%] whitespace-nowrap px-3",
-      headerClassName: "text-right",
+      className: "w-[128px] whitespace-nowrap px-3",
+      headerClassName: "w-[128px] px-3 text-right",
       cell: rowActions,
     },
   ];
