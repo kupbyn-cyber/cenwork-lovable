@@ -100,20 +100,16 @@ export const setCycleStatus = createServerFn({ method: "POST" })
     }
 
     const now = new Date().toISOString();
-    const patch: Record<string, unknown> = { status: data.status };
-    if (data.status === "voting") {
-      patch["vote_opens_at"] = now;
-      const closes = new Date();
-      closes.setDate(closes.getDate() + 2);
-      patch["vote_closes_at"] = closes.toISOString();
-    }
-    if (data.status === "reviewing") {
-      patch["data_locked_at"] = now;
-    }
-    if (data.status === "published") {
-      patch["published_at"] = now;
-      patch["published_by"] = context.userId;
-    }
+    const voteCloses = new Date();
+    voteCloses.setDate(voteCloses.getDate() + 2);
+    const patch = {
+      status: data.status,
+      ...(data.status === "voting"
+        ? { vote_opens_at: now, vote_closes_at: voteCloses.toISOString() }
+        : {}),
+      ...(data.status === "reviewing" ? { data_locked_at: now } : {}),
+      ...(data.status === "published" ? { published_at: now, published_by: context.userId } : {}),
+    };
 
     const { error } = await context.supabase
       .from("mvp_cycles")
@@ -153,13 +149,13 @@ export const decideAward = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_APPROVE);
 
-    const patch: Record<string, unknown> = {
+    const patch = {
       status: data.decision,
       approved_by: context.userId,
       approved_at: new Date().toISOString(),
+      ...(data.decision === "not_awarded" ? { recipient_id: null } : {}),
+      ...(data.reason ? { reason: data.reason } : {}),
     };
-    if (data.decision === "not_awarded") patch["recipient_id"] = null;
-    if (data.reason) patch["reason"] = data.reason;
 
     const { error } = await context.supabase
       .from("mvp_award_results")
