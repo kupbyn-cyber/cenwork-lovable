@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
