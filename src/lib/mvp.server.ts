@@ -136,8 +136,9 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
           "announcement_id,user_id,status,due_at,acknowledged_at,exempt_reason,created_at," +
             "announcement:announcements(id,title,status,due_at,revoked_at)",
         )
-        .gte("due_at", from)
-        .lte("due_at", to),
+        .gte("due_at", weekFrom)
+        .lte("due_at", weekTo),
+
     ]);
 
   for (const result of [
