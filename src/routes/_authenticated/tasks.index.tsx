@@ -43,6 +43,7 @@ import {
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
   canChangeTaskStatus,
+  canCreateProjectTask,
   canEditTask,
   canManuallyArchiveTask,
   canRequestTaskDeadline,
