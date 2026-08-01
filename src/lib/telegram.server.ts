@@ -36,13 +36,14 @@ export async function readTelegramConfig(): Promise<TelegramConfig> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("telegram_config")
-    .select("bot_token,group_chat_id")
+    .select("bot_token,group_chat_id,daily_report_topic_id")
     .maybeSingle();
   if (error) throw new Error(error.message);
   const stored = data?.bot_token?.trim() || null;
   return {
     botToken: stored ?? readEnvToken(),
     groupChatId: data?.group_chat_id?.trim() || DEFAULT_GROUP_CHAT_ID,
+    dailyReportTopicId: data?.daily_report_topic_id?.trim() || null,
   };
 }
 
@@ -53,24 +54,52 @@ export function maskToken(token: string | null): string | null {
   return `${token.slice(0, 6)}••••${token.slice(-4)}`;
 }
 
-/** Gửi một tin nhắn. Trả về lỗi dạng chuỗi an toàn (không chứa token). */
-export async function sendTelegramMessage(
+/** Giới hạn an toàn dưới mức 4096 ký tự của Telegram. */
+const MAX_PART_LENGTH = 3800;
+
+/**
+ * Chia nội dung dài thành nhiều phần theo dòng, giữ nguyên thứ tự và không mất Task.
+ * Mỗi phần được đánh dấu "(Phần i/n)" để người đọc nhận biết cùng một báo cáo.
+ */
+export function splitTelegramMessage(message: string): string[] {
+  if (message.length <= MAX_PART_LENGTH) return [message];
+  const parts: string[] = [];
+  let current = "";
+  for (const line of message.split("\n")) {
+    const chunk = current ? `${current}\n${line}` : line;
+    if (chunk.length > MAX_PART_LENGTH && current) {
+      parts.push(current);
+      current = line.slice(0, MAX_PART_LENGTH);
+    } else {
+      current = chunk.slice(0, MAX_PART_LENGTH);
+    }
+  }
+  if (current) parts.push(current);
+  return parts.map((part, index) => `(Phần ${index + 1}/${parts.length})\n${part}`);
+}
+
+export type TelegramSendResult =
+  | { ok: true; messageId: string | null }
+  | { ok: false; error: string };
+
+async function sendOnePart(
   token: string,
-  target: TelegramTarget,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+  target: Omit<TelegramTarget, "message">,
+  text: string,
+): Promise<TelegramSendResult> {
   try {
     const response = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: target.chatId,
-        text: target.message,
+        text,
         disable_web_page_preview: true,
         ...(target.topicId ? { message_thread_id: Number(target.topicId) } : {}),
       }),
     });
     const payload = (await response.json().catch(() => null)) as
-      | { ok?: boolean; description?: string }
+      | { ok?: boolean; description?: string; result?: { message_id?: number } }
       | null;
     if (!response.ok || !payload?.ok) {
       return {
@@ -81,8 +110,31 @@ export async function sendTelegramMessage(
         ),
       };
     }
-    return { ok: true };
+    const messageId = payload.result?.message_id;
+    return { ok: true, messageId: typeof messageId === "number" ? String(messageId) : null };
   } catch (error) {
     return { ok: false, error: (error as Error).message.slice(0, 400) };
   }
+}
+
+/**
+ * Gửi một tin nhắn (tự chia phần nếu quá dài).
+ * Trả về lỗi dạng chuỗi an toàn, không bao giờ chứa Bot Token.
+ */
+export async function sendTelegramMessage(
+  token: string,
+  target: TelegramTarget,
+): Promise<TelegramSendResult> {
+  const parts = splitTelegramMessage(target.message);
+  let firstId: string | null = null;
+  for (const [index, part] of parts.entries()) {
+    const result = await sendOnePart(token, target, part);
+    if (!result.ok) {
+      return parts.length > 1
+        ? { ok: false, error: `Phần ${index + 1}/${parts.length}: ${result.error}`.slice(0, 400) }
+        : result;
+    }
+    if (index === 0) firstId = result.messageId;
+  }
+  return { ok: true, messageId: firstId };
 }
