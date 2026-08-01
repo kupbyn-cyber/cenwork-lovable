@@ -130,9 +130,11 @@ function MvpCyclesPage() {
         description={`Mỗi kỳ chấm trên thang ${MVP_TOTAL_MAX} điểm: 75 điểm từ dữ liệu hệ thống và 25 điểm đánh giá thực tế.`}
         actions={
           access.can(PERMISSIONS.MVP_MANAGE) ? (
-            <Button onClick={() => setOpen(true)} icon={<Plus />}>
+            <Button onClick={() => setOpen(true)}>
+              <Plus />
               Mở kỳ MVP
             </Button>
+
           ) : null
         }
       />
