@@ -71,11 +71,15 @@ function ConfigSection() {
   });
 
   const [groupChatId, setGroupChatId] = React.useState("");
+  const [dailyTopicId, setDailyTopicId] = React.useState("");
   const [botToken, setBotToken] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (config.data) setGroupChatId(config.data.groupChatId);
+    if (config.data) {
+      setGroupChatId(config.data.groupChatId);
+      setDailyTopicId(config.data.dailyReportTopicId ?? "");
+    }
   }, [config.data]);
 
   const save = useMutation({
@@ -83,6 +87,7 @@ function ConfigSection() {
       saveTelegramConfig({
         data: {
           groupChatId,
+          dailyReportTopicId: dailyTopicId,
           ...(botToken.trim() ? { botToken: botToken.trim() } : {}),
         },
       }),
@@ -95,12 +100,21 @@ function ConfigSection() {
     onError: (mutationError: Error) => setError(mutationError.message),
   });
 
+  const test = useMutation({
+    mutationFn: () => testTelegramConnection(),
+    onSuccess: () => {
+      setError(null);
+      cenToast.success("Đã gửi tin kiểm tra vào Group và Topic Báo cáo ngày.");
+    },
+    onError: (testError: Error) => setError(testError.message),
+  });
+
   return (
     <Card>
       <CardContent className="flex min-w-0 flex-col gap-4">
         <SectionHeader
           title="Cấu hình Telegram"
-          description="Một Bot dùng chung và một Group Chat chung cho toàn hệ thống. Mỗi Team dùng một Topic Thread ID riêng trong nhóm này."
+          description="Một Bot dùng chung, một Group Chat chung và một Topic Báo cáo ngày chung cho toàn hệ thống."
         />
         <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <FormField
@@ -115,6 +129,21 @@ function ConfigSection() {
                 value={groupChatId}
                 placeholder="-1002041537249"
                 onChange={(event) => setGroupChatId(event.target.value)}
+              />
+            )}
+          </FormField>
+          <FormField
+            id="tg-daily-topic"
+            label="Daily Report Topic Thread ID"
+            required
+            helperText="Topic chung nhận Báo cáo ngày của tất cả Team."
+          >
+            {(control) => (
+              <Input
+                {...control}
+                value={dailyTopicId}
+                placeholder="Ví dụ: 25"
+                onChange={(event) => setDailyTopicId(event.target.value)}
               />
             )}
           </FormField>
@@ -146,14 +175,29 @@ function ConfigSection() {
             {error}
           </p>
         ) : null}
-        <div>
+        {test.isSuccess && !error ? (
+          <p className="rounded-control border border-state-success/50 bg-state-success-surface px-3 py-2 text-helper text-state-success">
+            Kết nối hợp lệ: Bot đã gửi được tin kiểm tra vào đúng Group và Topic Báo cáo ngày.
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             loading={save.isPending}
-            disabled={config.isLoading || !groupChatId.trim()}
+            disabled={config.isLoading || !groupChatId.trim() || !dailyTopicId.trim()}
             onClick={() => save.mutate()}
           >
             Lưu cấu hình
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={test.isPending}
+            disabled={config.isLoading || !config.data?.botConfigured}
+            onClick={() => test.mutate()}
+          >
+            <PlugZap />
+            Kiểm tra kết nối
           </Button>
         </div>
       </CardContent>
