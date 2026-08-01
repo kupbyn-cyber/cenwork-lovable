@@ -489,6 +489,7 @@ export async function buildPerformanceDashboard(
         .limit(1000);
       if (error) throw new Error(error.message);
       for (const row of data ?? []) {
+        if (!row.recipient_id) continue;
         const list = awardsByPerson.get(row.recipient_id) ?? [];
         list.push(row.award_type);
         awardsByPerson.set(row.recipient_id, list);
