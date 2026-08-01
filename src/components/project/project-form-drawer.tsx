@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -203,10 +203,11 @@ export function ProjectFormDrawer({
   }
 
   return (
-    <DrawerPanel
+    <Modal
+      size="xl"
       open={open}
       onOpenChange={mutation.isPending ? () => undefined : onOpenChange}
-      title={isOfficialCreate ? "Tạo dự án" : isCreate ? "Gửi ý tưởng dự án" : "Cập nhật dự án"}
+      title={isOfficialCreate ? "Tạo dự án" : isCreate ? "Gửi ý tưởng dự án" : "Chỉnh sửa dự án"}
       description={
         isOfficialCreate
           ? "Dự án mới bắt đầu ở trạng thái Ý tưởng và đi theo quy trình duyệt hiện hành."
@@ -401,6 +402,6 @@ export function ProjectFormDrawer({
           </>
         ) : null}
       </form>
-    </DrawerPanel>
+    </Modal>
   );
 }
