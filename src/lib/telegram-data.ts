@@ -94,7 +94,7 @@ export async function fetchOutbox(limit = 50): Promise<TelegramOutboxRow[]> {
   const { data, error } = await supabase
     .from("telegram_outbox")
     .select(
-      "id,target_type,target_id,chat_id,topic_id,message,status,attempts,last_error,sent_at,created_at",
+      "id,target_type,target_id,chat_id,topic_id,message,status,attempts,last_error,sent_at,created_at,message_type,report_id,telegram_message_id",
     )
     .order("created_at", { ascending: false })
     .limit(limit);
