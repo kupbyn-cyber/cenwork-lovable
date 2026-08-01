@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { EntityAvatar } from "@/components/ui/avatar";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -11,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { cenToast } from "@/components/ui/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSettingsSection } from "@/components/settings/admin-settings-section";
+import { AvatarUploader } from "@/components/settings/avatar-uploader";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { logSelfAuditEvent } from "@/lib/audit-data";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
@@ -79,8 +79,8 @@ function ProfileSection() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-3">
-          <EntityAvatar name={currentName || user?.email || ""} size="lg" />
+        <div className="flex min-w-0 flex-col gap-4">
+          <AvatarUploader displayName={currentName || user?.email || ""} />
           <div className="min-w-0">
             <p className="truncate text-label font-semibold text-text-primary">
               {currentName || "Chưa đặt tên hiển thị"}

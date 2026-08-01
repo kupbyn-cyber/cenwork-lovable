@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EntityAvatar } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
+import { avatarUrlQuery } from "@/lib/avatar-data";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cenToast } from "@/components/ui/toast";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
@@ -29,6 +31,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const displayName = getDisplayName(user);
+  const avatarUrl = useQuery(avatarUrlQuery(user?.id));
 
   const [confirmGlobal, setConfirmGlobal] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
@@ -92,7 +95,11 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             className="max-w-[12rem] gap-2 px-1.5"
             aria-label="Menu tài khoản"
           >
-            <EntityAvatar name={displayName || user?.email || "Tài khoản"} size="sm" />
+            <EntityAvatar
+              name={displayName || user?.email || "Tài khoản"}
+              size="sm"
+              {...(avatarUrl.data ? { src: avatarUrl.data } : {})}
+            />
             <span className="hidden min-w-0 truncate sm:block">{displayName}</span>
           </Button>
         </DropdownMenuTrigger>
