@@ -32,6 +32,7 @@ import {
   DeadlineDecisionModal,
   DeadlineRequestModal,
 } from "@/components/common/deadline-request-modal";
+import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { cn } from "@/lib/utils";
 import { useFlashHighlight } from "@/hooks/use-flash-highlight";
@@ -64,6 +65,7 @@ import {
   setTaskStatus,
   taskHistoryQuery,
   taskQuery,
+  taskResultsQuery,
   taskTimeProgress,
   type TaskAccessContext,
   type TaskStatus,
@@ -106,6 +108,7 @@ function TaskDetailPage() {
 
   const taskResult = useQuery(taskQuery(taskId));
   const historyResult = useQuery(taskHistoryQuery(taskId));
+  const resultsResult = useQuery(taskResultsQuery(taskId));
   const projectsResult = useQuery(projectsQuery());
   const teamsResult = useQuery(teamsQuery());
   const peopleResult = useQuery(activePeopleQuery());
@@ -115,6 +118,7 @@ function TaskDetailPage() {
   const [restoreOpen, setRestoreOpen] = React.useState(false);
   const [requestOpen, setRequestOpen] = React.useState(false);
   const [decisionOpen, setDecisionOpen] = React.useState(false);
+  const [completeOpen, setCompleteOpen] = React.useState(false);
 
   const task = taskResult.data ?? null;
   const ctx: TaskAccessContext = {
@@ -130,6 +134,7 @@ function TaskDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
+    void queryClient.invalidateQueries({ queryKey: ["task-results", taskId] });
     void queryClient.invalidateQueries({ queryKey: ["deadline-requests"] });
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
@@ -213,7 +218,13 @@ function TaskDetailPage() {
               <div className="flex items-center gap-2">
               <Select
                 value={task.status}
-                onValueChange={(value) => statusMutation.mutate(value as TaskStatus)}
+                onValueChange={(value) => {
+                  if (value === "done") {
+                    setCompleteOpen(true);
+                    return;
+                  }
+                  statusMutation.mutate(value as TaskStatus);
+                }}
                 disabled={statusMutation.isPending}
               >
                 <SelectTrigger className="w-48" aria-label="Đổi trạng thái công việc">
@@ -361,6 +372,22 @@ function TaskDetailPage() {
                 }
               />
             ) : null}
+            {task.result_text ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Kết quả công việc"
+                  value={
+                    <span className="whitespace-pre-wrap">
+                      {task.result_text}
+                      <span className="mt-1 block text-caption text-text-muted">
+                        Cập nhật bởi {task.resultUpdatedByName ?? "—"} ·{" "}
+                        {formatDateTime(task.result_updated_at)}
+                      </span>
+                    </span>
+                  }
+                />
+              </div>
+            ) : null}
             {pendingRequest ? (
               <div className="sm:col-span-2">
                 <InfoRow
@@ -382,6 +409,38 @@ function TaskDetailPage() {
         </Card>
 
         <Card>
+          <CardHeader>
+            <CardTitle>Lịch sử kết quả</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {resultsResult.isLoading ? (
+              <Skeleton className="h-20 w-full" />
+            ) : resultsResult.isError ? (
+              <ErrorState
+                title="Không tải được lịch sử kết quả"
+                onRetry={() => void resultsResult.refetch()}
+              />
+            ) : (resultsResult.data ?? []).length === 0 ? (
+              <p className="text-body-sm text-text-muted">Chưa có kết quả nào được ghi nhận.</p>
+            ) : (
+              <ol className="flex flex-col gap-3">
+                {(resultsResult.data ?? []).map((entry, index) => (
+                  <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
+                    <p className="text-body-sm whitespace-pre-wrap text-text-primary">
+                      {entry.result_text}
+                    </p>
+                    <p className="text-caption text-text-muted">
+                      {index === 0 ? "Kết quả hiện tại · " : ""}
+                      {entry.authorName ?? "—"} · {formatDateTime(entry.created_at)}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Lịch sử thay đổi</CardTitle>
           </CardHeader>
@@ -443,6 +502,15 @@ function TaskDetailPage() {
         confirmLabel="Khôi phục"
         loading={archiveMutation.isPending}
         onConfirm={() => archiveMutation.mutate(false)}
+      />
+
+      <TaskCompleteDialog
+        task={completeOpen ? task : null}
+        onOpenChange={(open) => setCompleteOpen(open)}
+        onCompleted={() => {
+          invalidate();
+          flash("status");
+        }}
       />
 
       <DeadlineRequestModal
