@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAuditLogsRouteImport } from './routes/_authenticated/audit-logs'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedOrganizationRouteImport } from './routes/_authenticated/organization'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -56,6 +57,12 @@ const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrganizationRoute =
   AuthenticatedOrganizationRouteImport.update({
     id: '/organization',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/members': typeof AuthenticatedMembersRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/organization': typeof AuthenticatedOrganizationRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -143,6 +151,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/members': typeof AuthenticatedMembersRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/organization': typeof AuthenticatedOrganizationRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -163,6 +172,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/organization': typeof AuthenticatedOrganizationRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit-logs'
     | '/members'
+    | '/notifications'
     | '/organization'
     | '/roles'
     | '/settings'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit-logs'
     | '/members'
+    | '/notifications'
     | '/organization'
     | '/roles'
     | '/settings'
@@ -220,6 +232,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/audit-logs'
     | '/_authenticated/members'
+    | '/_authenticated/notifications'
     | '/_authenticated/organization'
     | '/_authenticated/roles'
     | '/_authenticated/settings'
@@ -282,6 +295,13 @@ declare module '@tanstack/react-router' {
       path: '/members'
       fullPath: '/members'
       preLoaderRoute: typeof AuthenticatedMembersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/organization': {
@@ -367,6 +387,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditLogsRoute: typeof AuthenticatedAuditLogsRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOrganizationRoute: typeof AuthenticatedOrganizationRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -384,6 +405,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditLogsRoute: AuthenticatedAuditLogsRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOrganizationRoute: AuthenticatedOrganizationRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
