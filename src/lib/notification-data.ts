@@ -32,6 +32,7 @@ export const NOTIFICATION_EVENT_LABEL: Record<string, string> = {
   "project.rejected": "Dự án bị từ chối",
   "project.member_added": "Thêm vào dự án",
   "project.member_removed": "Rời khỏi dự án",
+  "recognition.received": "Ghi nhận từ đồng đội",
 };
 
 export function notificationEventLabel(eventType: string): string {
