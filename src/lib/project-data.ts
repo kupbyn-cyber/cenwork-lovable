@@ -323,7 +323,7 @@ export function isCompletedEarly(project: ProjectRow) {
 
 /** Gửi yêu cầu đổi deadline: Project Owner, Leader đúng phạm vi, Admin và CMO. */
 export function canRequestProjectDeadline(project: ProjectRow, ctx: ProjectAccessContext) {
-  if (isProjectArchived(project)) return false;
+  if (isProjectArchived(project) || !isProjectApproved(project)) return false;
   if (privileged(ctx) || isProjectOwner(project, ctx)) return true;
   return Boolean(ctx.leaderTeamId && project.teamIds.includes(ctx.leaderTeamId));
 }
@@ -351,26 +351,85 @@ function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-export async function createProjectIdea(input: {
-  createdBy: string;
-  name: string;
-  objective: string;
-  description: string | null;
-}) {
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      name: input.name,
-      objective: input.objective,
-      description: input.description,
-      created_by: input.createdBy,
-      status: "idea",
-    })
-    .select("id")
-    .single();
-  fail(error);
-  return data!.id;
+/** Gửi duyệt (hoặc gửi lại sau khi bị từ chối). Quyền và bước duyệt do database quyết định. */
+export async function submitProject(projectId: string): Promise<ProjectStatus> {
+  const { data, error } = await supabase.rpc("project_submit", { _project: projectId });
+  if (error) throw new Error(error.message);
+  return data as ProjectStatus;
 }
+
+/** Duyệt hoặc từ chối ở bước hiện tại. Từ chối bắt buộc có lý do. */
+export async function decideProject(
+  projectId: string,
+  approve: boolean,
+  reason?: string | null,
+): Promise<ProjectStatus> {
+  const { data, error } = await supabase.rpc("project_decide", {
+    _project: projectId,
+    _approve: approve,
+    _reason: reason ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return data as ProjectStatus;
+}
+
+/** Lịch sử phê duyệt của một dự án. */
+export interface ProjectApprovalEntry {
+  id: string;
+  round: number;
+  stage: string;
+  action: string;
+  actorName: string | null;
+  actor_role: string | null;
+  from_status: ProjectStatus | null;
+  to_status: ProjectStatus | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export const APPROVAL_ACTION_LABEL: Record<string, string> = {
+  submitted: "Gửi duyệt",
+  approved: "Duyệt",
+  rejected: "Từ chối",
+  auto_approved: "Tạo và duyệt ngay",
+};
+
+export const APPROVAL_STAGE_LABEL: Record<string, string> = {
+  leader: "Bước Leader",
+  cmo: "Bước CMO",
+  auto: "Tự động",
+};
+
+export async function fetchProjectApprovals(projectId: string): Promise<ProjectApprovalEntry[]> {
+  const { data, error } = await supabase
+    .from("project_approvals")
+    .select("id,round,stage,action,actor_role,from_status,to_status,reason,created_at,actor:profiles(display_name)")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const raw = row as RawProject;
+    const actor = raw["actor"] as { display_name: string } | null;
+    return {
+      id: raw["id"] as string,
+      round: (raw["round"] as number | null) ?? 1,
+      stage: raw["stage"] as string,
+      action: raw["action"] as string,
+      actorName: actor?.display_name ?? null,
+      actor_role: (raw["actor_role"] as string | null) ?? null,
+      from_status: (raw["from_status"] as ProjectStatus | null) ?? null,
+      to_status: (raw["to_status"] as ProjectStatus | null) ?? null,
+      reason: (raw["reason"] as string | null) ?? null,
+      created_at: raw["created_at"] as string,
+    };
+  });
+}
+
+export const projectApprovalsQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ["project-approvals", projectId],
+    queryFn: () => fetchProjectApprovals(projectId),
+  });
 
 export interface ProjectDetailInput {
   name: string;
@@ -379,6 +438,7 @@ export interface ProjectDetailInput {
   ownerId: string | null;
   startDate: string | null;
   deadline: string | null;
+  responsibleTeamId?: string | null;
 }
 
 export async function updateProjectDetail(id: string, input: ProjectDetailInput) {
@@ -391,6 +451,9 @@ export async function updateProjectDetail(id: string, input: ProjectDetailInput)
       owner_id: input.ownerId,
       start_date: input.startDate,
       deadline: input.deadline,
+      ...(input.responsibleTeamId === undefined
+        ? {}
+        : { responsible_team_id: input.responsibleTeamId }),
     })
     .eq("id", id);
   fail(error);
