@@ -49,7 +49,7 @@ export function RowActionsMenu({
           return (
             <DropdownMenuItem
               key={action.key}
-              variant={action.tone === "destructive" ? "destructive" : undefined}
+              variant={action.tone === "destructive" ? "destructive" : "default"}
               onSelect={(event) => {
                 event.preventDefault();
                 action.onSelect();
