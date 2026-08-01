@@ -116,8 +116,10 @@ function GroupTable({ title, rows }: { title: string; rows: ReportStatsGroup[] }
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <DataTable data={rows} columns={columns} getRowId={(row) => row.key} density="compact" />
-        <div className="mt-3 space-y-2 md:hidden">
+        <div className="hidden md:block">
+          <DataTable data={rows} columns={columns} getRowId={(row) => row.key} density="compact" />
+        </div>
+        <div className="space-y-2 md:hidden">
           {rows.map((row) => (
             <div key={`m-${row.key}`} className="rounded-control border border-border-default p-3">
               <p className="font-medium">{row.label}</p>
