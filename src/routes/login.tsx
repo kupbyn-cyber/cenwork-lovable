@@ -87,17 +87,17 @@ function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2.5">
-          <span
+          <img
+            src="/brand/logo-mark.svg"
+            alt=""
             aria-hidden
-            className="grid size-9 shrink-0 place-items-center rounded-control bg-brand-primary text-label font-bold text-brand-foreground"
-          >
-            C
-          </span>
+            className="size-9 shrink-0 object-contain"
+          />
           <span className="min-w-0">
             <span className="block text-label font-bold tracking-wide text-text-primary">
               CEN 1.0
             </span>
-            <span className="block text-caption text-text-muted">Command Center</span>
+            <span className="block text-caption text-text-muted">Trung tâm điều hành</span>
           </span>
         </div>
 
