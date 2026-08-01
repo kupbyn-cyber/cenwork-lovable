@@ -45,7 +45,7 @@ export function SurveyForm({ questions, options, drafts, readOnly, onChange }: P
               <p className="min-w-0 break-words text-body-sm font-medium text-text-primary">
                 {index + 1}. {question.content}
               </p>
-              {question.is_required ? <Badge variant="danger">Bắt buộc</Badge> : null}
+              {question.is_required ? <Badge variant="error">Bắt buộc</Badge> : null}
               {question.question_type === "multi" &&
               (question.min_select || question.max_select) ? (
                 <Badge variant="neutral">
