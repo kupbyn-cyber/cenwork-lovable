@@ -718,6 +718,37 @@ function TelegramPage() {
                   Gửi thông báo đang chờ
                 </Button>
               </div>
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <FormField id="tg-filter-type" label="Lọc theo loại tin">
+                  {(control) => (
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger {...control} aria-label="Lọc theo loại tin">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="daily_report">Báo cáo ngày</SelectItem>
+                        <SelectItem value="notification">Thông báo cá nhân</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormField>
+                <FormField id="tg-filter-status" label="Lọc theo trạng thái">
+                  {(control) => (
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger {...control} aria-label="Lọc theo trạng thái">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ gửi</SelectItem>
+                        <SelectItem value="sent">Đã gửi</SelectItem>
+                        <SelectItem value="failed">Thất bại</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormField>
+              </div>
             </CardContent>
           </Card>
 
