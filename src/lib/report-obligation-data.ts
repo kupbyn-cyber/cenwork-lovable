@@ -16,7 +16,9 @@ export const REPORT_KIND_LABEL: Record<ReportKind, string> = {
   daily: "Báo cáo ngày",
   weekly: "Báo cáo tuần",
   project: "Báo cáo dự án",
+  project_closure: "Báo cáo kết thúc dự án",
 };
+
 
 export const REPORT_PERIOD_STATUS_LABEL: Record<ReportPeriodStatus, string> = {
   scheduled: "Chưa mở",
