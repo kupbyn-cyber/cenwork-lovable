@@ -183,6 +183,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_key: string
+          event_type: string
+          id: string
+          link: string | null
+          read_at: string | null
+          recipient_id: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_key: string
+          event_type: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_key?: string
+          event_type?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -579,6 +621,138 @@ export type Database = {
           },
         ]
       }
+      telegram_outbox: {
+        Row: {
+          attempts: number
+          chat_id: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          last_error: string | null
+          message: string
+          notification_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["delivery_status"]
+          target_id: string | null
+          target_type: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          chat_id: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          last_error?: string | null
+          message: string
+          notification_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"]
+          target_id?: string | null
+          target_type: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          chat_id?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          last_error?: string | null
+          message?: string
+          notification_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"]
+          target_id?: string | null
+          target_type?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_outbox_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_team_links: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          team_id: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          team_id: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          team_id?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_team_links_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_user_links: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_user_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -704,6 +878,15 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      enqueue_telegram_user: {
+        Args: {
+          _dedupe: string
+          _message: string
+          _notification: string
+          _user: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -720,6 +903,23 @@ export type Database = {
       leader_team_id: { Args: { _user_id: string }; Returns: string }
       my_primary_team_id: { Args: never; Returns: string }
       my_team_ids: { Args: never; Returns: string[] }
+      notify_team_telegram: {
+        Args: { _dedupe: string; _message: string; _team: string }
+        Returns: undefined
+      }
+      notify_user: {
+        Args: {
+          _body: string
+          _entity_id: string
+          _entity_type: string
+          _event_key: string
+          _event_type: string
+          _link: string
+          _recipient: string
+          _title: string
+        }
+        Returns: undefined
+      }
       write_audit: {
         Args: {
           _action: string
@@ -735,6 +935,7 @@ export type Database = {
     Enums: {
       account_status: "active" | "locked"
       app_role: "admin" | "cmo" | "leader" | "member"
+      delivery_status: "pending" | "sent" | "failed"
       project_status:
         | "idea"
         | "leader_review"
@@ -876,6 +1077,7 @@ export const Constants = {
     Enums: {
       account_status: ["active", "locked"],
       app_role: ["admin", "cmo", "leader", "member"],
+      delivery_status: ["pending", "sent", "failed"],
       project_status: [
         "idea",
         "leader_review",
