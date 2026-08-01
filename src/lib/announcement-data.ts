@@ -62,6 +62,9 @@ export interface AnnouncementRow {
   revoke_reason: string | null;
   archived_at: string | null;
   last_minor_edit_at: string | null;
+  audience_all_users: boolean;
+  audience_all_teams: boolean;
+  include_self: boolean;
 }
 
 
@@ -91,7 +94,8 @@ export interface TargetRow {
 
 const ANNOUNCEMENT_COLUMNS =
   "id,created_by,title,body,status,due_at,published_at,created_at,updated_at," +
-  "comments_enabled,result_visibility,current_version,revoked_at,revoke_reason,archived_at,last_minor_edit_at";
+  "comments_enabled,result_visibility,current_version,revoked_at,revoke_reason,archived_at,last_minor_edit_at," +
+  "audience_all_users,audience_all_teams,include_self";
 const RECIPIENT_COLUMNS =
   "id,announcement_id,user_id,status,version,due_at,first_opened_at,read_completed_at,acknowledged_at,is_late,exempt_reason";
 
@@ -206,6 +210,10 @@ export interface DraftInput {
   teamIds: string[];
   commentsEnabled: boolean;
   resultVisibility: ResultVisibility;
+  /** M6.3 — tiêu chí "Tất cả": danh sách người nhận tính lại khi phát hành. */
+  allUsers: boolean;
+  allTeams: boolean;
+  includeSelf: boolean;
 }
 
 /** Lưu Nháp: Nháp có thể chưa hoàn chỉnh nên không ràng buộc nội dung. */
@@ -220,6 +228,9 @@ export async function saveDraft(input: DraftInput, createdBy: string): Promise<s
         due_at: input.dueAt,
         comments_enabled: input.commentsEnabled,
         result_visibility: input.resultVisibility,
+        audience_all_users: input.allUsers,
+        audience_all_teams: input.allTeams,
+        include_self: input.includeSelf,
       })
       .eq("id", id);
     fail(error);
@@ -233,6 +244,9 @@ export async function saveDraft(input: DraftInput, createdBy: string): Promise<s
         due_at: input.dueAt,
         comments_enabled: input.commentsEnabled,
         result_visibility: input.resultVisibility,
+        audience_all_users: input.allUsers,
+        audience_all_teams: input.allTeams,
+        include_self: input.includeSelf,
       })
       .select("id")
       .single();
