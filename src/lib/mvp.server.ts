@@ -2,6 +2,7 @@ import {
   computeMvpScore,
   proposeMvpAwards,
   MVP_CRITERION_MAX,
+  type MvpAnnouncementInput,
   type MvpAwardCandidate,
   type MvpCriterion,
   type MvpTaskInput,
@@ -79,7 +80,7 @@ interface ComputeContext {
 export async function computeCycleScores(supabase: Db, cycleId: string) {
   const { data: cycle, error: cycleError } = await supabase
     .from("mvp_cycles")
-    .select("id,week_start,week_end,status")
+    .select("id,week_start,week_end,status,data_locked_at")
     .eq("id", cycleId)
     .single();
   if (cycleError || !cycle) throw new Error(cycleError?.message ?? "Không tìm thấy kỳ MVP.");
@@ -272,6 +273,8 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
+      announcements: announcementsByUser.get(profile.id) ?? [],
+      announcementLockAt,
     });
 
     scorecardRows.push({
