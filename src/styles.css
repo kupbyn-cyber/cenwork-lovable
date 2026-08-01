@@ -109,8 +109,16 @@
   --spacing-icon-md: 1rem;
   --spacing-icon-lg: 1.25rem;
 
-  /* ---- Motion ---- */
+  /* ---- Motion (single source of truth) ---- */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --cen-dur-1: 80ms;
+  --cen-dur-2: 120ms;
+  --cen-dur-3: 180ms;
+  --cen-dur-4: 240ms;
+  --cen-dur-5: 280ms;
 }
 
 :root {
@@ -215,11 +223,74 @@
   }
 }
 
-/* ---- Motion foundation: fast, light, purposeful ---- */
+/* ---- Motion foundation: fast, light, purposeful ----
+ * Chỉ animate opacity / transform / màu / border / shadow.
+ * Không transition-all, không animate kích thước hoặc vị trí layout.
+ * Tắt toàn hệ thống sau này: đặt data-motion="off" trên <html>.
+ */
 @utility cen-transition {
-  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
-  transition-duration: 140ms;
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+  transition-duration: var(--cen-dur-2);
   transition-timing-function: var(--ease-standard);
+}
+
+/* Biến thể thời lượng — dùng kèm cen-transition */
+@utility cen-dur-1 {
+  transition-duration: var(--cen-dur-1);
+}
+@utility cen-dur-2 {
+  transition-duration: var(--cen-dur-2);
+}
+@utility cen-dur-3 {
+  transition-duration: var(--cen-dur-3);
+}
+@utility cen-dur-4 {
+  transition-duration: var(--cen-dur-4);
+}
+@utility cen-dur-5 {
+  transition-duration: var(--cen-dur-5);
+}
+
+/* Phản hồi tương tác chuẩn */
+@utility cen-press {
+  &:active:not(:disabled):not([aria-disabled="true"]):not([data-loading="true"]) {
+    transform: scale(0.98);
+  }
+}
+
+@utility cen-press-subtle {
+  &:active:not(:disabled):not([aria-disabled="true"]):not([data-loading="true"]) {
+    transform: scale(0.99);
+  }
+}
+
+@utility cen-hover-lift {
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(-1px);
+  }
+}
+
+/* Thời lượng cho overlay (Radix data-state) */
+@utility cen-overlay-motion {
+  &[data-state="open"] {
+    animation-duration: var(--cen-dur-3);
+    animation-timing-function: var(--ease-enter);
+  }
+  &[data-state="closed"] {
+    animation-duration: var(--cen-dur-2);
+    animation-timing-function: var(--ease-exit);
+  }
+}
+
+@utility cen-popover-motion {
+  &[data-state="open"] {
+    animation-duration: var(--cen-dur-2);
+    animation-timing-function: var(--ease-enter);
+  }
+  &[data-state="closed"] {
+    animation-duration: var(--cen-dur-1);
+    animation-timing-function: var(--ease-exit);
+  }
 }
 
 @utility cen-kpi {
@@ -230,13 +301,33 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Reduced motion + công tắc tắt motion toàn hệ thống */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+
+  .cen-press:active,
+  .cen-press-subtle:active,
+  .cen-hover-lift:hover {
+    transform: none !important;
+  }
+}
+
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+html[data-motion="off"] :is(.cen-press, .cen-press-subtle, .cen-hover-lift) {
+  transform: none !important;
 }
 
 /* ---- Brand surfaces (chỉ dùng ở vùng thương hiệu & header) ---- */
