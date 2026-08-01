@@ -46,6 +46,8 @@ interface FormState {
   primaryTeamId: string;
   collaboratorTeamIds: string[];
   password: string;
+  phoneNumber: string;
+  birthday: string;
   telegramUserId: string;
   telegramEnabled: boolean;
 }
@@ -59,6 +61,8 @@ function initialState(member: MemberRow | null): FormState {
     primaryTeamId: member?.primary_team_id ?? NO_TEAM,
     collaboratorTeamIds: member?.collaboratorTeamIds ?? [],
     password: "",
+    phoneNumber: member?.phone_number ?? "",
+    birthday: member?.birthday ?? "",
     telegramUserId: member?.telegram_user_id ?? "",
     telegramEnabled: member?.telegram_enabled ?? true,
   };
@@ -101,6 +105,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             primaryTeamId,
             collaboratorTeamIds: collaborators,
             initialPassword: values.password,
+            phoneNumber: values.phoneNumber.trim() || null,
+            birthday: values.birthday || null,
           },
         });
         return;
@@ -111,6 +117,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         display_name: values.displayName.trim(),
         job_title: values.jobTitle.trim() || null,
         primary_team_id: primaryTeamId,
+        phone_number: values.phoneNumber.trim() || null,
+        birthday: values.birthday || null,
         canChangePrimaryTeam: canEditRoleTeam,
         telegram_user_id: values.telegramUserId.trim() || null,
         telegram_enabled: values.telegramEnabled,
@@ -140,6 +148,10 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         next.email = "Email không đúng định dạng.";
       if (form.password.length < 8) next.password = "Mật khẩu khởi tạo tối thiểu 8 ký tự.";
     }
+    if (form.phoneNumber.trim() && !/^[0-9+][0-9 .()-]{7,19}$/.test(form.phoneNumber.trim()))
+      next.phoneNumber = "Số điện thoại không hợp lệ (8–20 ký tự số).";
+    if (form.birthday && !/^\d{4}-\d{2}-\d{2}$/.test(form.birthday))
+      next.birthday = "Sinh nhật không hợp lệ.";
     if (canEditRoleTeam && teamRequired && form.primaryTeamId === NO_TEAM)
       next.primaryTeamId = "Vai trò Leader và Member bắt buộc thuộc một Team chính.";
 
@@ -246,6 +258,42 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             />
           )}
         </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            id="member-phone"
+            label="Số điện thoại"
+            helperText="Không bắt buộc. Dùng để liên hệ nội bộ."
+            {...(errors.phoneNumber ? { error: errors.phoneNumber } : {})}
+          >
+            {(controlProps) => (
+              <Input
+                {...controlProps}
+                type="tel"
+                inputMode="tel"
+                maxLength={20}
+                value={form.phoneNumber}
+                onChange={(e) => setForm((s) => ({ ...s, phoneNumber: e.target.value }))}
+              />
+            )}
+          </FormField>
+
+          <FormField
+            id="member-birthday"
+            label="Sinh nhật"
+            helperText="Không bắt buộc. Dùng để nhắc sinh nhật trong tháng."
+            {...(errors.birthday ? { error: errors.birthday } : {})}
+          >
+            {(controlProps) => (
+              <Input
+                {...controlProps}
+                type="date"
+                value={form.birthday}
+                onChange={(e) => setForm((s) => ({ ...s, birthday: e.target.value }))}
+              />
+            )}
+          </FormField>
+        </div>
 
         <FormField
           id="member-role"
