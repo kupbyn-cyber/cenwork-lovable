@@ -33,6 +33,7 @@ import {
   DeadlineRequestModal,
 } from "@/components/common/deadline-request-modal";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { cn } from "@/lib/utils";
 import { useFlashHighlight } from "@/hooks/use-flash-highlight";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
