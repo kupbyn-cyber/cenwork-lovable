@@ -221,6 +221,70 @@ function ProjectsPage() {
         </span>
       ),
     },
+    {
+      id: "task-count",
+      header: "Số CV",
+      align: "right" as const,
+      className: "min-w-[80px] tabular-nums",
+      cell: (row: ProjectRow) => (
+        <span className="text-text-secondary">{taskCounts[row.id] ?? 0}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Hành động",
+      align: "right" as const,
+      className: "w-[1%] whitespace-nowrap",
+      headerClassName: "text-right",
+      cell: (row: ProjectRow) => {
+        const canComplete = nextStatuses(row, ctx).includes("completed");
+        const menuActions: RowAction[] = [];
+        if (canRequestProjectDeadline(row, ctx)) {
+          menuActions.push({
+            key: "deadline",
+            label: "Yêu cầu đổi deadline",
+            icon: CalendarClock,
+            onSelect: () => setDeadlineTarget(row),
+          });
+        }
+        if (canManuallyArchiveProject(row, ctx)) {
+          menuActions.push({
+            key: "archive",
+            label: "Đưa vào Lưu trữ",
+            icon: Archive,
+            onSelect: () => setArchiveTarget(row),
+          });
+        }
+        if (canRestoreProject(row, ctx)) {
+          menuActions.push({
+            key: "restore",
+            label: "Khôi phục khỏi Lưu trữ",
+            icon: ArchiveRestore,
+            onSelect: () => setRestoreTarget(row),
+          });
+        }
+        if (canSoftDelete(access.role)) {
+          menuActions.push({
+            key: "delete",
+            label: "Xóa",
+            icon: Trash2,
+            tone: "destructive",
+            onSelect: () => setDeleteTarget(row),
+          });
+        }
+        return (
+          <RowActionsCell
+            onView={() =>
+              void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
+            }
+            onEdit={canEditProject(row, ctx) ? () => setEditTarget(row) : null}
+            onComplete={canComplete ? () => setCompleteTarget(row) : null}
+            completing={completeMutation.isPending && completeTarget?.id === row.id}
+            menuActions={menuActions}
+          />
+        );
+      },
+    },
   ];
 
   return (
