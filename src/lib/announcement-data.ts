@@ -201,6 +201,40 @@ export const myOverdueQuery = (userId: string | undefined) =>
     refetchInterval: 60_000,
   });
 
+/** Thống kê xác nhận theo từng thông báo — dùng cho tab "Thông báo đã gửi". */
+export interface AckStat {
+  total: number;
+  completed: number;
+  overdue: number;
+}
+
+export async function fetchAckStats(ids: string[]): Promise<Record<string, AckStat>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("announcement_recipients")
+    .select("announcement_id,status,due_at")
+    .in("announcement_id", ids);
+  fail(error);
+  const rows = (data ?? []) as { announcement_id: string; status: RecipientStatus; due_at: string }[];
+  const stats: Record<string, AckStat> = {};
+  for (const row of rows) {
+    const stat = (stats[row.announcement_id] ??= { total: 0, completed: 0, overdue: 0 });
+    stat.total += 1;
+    const value = effectiveRecipientStatus(row);
+    if (value === "completed" || value === "exempt") stat.completed += 1;
+    else if (value === "overdue") stat.overdue += 1;
+  }
+  return stats;
+}
+
+export const ackStatsQuery = (ids: string[]) =>
+  queryOptions({
+    queryKey: ["announcement-ack-stats", [...ids].sort().join(",")],
+    queryFn: () => fetchAckStats(ids),
+    enabled: ids.length > 0,
+  });
+
+
 export interface DraftInput {
   id?: string;
   title: string;

@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
+  ackStatsQuery,
   ANNOUNCEMENT_STATUS_LABEL,
   effectiveRecipientStatus,
   inboxQuery,
@@ -31,7 +32,9 @@ import {
   type AnnouncementRow,
   type InboxRow,
 } from "@/lib/announcement-data";
+import { membersQuery } from "@/lib/org-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
+
 
 const TITLE = "Thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
@@ -62,6 +65,18 @@ function AnnouncementsPage() {
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
+  const members = useQuery(membersQuery());
+
+  const createdIds = React.useMemo(
+    () => (created.data ?? []).filter((row) => row.status === "published").map((row) => row.id),
+    [created.data],
+  );
+  const ackStats = useQuery(ackStatsQuery(createdIds));
+
+  const nameById = React.useMemo(
+    () => new Map((members.data ?? []).map((member) => [member.id, member.display_name])),
+    [members.data],
+  );
 
   const matches = (title: string) =>
     title.toLowerCase().includes(search.trim().toLowerCase());
@@ -75,6 +90,7 @@ function AnnouncementsPage() {
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
   );
+
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -138,9 +154,10 @@ function AnnouncementsPage() {
             }}
           >
             <TabsList>
-              <TabsTrigger value="inbox">Tôi nhận</TabsTrigger>
-              <TabsTrigger value="created">Tôi đã tạo</TabsTrigger>
+              <TabsTrigger value="inbox">Thông báo của tôi</TabsTrigger>
+              <TabsTrigger value="created">Thông báo đã gửi</TabsTrigger>
             </TabsList>
+
 
             <TabsContent value="inbox" className="mt-4">
               <DataTable<InboxRow>
@@ -181,6 +198,13 @@ function AnnouncementsPage() {
                     },
                   },
                   {
+                    id: "sender",
+                    header: "Người gửi",
+                    className: "min-w-[160px]",
+                    cell: (row) =>
+                      nameById.get(row.announcement.created_by) ?? "—",
+                  },
+                  {
                     id: "due",
                     header: "Hạn xác nhận",
                     className: "min-w-[160px]",
@@ -192,6 +216,7 @@ function AnnouncementsPage() {
                     className: "min-w-[160px]",
                     cell: (row) => formatHanoiDateTime(row.announcement.published_at),
                   },
+
                 ]}
               />
             </TabsContent>
@@ -232,11 +257,30 @@ function AnnouncementsPage() {
                     ),
                   },
                   {
+                    id: "ack",
+                    header: "Đã xác nhận",
+                    className: "min-w-[150px]",
+                    cell: (row) => {
+                      if (row.status !== "published") return "—";
+                      const stat = ackStats.data?.[row.id];
+                      if (!stat) return "—";
+                      return (
+                        <span className="text-body-sm text-text-primary">
+                          {stat.completed}/{stat.total}
+                          {stat.overdue > 0 ? (
+                            <span className="text-state-danger"> • {stat.overdue} quá hạn</span>
+                          ) : null}
+                        </span>
+                      );
+                    },
+                  },
+                  {
                     id: "due",
                     header: "Hạn xác nhận",
                     className: "min-w-[160px]",
                     cell: (row) => (row.due_at ? formatHanoiDateTime(row.due_at) : "—"),
                   },
+
                   {
                     id: "action",
                     header: "",
