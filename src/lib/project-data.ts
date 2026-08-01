@@ -58,6 +58,9 @@ export interface ProjectRow {
   deadline: string | null;
   status: ProjectStatus;
   last_decision_note: string | null;
+  completed_at: string | null;
+  manually_archived_at: string | null;
+  manually_archived_by: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -69,6 +72,7 @@ export interface ProjectRow {
 
 const SELECT = `
   id,name,objective,description,owner_id,start_date,deadline,status,last_decision_note,
+  completed_at,manually_archived_at,manually_archived_by,
   created_by,created_at,updated_at,
   owner:profiles!projects_owner_id_fkey(id,display_name),
   creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
@@ -104,6 +108,9 @@ function mapProject(raw: RawProject): ProjectRow {
     deadline: (raw["deadline"] as string | null) ?? null,
     status: raw["status"] as ProjectStatus,
     last_decision_note: (raw["last_decision_note"] as string | null) ?? null,
+    completed_at: (raw["completed_at"] as string | null) ?? null,
+    manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
+    manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
