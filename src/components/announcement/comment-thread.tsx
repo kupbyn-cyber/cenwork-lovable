@@ -257,37 +257,41 @@ export function CommentThread({
               </button>
             </p>
           ) : null}
-          <Textarea
-            rows={3}
-            value={body}
-            maxLength={4000}
-            aria-label="Nội dung bình luận"
-            placeholder="Nhập bình luận…"
-            onChange={(event) => setBody(event.target.value)}
-          />
-          {mentionCandidates.length > 0 ? (
-            <div className="flex min-w-0 flex-col gap-1">
-              <label htmlFor="mention-picker" className="text-body-xs text-text-muted">
-                Nhắc tên (chỉ trong phạm vi thông báo)
-              </label>
-              <select
-                id="mention-picker"
-                multiple
-                value={mentionIds}
-                onChange={(event) =>
-                  setMentionIds(
-                    [...event.target.selectedOptions].map((option) => option.value),
-                  )
-                }
-                className="min-h-24 w-full rounded-control border border-border-default bg-surface-raised px-3 py-2 text-body-sm text-text-primary"
-              >
-                {mentionCandidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name}
-                  </option>
+          <div className="relative min-w-0">
+            <Textarea
+              rows={3}
+              value={body}
+              maxLength={4000}
+              aria-label="Nội dung bình luận"
+              placeholder="Nhập bình luận… gõ @ để nhắc tên"
+              onChange={(event) => handleBodyChange(event.target.value)}
+              onBlur={() => window.setTimeout(() => setMentionQuery(null), 150)}
+            />
+            {suggestions.length > 0 ? (
+              <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-control border border-border-default bg-surface-raised py-1 shadow-lg">
+                {suggestions.map((candidate) => (
+                  <li key={candidate.id}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-body-sm text-text-primary hover:bg-surface-overlay"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => applyMention(candidate)}
+                    >
+                      @{candidate.name}
+                    </button>
+                  </li>
                 ))}
-              </select>
-            </div>
+              </ul>
+            ) : null}
+          </div>
+          {mentionIds.length > 0 ? (
+            <p className="text-body-xs text-text-muted">
+              Sẽ nhắc tên:{" "}
+              {mentionIds.map((id) => nameById.get(id) ?? id).join(", ")}{" "}
+              <button type="button" className="underline" onClick={() => setMentionIds([])}>
+                Xóa nhắc tên
+              </button>
+            </p>
           ) : null}
           <div className="flex justify-end">
             <Button
@@ -301,6 +305,7 @@ export function CommentThread({
           </div>
         </div>
       ) : (
+
         <p className="text-body-sm text-text-muted">
           {readOnly
             ? "Bạn đã hoàn thành thông báo được lưu trữ nên chỉ xem lại nội dung."
