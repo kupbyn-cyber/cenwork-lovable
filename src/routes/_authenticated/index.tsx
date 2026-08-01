@@ -351,16 +351,16 @@ function Dashboard() {
       </div>
 
       {canSubmitDaily && access.userId ? (
-        <DailyReportDrawer
+        <DailyReportPreviewModal
           open={dailyOpen}
           onOpenChange={setDailyOpen}
-          report={dailyDraft}
           authorId={access.userId}
-          teamId={
-            (membersResult.data ?? []).find((member) => member.id === access.userId)
-              ?.primary_team_id ?? null
-          }
-          onSaved={(id) =>
+          authorName={me?.display_name ?? "—"}
+          teamId={me?.primary_team_id ?? null}
+          teamName={me?.teamName ?? "Chưa gắn Team"}
+          reportDate={today}
+          existingReportId={dailyDraft?.id ?? null}
+          onSubmitted={(id) =>
             void navigate({ to: "/reports/daily/$reportId", params: { reportId: id } })
           }
         />
