@@ -267,8 +267,8 @@ function ProjectsPage() {
     {
       id: "progress",
       header: "Tiến độ",
-      className: "hidden w-[110px] md:table-cell",
-      headerClassName: "hidden md:table-cell",
+      className: "hidden w-[110px] lg:table-cell",
+      headerClassName: "hidden lg:table-cell",
       cell: (row: ProjectRow) => {
         const value = timeProgress(row);
         if (value === null) return <span className="text-text-muted">—</span>;
@@ -304,7 +304,7 @@ function ProjectsPage() {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
-      className: "w-[132px] whitespace-nowrap",
+      className: "w-[150px] whitespace-nowrap",
       headerClassName: "text-right",
       cell: (row: ProjectRow) => rowActions(row),
     },
