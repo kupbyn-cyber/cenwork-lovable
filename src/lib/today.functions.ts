@@ -1,0 +1,22 @@
+import { createServerFn } from "@tanstack/react-start";
+
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveCallerRole } from "@/lib/permission-guard";
+import type { TodayHubResult } from "@/lib/today-hub";
+
+/**
+ * CEN TODAY-01 — server function tổng hợp việc cần xử lý cho Trang chủ.
+ * Chạy bằng phiên người gọi (RLS giữ nguyên phạm vi); UI không tự lọc dữ liệu cấm.
+ */
+export const getTodayHub = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<TodayHubResult> => {
+    const { buildTodayHub } = await import("@/lib/today.server");
+    const role = await resolveCallerRole(context.supabase, context.userId);
+    const { data: leaderTeam } = await context.supabase
+      .from("teams")
+      .select("id")
+      .eq("leader_id", context.userId)
+      .maybeSingle();
+    return buildTodayHub(context.supabase, context.userId, role, leaderTeam?.id ?? null);
+  });

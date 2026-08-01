@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
+import { DailyActionHub } from "@/components/home/daily-action-hub";
+import { QuickActions } from "@/components/home/quick-actions";
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
@@ -63,6 +65,21 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = ["planning", "in_progress", "pending_acceptance"];
+
+/** Lời chào theo giờ Hà Nội — chỉ hiển thị, không ảnh hưởng dữ liệu. */
+function greeting(): string {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date()),
+  );
+  if (hour < 11) return "Chào buổi sáng";
+  if (hour < 14) return "Chào buổi trưa";
+  if (hour < 18) return "Chào buổi chiều";
+  return "Chào buổi tối";
+}
 
 function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
@@ -192,9 +209,12 @@ function Dashboard() {
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
-        title="Bảng điều hành"
-        description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
+        title={`${greeting()}, ${me?.display_name ?? "bạn"}`}
+        description={`Hôm nay ${formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo cáo trong phạm vi bạn được xem.`}
       />
+
+      <DailyActionHub />
+      <QuickActions />
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
