@@ -44,6 +44,7 @@ export const Route = createFileRoute("/login")({
 });
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REMEMBER_KEY = "cen.login.remember";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -51,9 +52,20 @@ function LoginPage() {
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [remember, setRemember] = React.useState(false);
+  const [showForgot, setShowForgot] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Ghi nhớ đăng nhập: chỉ lưu email ở trình duyệt, không lưu mật khẩu.
+  React.useEffect(() => {
+    const saved = window.localStorage.getItem(REMEMBER_KEY);
+    if (saved) {
+      setEmail(saved);
+      setRemember(true);
+    }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,29 +92,41 @@ function LoginPage() {
       return;
     }
 
+    if (remember) window.localStorage.setItem(REMEMBER_KEY, email.trim());
+    else window.localStorage.removeItem(REMEMBER_KEY);
+
     await navigate({ to: safeRedirect(search.redirect), replace: true });
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2.5">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
+      {/* Vùng thương hiệu: gradient + glow, không phủ lên form */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 cen-hairlines opacity-70"
+        style={{
+          background:
+            "radial-gradient(70% 55% at 50% -5%, oklch(0.30 0.045 160 / 85%), transparent 70%), radial-gradient(45% 40% at 88% 100%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%)",
+        }}
+      />
+
+      <div className="relative w-full max-w-[26rem]">
+        <div className="cen-brand-glow flex flex-col items-center text-center">
           <img
             src="/brand/logo-mark.svg"
-            alt=""
-            aria-hidden
-            className="size-9 shrink-0 object-contain"
+            alt="Logo CEN WORK"
+            className="size-16 shrink-0 object-contain drop-shadow-[0_6px_24px_oklch(0.7101_0.1541_53.2/25%)]"
           />
-          <span className="min-w-0">
-            <span className="block text-label font-bold tracking-wide text-text-primary">
-              CEN WORK
-            </span>
-            <span className="block text-caption text-text-muted">Marketing Command Center</span>
-          </span>
+          <h1 className="mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase">
+            CEN WORK
+          </h1>
+          <p className="mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase">
+            Marketing Command Center
+          </p>
         </div>
 
-        <div className="mt-5 rounded-card border border-border-default bg-background-elevated p-5 shadow-level-2">
-          <h1 className="text-h3 text-text-primary">Đăng nhập</h1>
+        <div className="mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl">
+          <h2 className="text-h4 text-text-primary">Đăng nhập</h2>
           <p className="mt-1 text-helper text-text-muted">
             Sử dụng tài khoản nội bộ đã được cấp để truy cập hệ thống.
           </p>
@@ -142,6 +166,31 @@ function LoginPage() {
               )}
             </FormField>
 
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="flex cursor-pointer items-center gap-2 text-label text-text-secondary">
+                <Checkbox
+                  checked={remember}
+                  disabled={submitting}
+                  onCheckedChange={(value) => setRemember(value === true)}
+                />
+                Ghi nhớ đăng nhập
+              </label>
+              <button
+                type="button"
+                className="cen-transition text-label text-accent-orange hover:text-accent-yellow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                onClick={() => setShowForgot((v) => !v)}
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
+
+            {showForgot ? (
+              <p className="rounded-control border border-border-default bg-surface-subtle px-3 py-2 text-helper text-text-secondary">
+                Mật khẩu do quản trị hệ thống cấp lại. Vui lòng liên hệ Admin hoặc CMO để được đặt
+                lại mật khẩu.
+              </p>
+            ) : null}
+
             {formError ? (
               <p
                 role="alert"
@@ -167,3 +216,4 @@ function LoginPage() {
     </main>
   );
 }
+
