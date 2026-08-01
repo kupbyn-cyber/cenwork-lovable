@@ -1891,6 +1891,115 @@ export type Database = {
           },
         ]
       }
+      recognition_reports: {
+        Row: {
+          created_at: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          reason: string
+          recognition_id: string
+          reporter_id: string
+          status: Database["public"]["Enums"]["recognition_report_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          reason: string
+          recognition_id: string
+          reporter_id: string
+          status?: Database["public"]["Enums"]["recognition_report_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          reason?: string
+          recognition_id?: string
+          reporter_id?: string
+          status?: Database["public"]["Enums"]["recognition_report_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_reports_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recognition_reports_recognition_id_fkey"
+            columns: ["recognition_id"]
+            isOneToOne: false
+            referencedRelation: "recognitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recognition_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recognitions: {
+        Row: {
+          category: Database["public"]["Enums"]["recognition_category"]
+          created_at: string
+          id: string
+          message: string
+          receiver_id: string
+          relation_type: string
+          revoked_at: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["recognition_category"]
+          created_at?: string
+          id?: string
+          message: string
+          receiver_id: string
+          relation_type?: string
+          revoked_at?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["recognition_category"]
+          created_at?: string
+          id?: string
+          message?: string
+          receiver_id?: string
+          relation_type?: string
+          revoked_at?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognitions_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recognitions_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_participants: {
         Row: {
           created_at: string
@@ -2497,6 +2606,7 @@ export type Database = {
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
       can_moderate_announcement: { Args: never; Returns: boolean }
+      can_recognize: { Args: { _target: string }; Returns: boolean }
       can_request_deadline_change: {
         Args: { _entity_id: string; _entity_type: string }
         Returns: boolean
@@ -2596,6 +2706,7 @@ export type Database = {
         Args: { _project: string }
         Returns: Database["public"]["Enums"]["project_status"]
       }
+      recognition_quota_left: { Args: never; Returns: number }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
         Returns: undefined
@@ -2658,6 +2769,13 @@ export type Database = {
         | "completed"
         | "archived"
         | "rejected"
+      recognition_category:
+        | "support"
+        | "quality"
+        | "speed"
+        | "initiative"
+        | "teamwork"
+      recognition_report_status: "open" | "dismissed" | "actioned"
       report_status: "draft" | "submitted" | "changes_requested" | "approved"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
@@ -2834,6 +2952,14 @@ export const Constants = {
         "archived",
         "rejected",
       ],
+      recognition_category: [
+        "support",
+        "quality",
+        "speed",
+        "initiative",
+        "teamwork",
+      ],
+      recognition_report_status: ["open", "dismissed", "actioned"],
       report_status: ["draft", "submitted", "changes_requested", "approved"],
       task_priority: ["low", "medium", "high"],
       task_status: ["not_started", "in_progress", "review", "done"],

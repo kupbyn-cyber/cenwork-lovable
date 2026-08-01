@@ -11,6 +11,7 @@ import {
   Bell,
   Megaphone,
   Send,
+  Sparkles,
   Palette,
   ScrollText,
   ShieldCheck,
@@ -92,6 +93,12 @@ export const navGroups: NavGroup[] = [
         to: "/announcements",
         icon: Megaphone,
         permissionKey: "announcements.view",
+      },
+      {
+        key: "recognitions",
+        label: "Ghi nhận đồng đội",
+        to: "/recognitions",
+        icon: Sparkles,
       },
       {
         key: "notifications",
