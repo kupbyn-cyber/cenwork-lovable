@@ -55,6 +55,9 @@ export interface TaskRow {
   description: string | null;
   project_id: string | null;
   projectName: string | null;
+  projectOwnerId: string | null;
+  /** Dự án cha đang bị lưu trữ thủ công → Task cũng rời danh sách hoạt động. */
+  projectManuallyArchivedAt: string | null;
   assignee_id: string;
   assigneeName: string | null;
   assigneeTeamId: string | null;
@@ -65,6 +68,9 @@ export interface TaskRow {
   priority: TaskPriority;
   status: TaskStatus;
   is_archived: boolean;
+  completed_at: string | null;
+  manually_archived_at: string | null;
+  manually_archived_by: string | null;
   created_by: string;
   creatorName: string | null;
   created_at: string;
@@ -75,8 +81,9 @@ export interface TaskRow {
 
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
-  is_archived,created_by,created_at,updated_at,
-  project:projects(id,name),
+  is_archived,completed_at,manually_archived_at,manually_archived_by,
+  created_by,created_at,updated_at,
+  project:projects(id,name,owner_id,manually_archived_at),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
   team:teams(id,name),
@@ -86,7 +93,11 @@ const SELECT = `
 type RawTask = Record<string, unknown>;
 
 function mapTask(raw: RawTask): TaskRow {
-  const project = raw["project"] as { name: string } | null;
+  const project = raw["project"] as {
+    name: string;
+    owner_id: string | null;
+    manually_archived_at: string | null;
+  } | null;
   const assignee = raw["assignee"] as
     | { display_name: string; primary_team_id: string | null }
     | null;
@@ -103,6 +114,8 @@ function mapTask(raw: RawTask): TaskRow {
     description: (raw["description"] as string | null) ?? null,
     project_id: (raw["project_id"] as string | null) ?? null,
     projectName: project?.name ?? null,
+    projectOwnerId: project?.owner_id ?? null,
+    projectManuallyArchivedAt: project?.manually_archived_at ?? null,
     assignee_id: raw["assignee_id"] as string,
     assigneeName: assignee?.display_name ?? null,
     assigneeTeamId: assignee?.primary_team_id ?? null,
@@ -113,6 +126,9 @@ function mapTask(raw: RawTask): TaskRow {
     priority: raw["priority"] as TaskPriority,
     status: raw["status"] as TaskStatus,
     is_archived: Boolean(raw["is_archived"]),
+    completed_at: (raw["completed_at"] as string | null) ?? null,
+    manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
+    manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
     creatorName: creator?.display_name ?? null,
     created_at: raw["created_at"] as string,
@@ -177,14 +193,53 @@ export function canChangeTaskStatus(task: TaskRow, ctx: TaskAccessContext) {
   return canEditTask(task, ctx);
 }
 
-/** Chỉ Task đã hoàn thành cuối cùng (đã xác nhận) mới được lưu trữ thủ công. */
-export function canArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
-  return !task.is_archived && task.status === "done" && canManageTask(task, ctx);
+/** Lưu trữ thủ công: chỉ Admin và CMO, không đổi trạng thái nghiệp vụ. */
+export function isTaskManuallyArchived(task: TaskRow) {
+  return task.manually_archived_at !== null;
 }
 
-/** Task thuộc khu vực Lưu trữ: chỉ khi đã hoàn thành cuối cùng (đã xác nhận). */
+export function canManuallyArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
+  return privileged(ctx) && !isTaskManuallyArchived(task);
+}
+
+/** Chỉ dữ liệu lưu trữ thủ công mới được khôi phục; dữ liệu hoàn thành thì không. */
+export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
+  return privileged(ctx) && isTaskManuallyArchived(task);
+}
+
+/**
+ * Task thuộc khu vực Lưu trữ khi đã hoàn thành cuối cùng, được lưu trữ thủ công,
+ * hoặc thuộc dự án đang được lưu trữ thủ công.
+ */
 export function isTaskArchived(task: TaskRow) {
-  return task.status === "done";
+  return (
+    task.status === "done" ||
+    isTaskManuallyArchived(task) ||
+    task.projectManuallyArchivedAt !== null
+  );
+}
+
+/** Hoàn thành trước hạn: dữ liệu suy ra từ completed_at và deadline, không phải trạng thái. */
+export function isCompletedEarly(task: TaskRow) {
+  if (!task.completed_at) return false;
+  return new Date(task.completed_at).getTime() < new Date(task.deadline).getTime();
+}
+
+/** Người phụ trách được gửi yêu cầu đổi deadline; người có quyền duyệt cũng được gửi. */
+export function canRequestTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskArchived(task)) return false;
+  return isTaskAssignee(task, ctx) || canApproveTaskDeadline(task, ctx);
+}
+
+/** Duyệt: Admin, CMO, Project Owner của dự án chứa Task, Leader đúng phạm vi. */
+export function canApproveTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
+  if (privileged(ctx)) return true;
+  if (ctx.userId && task.projectOwnerId === ctx.userId) return true;
+  if (ctx.leaderTeamId) {
+    if (task.team_id === ctx.leaderTeamId) return true;
+    if (task.assigneeTeamId === ctx.leaderTeamId) return true;
+  }
+  return false;
 }
 
 /** Chỉ CMO, Admin, Leader hoặc Project Owner được gắn Task vào dự án. */

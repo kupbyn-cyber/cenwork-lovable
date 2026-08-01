@@ -867,6 +867,69 @@ export type Database = {
           },
         ]
       }
+      deadline_change_requests: {
+        Row: {
+          created_at: string
+          current_deadline: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          proposed_deadline: string
+          reason: string
+          requested_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_deadline?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          proposed_deadline: string
+          reason: string
+          requested_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_deadline?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          proposed_deadline?: string
+          reason?: string
+          requested_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deadline_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deadline_change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilities: {
         Row: {
           address: string
@@ -1621,12 +1684,15 @@ export type Database = {
       }
       projects: {
         Row: {
+          completed_at: string | null
           created_at: string
           created_by: string
           deadline: string | null
           description: string | null
           id: string
           last_decision_note: string | null
+          manually_archived_at: string | null
+          manually_archived_by: string | null
           name: string
           objective: string
           owner_id: string | null
@@ -1635,12 +1701,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           created_by: string
           deadline?: string | null
           description?: string | null
           id?: string
           last_decision_note?: string | null
+          manually_archived_at?: string | null
+          manually_archived_by?: string | null
           name: string
           objective: string
           owner_id?: string | null
@@ -1649,12 +1718,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           created_by?: string
           deadline?: string | null
           description?: string | null
           id?: string
           last_decision_note?: string | null
+          manually_archived_at?: string | null
+          manually_archived_by?: string | null
           name?: string
           objective?: string
           owner_id?: string | null
@@ -1666,6 +1738,13 @@ export type Database = {
           {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_manually_archived_by_fkey"
+            columns: ["manually_archived_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1718,12 +1797,15 @@ export type Database = {
       tasks: {
         Row: {
           assignee_id: string
+          completed_at: string | null
           created_at: string
           created_by: string
           deadline: string
           description: string | null
           id: string
           is_archived: boolean
+          manually_archived_at: string | null
+          manually_archived_by: string | null
           name: string
           priority: Database["public"]["Enums"]["task_priority"]
           project_id: string | null
@@ -1734,12 +1816,15 @@ export type Database = {
         }
         Insert: {
           assignee_id: string
+          completed_at?: string | null
           created_at?: string
           created_by: string
           deadline: string
           description?: string | null
           id?: string
           is_archived?: boolean
+          manually_archived_at?: string | null
+          manually_archived_by?: string | null
           name: string
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
@@ -1750,12 +1835,15 @@ export type Database = {
         }
         Update: {
           assignee_id?: string
+          completed_at?: string | null
           created_at?: string
           created_by?: string
           deadline?: string
           description?: string | null
           id?: string
           is_archived?: boolean
+          manually_archived_at?: string | null
+          manually_archived_by?: string | null
           name?: string
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
@@ -1775,6 +1863,13 @@ export type Database = {
           {
             foreignKeyName: "tasks_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_manually_archived_by_fkey"
+            columns: ["manually_archived_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2195,6 +2290,10 @@ export type Database = {
       }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
+      can_approve_deadline_change: {
+        Args: { _entity_id: string; _entity_type: string }
+        Returns: boolean
+      }
       can_assign_task: {
         Args: { _person: string; _project: string; _team: string }
         Returns: boolean
@@ -2208,6 +2307,10 @@ export type Database = {
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
       can_moderate_announcement: { Args: never; Returns: boolean }
+      can_request_deadline_change: {
+        Args: { _entity_id: string; _entity_type: string }
+        Returns: boolean
+      }
       can_review_daily_report: { Args: { _author: string }; Returns: boolean }
       can_review_mvp: { Args: { _subject: string }; Returns: boolean }
       can_review_weekly_report: { Args: never; Returns: boolean }
@@ -2226,6 +2329,19 @@ export type Database = {
       current_app_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      deadline_change_decide: {
+        Args: { _approve: boolean; _note?: string; _request: string }
+        Returns: undefined
+      }
+      deadline_change_request: {
+        Args: {
+          _entity_id: string
+          _entity_type: string
+          _proposed: string
+          _reason: string
+        }
+        Returns: string
       }
       enqueue_telegram_user: {
         Args: {
@@ -2278,6 +2394,10 @@ export type Database = {
           _recipient: string
           _title: string
         }
+        Returns: undefined
+      }
+      set_manual_archive: {
+        Args: { _archived: boolean; _entity_id: string; _entity_type: string }
         Returns: undefined
       }
       write_audit: {

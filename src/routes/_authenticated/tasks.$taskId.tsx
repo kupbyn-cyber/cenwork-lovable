@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArrowLeft, Pencil } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, CalendarClock, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +20,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
+import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
+import {
+  DeadlineDecisionModal,
+  DeadlineRequestModal,
+} from "@/components/common/deadline-request-modal";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
+import {
+  deadlineRequestsQuery,
+  findPending,
+  setManualArchive,
+} from "@/lib/deadline-data";
 import { teamsQuery } from "@/lib/org-data";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
@@ -31,13 +41,17 @@ import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
-  canArchiveTask,
+  canApproveTaskDeadline,
   canChangeTaskStatus,
   canEditTask,
+  canManuallyArchiveTask,
+  canRequestTaskDeadline,
+  canRestoreTask,
   formatDate,
   formatDateTime,
+  isCompletedEarly,
+  isTaskManuallyArchived,
   isTaskOverdue,
-  setTaskArchived,
   setTaskStatus,
   taskHistoryQuery,
   taskQuery,
@@ -89,6 +103,9 @@ function TaskDetailPage() {
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [restoreOpen, setRestoreOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
+  const [decisionOpen, setDecisionOpen] = React.useState(false);
 
   const task = taskResult.data ?? null;
   const ctx: TaskAccessContext = {
@@ -97,10 +114,14 @@ function TaskDetailPage() {
     leaderTeamId: access.leaderTeamId,
   };
 
+  const requestsResult = useQuery(deadlineRequestsQuery("task", taskId));
+  const pendingRequest = findPending(requestsResult.data, "task", taskId);
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
+    void queryClient.invalidateQueries({ queryKey: ["deadline-requests"] });
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
@@ -114,11 +135,14 @@ function TaskDetailPage() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: () => setTaskArchived(taskId, true),
-    onSuccess: () => {
+    mutationFn: (archived: boolean) => setManualArchive("task", taskId, archived),
+    onSuccess: (_data, archived) => {
       invalidate();
       setArchiveOpen(false);
-      cenToast.success("Đã lưu trữ công việc.");
+      setRestoreOpen(false);
+      cenToast.success(
+        archived ? "Đã đưa công việc vào Lưu trữ." : "Đã khôi phục công việc khỏi Lưu trữ.",
+      );
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
@@ -197,12 +221,43 @@ function TaskDetailPage() {
                 Cập nhật
               </Button>
             ) : null}
-            {canArchiveTask(task, ctx) ? (
-              <Button variant="ghost" onClick={() => setArchiveOpen(true)}>
-                <Archive />
-                Lưu trữ
+            {pendingRequest && canApproveTaskDeadline(task, ctx) ? (
+              <Button variant="secondary" onClick={() => setDecisionOpen(true)}>
+                <CalendarClock />
+                Duyệt đổi deadline
               </Button>
             ) : null}
+            <RowActionsMenu
+              actions={
+                [
+                  canRequestTaskDeadline(task, ctx) && !pendingRequest
+                    ? {
+                        key: "deadline",
+                        label: "Yêu cầu đổi deadline",
+                        icon: CalendarClock,
+                        onSelect: () => setRequestOpen(true),
+                      }
+                    : null,
+                  canManuallyArchiveTask(task, ctx)
+                    ? {
+                        key: "archive",
+                        label: "Đưa vào Lưu trữ",
+                        icon: Archive,
+                        onSelect: () => setArchiveOpen(true),
+                      }
+                    : null,
+                  canRestoreTask(task, ctx)
+                    ? {
+                        key: "restore",
+                        label: "Khôi phục",
+                        icon: ArchiveRestore,
+                        onSelect: () => setRestoreOpen(true),
+                      }
+                    : null,
+                ].filter(Boolean) as RowAction[]
+              }
+            />
+
           </div>
         }
       />
@@ -262,14 +317,34 @@ function TaskDetailPage() {
                 <span className="text-caption text-text-muted">{progress}%</span>
               </div>
             ) : null}
-            {task.is_archived ? (
+            {task.completed_at ? (
+              <InfoRow
+                label="Thời điểm hoàn thành"
+                value={
+                  <span className={isCompletedEarly(task) ? "text-state-success" : undefined}>
+                    {formatDateTime(task.completed_at)}
+                    {isCompletedEarly(task) ? " · Hoàn thành trước hạn" : ""}
+                  </span>
+                }
+              />
+            ) : null}
+            {pendingRequest ? (
               <div className="sm:col-span-2">
                 <InfoRow
-                  label="Trạng thái lưu trữ"
-                  value="Công việc đã được lưu trữ, chỉ xem lại lịch sử."
+                  label="Yêu cầu đổi deadline"
+                  value={`Đang chờ xử lý — đề xuất ${formatDateTime(pendingRequest.proposed_deadline)} (${pendingRequest.requesterName ?? "—"})`}
                 />
               </div>
             ) : null}
+            {isTaskManuallyArchived(task) ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Trạng thái lưu trữ"
+                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatDateTime(task.manually_archived_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                />
+              </div>
+            ) : null}
+
           </CardContent>
         </Card>
 
@@ -320,12 +395,39 @@ function TaskDetailPage() {
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title="Lưu trữ công việc?"
-        description="Công việc không bị xóa; toàn bộ lịch sử được giữ nguyên và chỉ còn xem lại."
-        confirmLabel="Lưu trữ"
+        title="Đưa công việc vào Lưu trữ?"
+        description="Công việc không bị xóa và trạng thái nghiệp vụ giữ nguyên; công việc chỉ chuyển sang tab Lưu trữ."
+        confirmLabel="Đưa vào Lưu trữ"
         loading={archiveMutation.isPending}
-        onConfirm={() => archiveMutation.mutate()}
+        onConfirm={() => archiveMutation.mutate(true)}
       />
+
+      <ConfirmDialog
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        title="Khôi phục công việc?"
+        description="Công việc quay lại danh sách đang hoạt động, trạng thái nghiệp vụ không đổi."
+        confirmLabel="Khôi phục"
+        loading={archiveMutation.isPending}
+        onConfirm={() => archiveMutation.mutate(false)}
+      />
+
+      <DeadlineRequestModal
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        entityType="task"
+        entityId={task.id}
+        entityName={task.name}
+        currentDeadline={task.deadline}
+      />
+
+      <DeadlineDecisionModal
+        open={decisionOpen}
+        onOpenChange={setDecisionOpen}
+        request={pendingRequest}
+        entityName={task.name}
+      />
+
     </div>
   );
 }

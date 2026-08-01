@@ -58,6 +58,9 @@ export interface ProjectRow {
   deadline: string | null;
   status: ProjectStatus;
   last_decision_note: string | null;
+  completed_at: string | null;
+  manually_archived_at: string | null;
+  manually_archived_by: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -69,6 +72,7 @@ export interface ProjectRow {
 
 const SELECT = `
   id,name,objective,description,owner_id,start_date,deadline,status,last_decision_note,
+  completed_at,manually_archived_at,manually_archived_by,
   created_by,created_at,updated_at,
   owner:profiles!projects_owner_id_fkey(id,display_name),
   creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
@@ -104,6 +108,9 @@ function mapProject(raw: RawProject): ProjectRow {
     deadline: (raw["deadline"] as string | null) ?? null,
     status: raw["status"] as ProjectStatus,
     last_decision_note: (raw["last_decision_note"] as string | null) ?? null,
+    completed_at: (raw["completed_at"] as string | null) ?? null,
+    manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
+    manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
@@ -199,15 +206,47 @@ export function canCmoDecide(project: ProjectRow, ctx: ProjectAccessContext) {
   return project.status === "proposal" && (ctx.role === "cmo" || ctx.role === "admin");
 }
 
-/** Chỉ dự án đã hoàn thành chính thức mới được đưa vào Lưu trữ. */
-export function canArchive(project: ProjectRow, ctx: ProjectAccessContext) {
-  if (project.status !== "completed") return false;
-  return privileged(ctx) || isProjectOwner(project, ctx);
+/** Lưu trữ thủ công: chỉ Admin và CMO, không đổi trạng thái nghiệp vụ. */
+export function isProjectManuallyArchived(project: ProjectRow) {
+  return project.manually_archived_at !== null;
 }
 
-/** Dự án thuộc khu vực Lưu trữ: đã hoàn thành chính thức hoặc đã lưu trữ. */
+export function canManuallyArchiveProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  return privileged(ctx) && !isProjectManuallyArchived(project);
+}
+
+/** Chỉ dữ liệu lưu trữ thủ công mới được khôi phục; dữ liệu hoàn thành thì không. */
+export function canRestoreProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  return privileged(ctx) && isProjectManuallyArchived(project);
+}
+
+/** Dự án thuộc khu vực Lưu trữ: hoàn thành, đã lưu trữ theo trạng thái, hoặc lưu trữ thủ công. */
 export function isProjectArchived(project: ProjectRow) {
-  return project.status === "completed" || project.status === "archived";
+  return (
+    project.status === "completed" ||
+    project.status === "archived" ||
+    isProjectManuallyArchived(project)
+  );
+}
+
+/** Hoàn thành trước hạn: dữ liệu suy ra từ completed_at và deadline. */
+export function isCompletedEarly(project: ProjectRow) {
+  if (!project.completed_at || !project.deadline) return false;
+  // Deadline dự án theo ngày: mốc hết ngày 23:59 giờ Hà Nội.
+  const end = new Date(`${project.deadline}T23:59:59+07:00`).getTime();
+  return new Date(project.completed_at).getTime() < end;
+}
+
+/** Gửi yêu cầu đổi deadline: Project Owner, Leader đúng phạm vi, Admin và CMO. */
+export function canRequestProjectDeadline(project: ProjectRow, ctx: ProjectAccessContext) {
+  if (isProjectArchived(project)) return false;
+  if (privileged(ctx) || isProjectOwner(project, ctx)) return true;
+  return Boolean(ctx.leaderTeamId && project.teamIds.includes(ctx.leaderTeamId));
+}
+
+/** Duyệt yêu cầu đổi deadline dự án: chỉ Admin và CMO. */
+export function canApproveProjectDeadline(ctx: ProjectAccessContext) {
+  return privileged(ctx);
 }
 
 const RUN_TRANSITIONS: Partial<Record<ProjectStatus, ProjectStatus[]>> = {

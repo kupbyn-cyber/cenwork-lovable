@@ -1,7 +1,16 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArchiveRestore, ArrowLeft, Check, Pencil, Send, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  CalendarClock,
+  Check,
+  Pencil,
+  Send,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,21 +25,32 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
+import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
+import {
+  DeadlineDecisionModal,
+  DeadlineRequestModal,
+} from "@/components/common/deadline-request-modal";
 import { ProjectFormDrawer } from "@/components/project/project-form-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { auditActionLabel, formatAuditTime } from "@/lib/audit-data";
+import { deadlineRequestsQuery, findPending, setManualArchive } from "@/lib/deadline-data";
 import { facilitiesQuery, teamsQuery } from "@/lib/org-data";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
   activePeopleQuery,
-  canArchive,
+  canApproveProjectDeadline,
   canCmoDecide,
   canEditProject,
   canLeaderDecide,
+  canManuallyArchiveProject,
+  canRequestProjectDeadline,
+  canRestoreProject,
   canSubmitIdea,
   formatDate,
+  isCompletedEarly,
   isOverdue,
+  isProjectManuallyArchived,
   nextStatuses,
   projectHistoryQuery,
   projectQuery,
@@ -85,6 +105,9 @@ function ProjectDetailPage() {
   const [rejectNote, setRejectNote] = React.useState("");
   const [rejectError, setRejectError] = React.useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [restoreOpen, setRestoreOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
+  const [decisionOpen, setDecisionOpen] = React.useState(false);
 
   const project = projectResult.data ?? null;
   const teams = teamsResult.data ?? [];
@@ -97,6 +120,9 @@ function ProjectDetailPage() {
     leaderTeamId: access.leaderTeamId,
   };
 
+  const requestsResult = useQuery(deadlineRequestsQuery("project", projectId));
+  const pendingRequest = findPending(requestsResult.data, "project", projectId);
+
   const statusMutation = useMutation({
     mutationFn: (input: { status: ProjectStatus; note?: string | null }) =>
       setProjectStatus(projectId, input.status, input.note),
@@ -108,13 +134,30 @@ function ProjectDetailPage() {
       cenToast.success(`Đã chuyển sang trạng thái: ${PROJECT_STATUS_LABEL[variables.status]}.`);
       setRejectFor(null);
       setRejectNote("");
-      setArchiveOpen(false);
     },
     onError: (error: Error) => {
       if (rejectFor) setRejectError(error.message);
       else cenToast.error(error.message);
     },
   });
+
+  const manualArchiveMutation = useMutation({
+    mutationFn: (archived: boolean) => setManualArchive("project", projectId, archived),
+    onSuccess: (_data, archived) => {
+      void queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      void queryClient.invalidateQueries({ queryKey: ["project-history", projectId] });
+      void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      setArchiveOpen(false);
+      setRestoreOpen(false);
+      cenToast.success(
+        archived ? "Đã đưa dự án vào Lưu trữ." : "Đã khôi phục dự án khỏi Lưu trữ.",
+      );
+    },
+    onError: (error: Error) => cenToast.error(error.message),
+  });
+
 
   if (projectResult.isLoading) {
     return (
@@ -221,14 +264,43 @@ function ProjectDetailPage() {
       </Button>,
     );
   }
-  if (canArchive(detail, ctx)) {
+  if (pendingRequest && canApproveProjectDeadline(ctx)) {
     actions.push(
-      <Button key="archive" variant="ghost" onClick={() => setArchiveOpen(true)}>
-        <ArchiveRestore />
-        Lưu trữ
+      <Button key="decide" variant="secondary" onClick={() => setDecisionOpen(true)}>
+        <CalendarClock />
+        Duyệt đổi deadline
       </Button>,
     );
   }
+  const menuActions: RowAction[] = [];
+  if (canRequestProjectDeadline(detail, ctx) && !pendingRequest) {
+    menuActions.push({
+      key: "deadline",
+      label: "Yêu cầu đổi deadline",
+      icon: CalendarClock,
+      onSelect: () => setRequestOpen(true),
+    });
+  }
+  if (canManuallyArchiveProject(detail, ctx)) {
+    menuActions.push({
+      key: "archive",
+      label: "Đưa vào Lưu trữ",
+      icon: Archive,
+      onSelect: () => setArchiveOpen(true),
+    });
+  }
+  if (canRestoreProject(detail, ctx)) {
+    menuActions.push({
+      key: "restore",
+      label: "Khôi phục",
+      icon: ArchiveRestore,
+      onSelect: () => setRestoreOpen(true),
+    });
+  }
+  if (menuActions.length > 0) {
+    actions.push(<RowActionsMenu key="more" actions={menuActions} />);
+  }
+
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -306,11 +378,39 @@ function ProjectDetailPage() {
                 <span className="text-caption text-text-muted">{progress}%</span>
               </div>
             ) : null}
+            {detail.completed_at ? (
+              <InfoRow
+                label="Thời điểm hoàn thành"
+                value={
+                  <span className={isCompletedEarly(detail) ? "text-state-success" : undefined}>
+                    {formatAuditTime(detail.completed_at)}
+                    {isCompletedEarly(detail) ? " · Hoàn thành trước hạn" : ""}
+                  </span>
+                }
+              />
+            ) : null}
+            {pendingRequest ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Yêu cầu đổi deadline"
+                  value={`Đang chờ xử lý — đề xuất ${formatAuditTime(pendingRequest.proposed_deadline)} (${pendingRequest.requesterName ?? "—"})`}
+                />
+              </div>
+            ) : null}
+            {isProjectManuallyArchived(detail) ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Trạng thái lưu trữ"
+                  value={`Đã đưa vào Lưu trữ thủ công lúc ${formatAuditTime(detail.manually_archived_at ?? detail.updated_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                />
+              </div>
+            ) : null}
             {detail.last_decision_note ? (
               <div className="sm:col-span-2">
                 <InfoRow label="Ghi chú quyết định gần nhất" value={detail.last_decision_note} />
               </div>
             ) : null}
+
           </CardContent>
         </Card>
 
@@ -410,12 +510,40 @@ function ProjectDetailPage() {
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title="Lưu trữ dự án?"
-        description="Dự án không bị xóa. Sau khi lưu trữ, dự án chỉ còn ở chế độ xem."
-        confirmLabel="Lưu trữ"
-        loading={busy}
-        onConfirm={() => statusMutation.mutate({ status: "archived" })}
+        title="Đưa dự án vào Lưu trữ?"
+        description="Dự án không bị xóa và trạng thái nghiệp vụ giữ nguyên; dự án chỉ chuyển sang tab Lưu trữ."
+        confirmLabel="Đưa vào Lưu trữ"
+        loading={manualArchiveMutation.isPending}
+        onConfirm={() => manualArchiveMutation.mutate(true)}
       />
+
+      <ConfirmDialog
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        title="Khôi phục dự án?"
+        description="Dự án quay lại danh sách đang hoạt động, trạng thái nghiệp vụ không đổi."
+        confirmLabel="Khôi phục"
+        loading={manualArchiveMutation.isPending}
+        onConfirm={() => manualArchiveMutation.mutate(false)}
+      />
+
+      <DeadlineRequestModal
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        entityType="project"
+        entityId={detail.id}
+        entityName={detail.name}
+        currentDeadline={detail.deadline ? `${detail.deadline}T00:00:00+07:00` : null}
+        dateOnly
+      />
+
+      <DeadlineDecisionModal
+        open={decisionOpen}
+        onOpenChange={setDecisionOpen}
+        request={pendingRequest}
+        entityName={detail.name}
+      />
+
     </div>
   );
 }
