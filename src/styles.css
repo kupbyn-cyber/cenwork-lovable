@@ -385,57 +385,93 @@ html[data-motion="off"] :is(.cen-press, .cen-press-subtle, .cen-hover-lift) {
     linear-gradient(90deg, oklch(0.235 0.018 162 / 90%) 0%, oklch(0.2 0.008 165 / 88%) 55%, oklch(0.2 0.008 165 / 88%) 100%);
 }
 
-/* ---- Login entrance & ambient motion (chỉ dùng ở màn Đăng nhập) ---- */
+/* ---- Login entrance & ambient motion (chỉ dùng ở màn Đăng nhập) ----
+ * Chỉ animate opacity/transform, chạy trên compositor (translate3d),
+ * biên độ nhỏ để mượt và ổn định cả trên desktop lẫn mobile.
+ */
 @keyframes cen-logo-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.96) translate3d(0, 4px, 0);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translate3d(0, 0, 0);
   }
 }
 
 @keyframes cen-rise-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
+/* Aurora: chỉ dịch chuyển nhẹ, không đổi scale để tránh repaint gradient lớn. */
 @keyframes cen-aurora-drift {
   0% {
-    transform: translate3d(-1.5%, -1%, 0) scale(1.04);
+    transform: translate3d(-1%, -0.6%, 0);
   }
   50% {
-    transform: translate3d(1.5%, 1.2%, 0) scale(1.08);
+    transform: translate3d(1%, 0.8%, 0);
   }
   100% {
-    transform: translate3d(-1.5%, -1%, 0) scale(1.04);
+    transform: translate3d(-1%, -0.6%, 0);
+  }
+}
+
+@keyframes cen-aurora-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--cen-aurora-opacity, 0.6);
   }
 }
 
 @utility cen-anim-logo {
-  animation: cen-logo-in 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: cen-logo-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+  backface-visibility: hidden;
 }
 
 @utility cen-anim-rise {
-  animation: cen-rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: cen-rise-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  backface-visibility: hidden;
 }
 
 @utility cen-anim-aurora {
-  animation: cen-aurora-drift 22s ease-in-out infinite;
-  will-change: transform;
+  --cen-aurora-opacity: 0.6;
+  opacity: var(--cen-aurora-opacity);
+  animation:
+    cen-aurora-fade 700ms ease-out both,
+    cen-aurora-drift 28s ease-in-out 700ms infinite;
+  will-change: transform, opacity;
+  transform: translate3d(-1%, -0.6%, 0);
+  backface-visibility: hidden;
+  contain: paint;
+}
+
+/* Mobile: giảm biên độ và tải vẽ, giữ nền tĩnh dịu mắt. */
+@media (max-width: 640px) {
+  .cen-anim-aurora {
+    --cen-aurora-opacity: 0.45;
+    animation:
+      cen-aurora-fade 600ms ease-out both,
+      cen-aurora-drift 36s ease-in-out 600ms infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cen-anim-aurora {
     animation: none !important;
+    opacity: var(--cen-aurora-opacity);
+    transform: none;
+    will-change: auto;
   }
 }
 
