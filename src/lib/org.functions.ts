@@ -22,6 +22,18 @@ const createMemberSchema = z.object({
   primaryTeamId: z.string().uuid().nullable(),
   collaboratorTeamIds: z.array(z.string().uuid()).max(20).default([]),
   initialPassword: z.string().min(8).max(72),
+  phoneNumber: z
+    .string()
+    .trim()
+    .regex(/^[0-9+][0-9 .()-]{7,19}$/, "Số điện thoại không hợp lệ.")
+    .optional()
+    .nullable(),
+  birthday: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Sinh nhật không hợp lệ.")
+    .optional()
+    .nullable(),
 });
 
 
@@ -62,6 +74,8 @@ export const createMemberAccount = createServerFn({ method: "POST" })
         display_name: data.displayName,
         job_title: data.jobTitle?.trim() || null,
         primary_team_id: data.primaryTeamId,
+        phone_number: data.phoneNumber?.trim() || null,
+        birthday: data.birthday || null,
       })
       .eq("id", userId);
     if (profileError) throw new Error("Không lưu được hồ sơ thành viên.");

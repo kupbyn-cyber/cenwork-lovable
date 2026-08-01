@@ -41,6 +41,12 @@ export interface MemberRow {
   primary_team_id: string | null;
   telegram_user_id: string | null;
   telegram_enabled: boolean;
+  telegram_test_status: "success" | "failed" | null;
+  telegram_tested_at: string | null;
+  telegram_test_error: string | null;
+  phone_number: string | null;
+  birthday: string | null;
+  avatar_path: string | null;
   role: AppRole | null;
   collaboratorTeamIds: string[];
 }
@@ -75,7 +81,9 @@ export async function fetchMembers(): Promise<MemberRow[]> {
   const profiles = unwrap(
     await supabase
       .from("profiles")
-      .select("id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled")
+      .select(
+        "id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled,telegram_test_status,telegram_tested_at,telegram_test_error,phone_number,birthday,avatar_path",
+      )
       .order("display_name"),
   ) as Omit<MemberRow, "role" | "collaboratorTeamIds">[];
 
@@ -133,6 +141,8 @@ export async function updateMemberProfile(input: {
   canChangePrimaryTeam: boolean;
   telegram_user_id?: string | null;
   telegram_enabled?: boolean;
+  phone_number?: string | null;
+  birthday?: string | null;
 }) {
   const payload: Database["public"]["Tables"]["profiles"]["Update"] = {
     display_name: input.display_name,
@@ -140,6 +150,8 @@ export async function updateMemberProfile(input: {
     ...(input.canChangePrimaryTeam ? { primary_team_id: input.primary_team_id } : {}),
     ...(input.telegram_user_id !== undefined ? { telegram_user_id: input.telegram_user_id } : {}),
     ...(input.telegram_enabled !== undefined ? { telegram_enabled: input.telegram_enabled } : {}),
+    ...(input.phone_number !== undefined ? { phone_number: input.phone_number } : {}),
+    ...(input.birthday !== undefined ? { birthday: input.birthday } : {}),
   };
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", input.id);

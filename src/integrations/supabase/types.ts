@@ -1524,43 +1524,58 @@ export type Database = {
       profiles: {
         Row: {
           avatar_path: string | null
+          birthday: string | null
           created_at: string
           display_name: string
           email: string
           id: string
           job_title: string | null
           must_change_password: boolean
+          phone_number: string | null
           primary_team_id: string | null
           status: Database["public"]["Enums"]["account_status"]
           telegram_enabled: boolean
+          telegram_test_error: string | null
+          telegram_test_status: string | null
+          telegram_tested_at: string | null
           telegram_user_id: string | null
           updated_at: string
         }
         Insert: {
           avatar_path?: string | null
+          birthday?: string | null
           created_at?: string
           display_name: string
           email: string
           id: string
           job_title?: string | null
           must_change_password?: boolean
+          phone_number?: string | null
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           telegram_enabled?: boolean
+          telegram_test_error?: string | null
+          telegram_test_status?: string | null
+          telegram_tested_at?: string | null
           telegram_user_id?: string | null
           updated_at?: string
         }
         Update: {
           avatar_path?: string | null
+          birthday?: string | null
           created_at?: string
           display_name?: string
           email?: string
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          phone_number?: string | null
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           telegram_enabled?: boolean
+          telegram_test_error?: string | null
+          telegram_test_status?: string | null
+          telegram_tested_at?: string | null
           telegram_user_id?: string | null
           updated_at?: string
         }

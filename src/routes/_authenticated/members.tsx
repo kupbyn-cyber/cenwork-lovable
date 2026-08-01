@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock, Pencil, Plus, Unlock } from "lucide-react";
+import { Cake, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
@@ -22,6 +22,9 @@ import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { setMemberStatus } from "@/lib/org.functions";
+import { testPersonalTelegram } from "@/lib/telegram.functions";
+import { avatarUrlMapQuery } from "@/lib/avatar-data";
+import { CEN_TIMEZONE, formatHanoiDate } from "@/lib/datetime";
 import {
   ROLE_LABEL,
   STATUS_LABEL,
@@ -51,6 +54,28 @@ export const Route = createFileRoute("/_authenticated/members")({
 
 const ALL = "__all__";
 
+/** Tháng hiện tại theo múi giờ Hà Nội (1–12). */
+function hanoiCurrentMonth(): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: CEN_TIMEZONE,
+    month: "2-digit",
+  }).format(new Date());
+  return Number(parts);
+}
+
+/** Sinh nhật rơi vào tháng hiện tại. */
+function isBirthdayThisMonth(birthday: string | null): boolean {
+  if (!birthday) return false;
+  const month = Number(birthday.slice(5, 7));
+  return month === hanoiCurrentMonth();
+}
+
+/** Hiển thị ngày sinh dạng ngày/tháng, không lộ năm sinh nếu không cần. */
+function formatBirthday(birthday: string | null): string {
+  if (!birthday) return "—";
+  return formatHanoiDate(`${birthday}T00:00:00+07:00`);
+}
+
 function MembersPage() {
   const access = useOrgAccess();
   const queryClient = useQueryClient();
@@ -66,6 +91,30 @@ function MembersPage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<MemberRow | null>(null);
   const [lockTarget, setLockTarget] = React.useState<MemberRow | null>(null);
+  const [testingId, setTestingId] = React.useState<string | null>(null);
+
+  const avatarPaths = React.useMemo(
+    () =>
+      (membersResult.data ?? [])
+        .map((member) => member.avatar_path)
+        .filter((path): path is string => Boolean(path)),
+    [membersResult.data],
+  );
+  const avatarMap = useQuery(avatarUrlMapQuery(avatarPaths));
+
+  const telegramTest = useMutation({
+    mutationFn: (userId: string) => testPersonalTelegram({ data: { userId } }),
+    onMutate: (userId: string) => setTestingId(userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      cenToast.success("Đã gửi tin nhắn test tới Telegram cá nhân.");
+    },
+    onError: (error: Error) => {
+      void queryClient.invalidateQueries({ queryKey: ["members"] });
+      cenToast.error(error.message);
+    },
+    onSettled: () => setTestingId(null),
+  });
 
   const teams = teamsResult.data ?? [];
   const teamName = React.useCallback(
@@ -107,7 +156,13 @@ function MembersPage() {
       className: "min-w-[220px]",
       cell: (row: MemberRow) => (
         <div className="flex min-w-0 items-center gap-2.5">
-          <EntityAvatar name={row.display_name} size="sm" />
+          <EntityAvatar
+            name={row.display_name}
+            size="sm"
+            {...(row.avatar_path && avatarMap.data?.[row.avatar_path]
+              ? { src: avatarMap.data[row.avatar_path] as string }
+              : {})}
+          />
           <TableCellStack primary={row.display_name} secondary={row.email} />
         </div>
       ),
@@ -119,6 +174,66 @@ function MembersPage() {
       cell: (row: MemberRow) => (
         <span className="text-text-secondary">{row.job_title || "—"}</span>
       ),
+    },
+    {
+      id: "contact",
+      header: "Liên hệ",
+      className: "min-w-[150px]",
+      cell: (row: MemberRow) => (
+        <TableCellStack
+          primary={row.phone_number || "—"}
+          secondary={
+            row.birthday ? (
+              <span className="inline-flex items-center gap-1">
+                {isBirthdayThisMonth(row.birthday) ? (
+                  <Cake className="size-3.5 text-brand-primary" aria-hidden />
+                ) : null}
+                {formatBirthday(row.birthday)}
+              </span>
+            ) : (
+              "Chưa có sinh nhật"
+            )
+          }
+        />
+      ),
+    },
+    {
+      id: "telegram",
+      header: "Telegram",
+      className: "min-w-[170px]",
+      cell: (row: MemberRow) => {
+        const tone =
+          row.telegram_test_status === "success"
+            ? "success"
+            : row.telegram_test_status === "failed" || !row.telegram_user_id
+              ? "error"
+              : "neutral";
+        const label =
+          row.telegram_test_status === "success"
+            ? "Đã test thành công"
+            : row.telegram_test_status === "failed"
+              ? "Test lỗi"
+              : row.telegram_user_id
+                ? "Chưa test"
+                : "Chưa có Telegram ID";
+        return (
+          <div className="flex min-w-0 flex-col items-start gap-1.5">
+            <StatusBadge label={label} tone={tone} />
+            {access.canEditMember(row) ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                loading={telegramTest.isPending && testingId === row.id}
+                disabled={telegramTest.isPending}
+                onClick={() => telegramTest.mutate(row.id)}
+              >
+                <Send /> Test
+              </Button>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       id: "role",
@@ -257,6 +372,11 @@ function MembersPage() {
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
+        rowClassName={(row) =>
+          isBirthdayThisMonth(row.birthday)
+            ? "bg-brand-primary/10 hover:bg-brand-primary/15"
+            : undefined
+        }
         density="compact"
         loading={membersResult.isLoading}
         error={membersResult.isError}

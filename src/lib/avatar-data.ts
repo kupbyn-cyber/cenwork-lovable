@@ -92,3 +92,29 @@ export async function uploadMyAvatar(userId: string, file: File): Promise<string
   if (!url) throw new Error("Đã lưu ảnh nhưng chưa hiển thị được. Vui lòng tải lại trang.");
   return url;
 }
+
+/**
+ * Tạo URL hiển thị hàng loạt cho danh sách hồ sơ.
+ * Dùng chung đúng một nguồn dữ liệu ảnh: cột profiles.avatar_path + bucket `avatars`.
+ */
+export async function createAvatarUrlMap(paths: string[]): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(paths.filter(Boolean)));
+  if (unique.length === 0) return {};
+  const { data, error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .createSignedUrls(unique, 60 * 60);
+  if (error || !data) return {};
+  const map: Record<string, string> = {};
+  for (const item of data) {
+    if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+  }
+  return map;
+}
+
+export const avatarUrlMapQuery = (paths: string[]) =>
+  queryOptions({
+    queryKey: ["avatar-url-map", [...paths].sort().join("|")],
+    queryFn: () => createAvatarUrlMap(paths),
+    enabled: paths.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
