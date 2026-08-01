@@ -27,6 +27,7 @@ import {
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
   formatDateTime,
+  isTaskArchived,
   isTaskOverdue,
   tasksQuery,
   type TaskAccessContext,
