@@ -98,7 +98,7 @@ export function TaskCompleteDialog({ task, onOpenChange, onCompleted }: TaskComp
         label="Kết quả công việc"
         required
         error={error ?? undefined}
-        helper="Mô tả ngắn gọn kết quả cụ thể đã đạt được."
+        helperText="Mô tả ngắn gọn kết quả cụ thể đã đạt được."
       >
         {(control) => (
           <Textarea
