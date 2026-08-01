@@ -191,7 +191,7 @@ export function isTaskAssignee(task: TaskRow, ctx: TaskAccessContext) {
 }
 
 export function canEditTask(task: TaskRow, ctx: TaskAccessContext) {
-  if (task.is_archived) return ctx.role === "admin";
+  if (task.is_archived) return privileged(ctx);
   return canManageTask(task, ctx) || isTaskAssignee(task, ctx);
 }
 
