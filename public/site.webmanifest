@@ -1,0 +1,16 @@
+{
+  "name": "CEN 1.0 — Trung tâm điều hành",
+  "short_name": "CEN",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1a15",
+  "theme_color": "#1F4837",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}
