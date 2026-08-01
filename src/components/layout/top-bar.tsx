@@ -31,6 +31,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const displayName = getDisplayName(user);
+  const avatarUrl = useQuery(avatarUrlQuery(user?.id));
 
   const [confirmGlobal, setConfirmGlobal] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
