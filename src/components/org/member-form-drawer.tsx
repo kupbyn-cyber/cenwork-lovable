@@ -246,18 +246,36 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
 
         <FormField
           id="member-job-title"
-          label="Chức danh chuyên môn"
-          helperText="Chỉ mang tính mô tả, không tạo quyền hệ thống."
+          label="Chức danh"
+          helperText="Thông tin tổ chức, độc lập với vai trò hệ thống."
+          {...(errors.jobTitle ? { error: errors.jobTitle } : {})}
         >
           {(controlProps) => (
-            <Input
-              {...controlProps}
-              value={form.jobTitle}
-              maxLength={120}
-              onChange={(e) => setForm((s) => ({ ...s, jobTitle: e.target.value }))}
-            />
+            <Select
+              value={form.jobTitle || NO_JOB_TITLE}
+              onValueChange={(value) =>
+                setForm((s) => ({ ...s, jobTitle: value === NO_JOB_TITLE ? "" : value }))
+              }
+            >
+              <SelectTrigger id={controlProps.id} aria-describedby={controlProps["aria-describedby"]}>
+                <SelectValue placeholder="Chọn chức danh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_JOB_TITLE}>Chưa đặt chức danh</SelectItem>
+                {JOB_TITLES.map((title) => (
+                  <SelectItem key={title} value={title}>
+                    {title}
+                  </SelectItem>
+                ))}
+                {/* Giá trị cũ ngoài danh sách: giữ nguyên để không mất dữ liệu, Admin/CMO chọn lại khi sửa. */}
+                {form.jobTitle && !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]) ? (
+                  <SelectItem value={form.jobTitle}>{form.jobTitle} (giá trị cũ)</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
           )}
         </FormField>
+
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
