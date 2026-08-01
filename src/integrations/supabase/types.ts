@@ -1927,6 +1927,50 @@ export type Database = {
           },
         ]
       }
+      task_saved_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          is_default: boolean
+          name: string
+          sort_config: Json
+          updated_at: string
+          user_id: string
+          visible_columns: Json
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          sort_config?: Json
+          updated_at?: string
+          user_id: string
+          visible_columns?: Json
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          sort_config?: Json
+          updated_at?: string
+          user_id?: string
+          visible_columns?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_saved_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee_id: string
