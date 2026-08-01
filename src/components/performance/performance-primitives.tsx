@@ -47,11 +47,11 @@ export function MetricCard({
 }) {
   const toneClass =
     tone === "success"
-      ? "text-status-success"
+      ? "text-state-success"
       : tone === "warning"
-        ? "text-status-warning"
+        ? "text-state-warning"
         : tone === "error"
-          ? "text-status-error"
+          ? "text-state-danger"
           : "text-text-primary";
   return (
     <Card className="min-w-0">
@@ -85,8 +85,8 @@ export function DeltaText({
     rounded === 0
       ? "text-text-muted"
       : (rounded > 0) !== invert
-        ? "text-status-success"
-        : "text-status-warning";
+        ? "text-state-success"
+        : "text-state-warning";
   const sign = rounded > 0 ? "+" : "";
   return (
     <span className={tone}>
