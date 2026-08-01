@@ -87,8 +87,14 @@ export function DailyReportDrawer({
       void queryClient.invalidateQueries({ queryKey: ["daily-report", id] });
       cenToast.success(status === "submitted" ? "Đã gửi báo cáo ngày" : "Đã lưu bản nháp");
       onOpenChange(false);
+      // Chỉ hành động "Gửi duyệt" thành công mới hiện lời cảm ơn; lưu nháp thì không.
+      if (status === "submitted") {
+        setThanksReportId(id);
+        return;
+      }
       onSaved?.(id);
     },
+
     onError: (error: Error) => cenToast.error("Không lưu được báo cáo", { description: error.message }),
   });
 
