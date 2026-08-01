@@ -229,7 +229,7 @@ function LoginPage() {
             >
               {succeeded ? (
                 <>
-                  <Check className="animate-scale-in" aria-hidden />
+                  <Check className="animate-in zoom-in-50 duration-200" aria-hidden />
                   Đã xác thực
                 </>
               ) : (
