@@ -54,7 +54,6 @@ import {
   formatDateTime,
   isTaskArchived,
   isTaskOverdue,
-  setTaskStatus,
   tasksQuery,
   type TaskAccessContext,
   type TaskRow,
