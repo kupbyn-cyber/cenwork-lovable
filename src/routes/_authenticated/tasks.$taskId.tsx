@@ -198,6 +198,7 @@ function TaskDetailPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             {canChangeTaskStatus(task, ctx) ? (
+              <div className="flex items-center gap-2">
               <Select
                 value={task.status}
                 onValueChange={(value) => statusMutation.mutate(value as TaskStatus)}
@@ -214,9 +215,21 @@ function TaskDetailPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {statusMutation.isPending ? (
+                <Loader2
+                  className="size-icon-sm shrink-0 animate-spin text-text-muted"
+                  aria-label="Đang cập nhật trạng thái"
+                  role="status"
+                />
+              ) : null}
+              </div>
             ) : null}
             {editable ? (
-              <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              <Button
+                variant="secondary"
+                disabled={statusMutation.isPending}
+                onClick={() => setEditOpen(true)}
+              >
                 <Pencil />
                 Cập nhật
               </Button>
