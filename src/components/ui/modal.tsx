@@ -20,6 +20,7 @@ const sizeClass = {
   sm: "sm:max-w-sm",
   md: "sm:max-w-lg",
   lg: "sm:max-w-2xl",
+  xl: "sm:max-w-[880px]",
 } as const;
 
 export interface ModalProps {
@@ -50,7 +51,7 @@ export function Modal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 [&>[data-slot=dialog-close]]:hidden",
+          "flex max-h-[90dvh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 [&>[data-slot=dialog-close]]:hidden",
           sizeClass[size],
         )}
       >
