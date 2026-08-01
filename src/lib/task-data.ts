@@ -184,7 +184,7 @@ export function canArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
 
 /** Task thuộc khu vực Lưu trữ: đã hoàn thành cuối cùng hoặc đã lưu trữ. */
 export function isTaskArchived(task: TaskRow) {
-  return task.status === "done" || task.is_archived;
+  return task.status === "done";
 }
 
 /** Chỉ CMO, Admin, Leader hoặc Project Owner được gắn Task vào dự án. */
