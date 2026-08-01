@@ -105,6 +105,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "reports.view",
     "reports.review_daily",
     "reports.review_weekly",
+    "telegram.manage",
   ],
   cmo: [
     "members.view",
