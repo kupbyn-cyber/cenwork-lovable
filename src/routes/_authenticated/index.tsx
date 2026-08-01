@@ -1,13 +1,18 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { FileText } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate } from "@/lib/datetime";
+import { membersQuery } from "@/lib/org-data";
+
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
@@ -75,11 +80,15 @@ function Metric({ label, value, hint }: { label: string; value: number | string;
 
 function Dashboard() {
   const access = useOrgAccess();
+  const navigate = useNavigate();
+  const [dailyOpen, setDailyOpen] = React.useState(false);
 
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
   const dailyResult = useQuery(dailyReportsQuery());
   const weeklyResult = useQuery(weeklyReportsQuery());
+  const membersResult = useQuery(membersQuery());
+
 
   const today = hanoiToday();
   const thisWeek = weekStartOf(today);
@@ -133,6 +142,32 @@ function Dashboard() {
     (row) => row.team_id === access.leaderTeamId && row.week_start === thisWeek,
   );
 
+  /**
+   * Hành động nhanh Báo cáo ngày: nhãn và đích đến bám theo trạng thái báo cáo
+   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở form.
+   */
+  const canSubmitDaily = access.can("reports.submit_daily");
+  const dailyDraft =
+    myTodayReport && (myTodayReport.status === "draft" || myTodayReport.status === "changes_requested")
+      ? myTodayReport
+      : null;
+  const dailyActionLabel = !myTodayReport
+    ? "Gửi báo cáo ngày"
+    : dailyDraft
+      ? "Tiếp tục báo cáo ngày"
+      : "Xem báo cáo hôm nay";
+
+  function openDailyAction() {
+    if (myTodayReport && !dailyDraft) {
+      void navigate({
+        to: "/reports/daily/$reportId",
+        params: { reportId: myTodayReport.id },
+      });
+      return;
+    }
+    setDailyOpen(true);
+  }
+
   const loading =
     projectsResult.isLoading || tasksResult.isLoading || dailyResult.isLoading || weeklyResult.isLoading;
 
@@ -151,7 +186,28 @@ function Dashboard() {
       <PageHeader
         title="Bảng điều hành"
         description="Tổng quan dự án, công việc và tình trạng báo cáo trong phạm vi bạn được xem."
+        actions={
+          canSubmitDaily ? (
+            <Button onClick={openDailyAction} disabled={dailyResult.isError}>
+              <FileText />
+              {dailyActionLabel}
+            </Button>
+          ) : null
+        }
       />
+
+      {canSubmitDaily && dailyResult.isError ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
+          <span className="text-body text-state-danger">
+            Không kiểm tra được báo cáo hôm nay của bạn.
+          </span>
+          <Button variant="secondary" size="sm" onClick={() => void dailyResult.refetch()}>
+            Thử lại
+          </Button>
+        </div>
+      ) : null}
+
+
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric label="Dự án đang chạy" value={activeProjects.length} hint={`${projects.length} dự án trong phạm vi`} />
@@ -291,6 +347,23 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {canSubmitDaily && access.userId ? (
+        <DailyReportDrawer
+          open={dailyOpen}
+          onOpenChange={setDailyOpen}
+          report={dailyDraft}
+          authorId={access.userId}
+          teamId={
+            (membersResult.data ?? []).find((member) => member.id === access.userId)
+              ?.primary_team_id ?? null
+          }
+          onSaved={(id) =>
+            void navigate({ to: "/reports/daily/$reportId", params: { reportId: id } })
+          }
+        />
+      ) : null}
     </div>
+
   );
 }

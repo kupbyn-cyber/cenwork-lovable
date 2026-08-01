@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { DrawerPanel } from "@/components/ui/drawer-panel";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
+
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_TONE,
@@ -45,7 +47,10 @@ export function DailyReportDrawer({
   onSaved,
 }: DailyReportDrawerProps) {
   const queryClient = useQueryClient();
+  /** Id báo cáo vừa gửi thành công — chỉ dùng để hiện modal cảm ơn một lần. */
+  const [thanksReportId, setThanksReportId] = React.useState<string | null>(null);
   const [reportDate, setReportDate] = React.useState(hanoiToday());
+
   const [results, setResults] = React.useState("");
   const [blockers, setBlockers] = React.useState("");
   const [nextPlan, setNextPlan] = React.useState("");
@@ -82,8 +87,14 @@ export function DailyReportDrawer({
       void queryClient.invalidateQueries({ queryKey: ["daily-report", id] });
       cenToast.success(status === "submitted" ? "Đã gửi báo cáo ngày" : "Đã lưu bản nháp");
       onOpenChange(false);
+      // Chỉ hành động "Gửi duyệt" thành công mới hiện lời cảm ơn; lưu nháp thì không.
+      if (status === "submitted") {
+        setThanksReportId(id);
+        return;
+      }
       onSaved?.(id);
     },
+
     onError: (error: Error) => cenToast.error("Không lưu được báo cáo", { description: error.message }),
   });
 
@@ -101,7 +112,14 @@ export function DailyReportDrawer({
 
   const tasks = taskRefs.data ?? [];
 
+  function closeThanks() {
+    const id = thanksReportId;
+    setThanksReportId(null);
+    if (id) onSaved?.(id);
+  }
+
   return (
+    <>
     <DrawerPanel
       open={open}
       onOpenChange={onOpenChange}
@@ -211,5 +229,22 @@ export function DailyReportDrawer({
         </FormField>
       </div>
     </DrawerPanel>
+
+    <Modal
+      open={thanksReportId !== null}
+      onOpenChange={(next) => {
+        if (!next) closeThanks();
+      }}
+      size="sm"
+      title="Cảm ơn bạn vì một ngày làm việc!"
+      footer={<Button onClick={closeThanks}>Hoàn tất</Button>}
+    >
+      <p className="text-body text-text-secondary">
+        Báo cáo ngày của bạn đã được gửi thành công. Chúc bạn có những phút giây thư giãn và tái
+        tạo năng lượng sau giờ làm.
+      </p>
+    </Modal>
+    </>
   );
 }
+
