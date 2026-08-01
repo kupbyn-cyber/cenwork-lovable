@@ -88,6 +88,7 @@ function Dashboard() {
   const dailyResult = useQuery(dailyReportsQuery());
   const weeklyResult = useQuery(weeklyReportsQuery());
   const membersResult = useQuery(membersQuery());
+  const teamsResult = useQuery(teamsQuery());
 
 
   const today = hanoiToday();
@@ -155,6 +156,9 @@ function Dashboard() {
   const dailyActionLabel = dailySent ? "Xem báo cáo hôm nay" : "Xem và gửi báo cáo";
 
   const me = (membersResult.data ?? []).find((member) => member.id === access.userId);
+  const myTeamName =
+    (teamsResult.data ?? []).find((team) => team.id === me?.primary_team_id)?.name ??
+    "Chưa gắn Team";
 
   function openDailyAction() {
     if (myTodayReport && !dailyDraft) {
@@ -357,7 +361,7 @@ function Dashboard() {
           authorId={access.userId}
           authorName={me?.display_name ?? "—"}
           teamId={me?.primary_team_id ?? null}
-          teamName={me?.teamName ?? "Chưa gắn Team"}
+          teamName={myTeamName}
           reportDate={today}
           existingReportId={dailyDraft?.id ?? null}
           onSubmitted={(id) =>
