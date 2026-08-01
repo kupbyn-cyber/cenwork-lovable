@@ -9,7 +9,7 @@ import { isNavItemActive, visibleNavGroups, type NavItem } from "@/config/naviga
 import { useOrgAccess } from "@/hooks/use-org-access";
 
 /**
- * CEN 1.0 — Sidebar điều hướng (M1.2)
+ * CEN WORK — Sidebar điều hướng (M1.2)
  * Dùng chung cho Desktop (cố định, mở rộng/thu gọn) và Mobile Drawer.
  */
 
