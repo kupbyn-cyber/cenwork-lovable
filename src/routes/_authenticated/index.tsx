@@ -12,6 +12,7 @@ import { DailyReportPreviewModal } from "@/components/report/daily-report-previe
 import { DailyActionHub } from "@/components/home/daily-action-hub";
 import { QuickActions } from "@/components/home/quick-actions";
 import { RoleInsights } from "@/components/home/role-insights";
+import { ReportSummaryCards } from "@/components/home/report-summary-cards";
 
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
@@ -218,6 +219,7 @@ function Dashboard() {
       <DailyActionHub />
       <QuickActions />
       <RoleInsights />
+      <ReportSummaryCards />
 
 
       {canSubmitDaily && dailyResult.isError ? (
