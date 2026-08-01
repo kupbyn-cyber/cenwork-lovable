@@ -2778,11 +2778,17 @@ export type Database = {
       }
       reports: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           author_id: string
           confirmed_at: string | null
           confirmed_by: string | null
           created_at: string
           current_version: number
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           due_at: string | null
           first_submitted_at: string | null
           id: string
@@ -2795,18 +2801,30 @@ export type Database = {
           project_id: string | null
           report_type: Database["public"]["Enums"]["report_kind"]
           requires_ack: boolean
+          restore_reason: string | null
+          restored_at: string | null
+          restored_by: string | null
           reviewer_id: string | null
           revision_round: number
           status: Database["public"]["Enums"]["report_doc_status"]
+          status_before_delete:
+            | Database["public"]["Enums"]["report_doc_status"]
+            | null
           team_id: string | null
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           author_id: string
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
           current_version?: number
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           due_at?: string | null
           first_submitted_at?: string | null
           id?: string
@@ -2819,18 +2837,30 @@ export type Database = {
           project_id?: string | null
           report_type: Database["public"]["Enums"]["report_kind"]
           requires_ack?: boolean
+          restore_reason?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
           reviewer_id?: string | null
           revision_round?: number
           status?: Database["public"]["Enums"]["report_doc_status"]
+          status_before_delete?:
+            | Database["public"]["Enums"]["report_doc_status"]
+            | null
           team_id?: string | null
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           author_id?: string
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
           current_version?: number
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           due_at?: string | null
           first_submitted_at?: string | null
           id?: string
@@ -2843,13 +2873,26 @@ export type Database = {
           project_id?: string | null
           report_type?: Database["public"]["Enums"]["report_kind"]
           requires_ack?: boolean
+          restore_reason?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
           reviewer_id?: string | null
           revision_round?: number
           status?: Database["public"]["Enums"]["report_doc_status"]
+          status_before_delete?:
+            | Database["public"]["Enums"]["report_doc_status"]
+            | null
           team_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reports_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reports_author_id_fkey"
             columns: ["author_id"]
@@ -2860,6 +2903,13 @@ export type Database = {
           {
             foreignKeyName: "reports_confirmed_by_fkey"
             columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2883,6 +2933,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_restored_by_fkey"
+            columns: ["restored_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3750,6 +3807,7 @@ export type Database = {
         Args: { _days: number; _from: string }
         Returns: string
       }
+      report_can_archive: { Args: { _report: string }; Returns: boolean }
       report_cmo_id: { Args: never; Returns: string }
       report_config_manager: { Args: never; Returns: boolean }
       report_content_snapshot: { Args: { _report: string }; Returns: Json }
@@ -3786,6 +3844,21 @@ export type Database = {
         Returns: boolean
       }
       report_link_snapshot: { Args: { _link: string }; Returns: Json }
+      report_notify: {
+        Args: {
+          _body: string
+          _entity_id: string
+          _entity_type: string
+          _event: string
+          _event_key: string
+          _link: string
+          _recipient: string
+          _skip_actor?: boolean
+          _telegram?: boolean
+          _title: string
+        }
+        Returns: undefined
+      }
       report_refresh_reviewers: { Args: never; Returns: number }
       report_reopen_decide: {
         Args: { _approve: boolean; _note: string; _request: string }
@@ -3795,6 +3868,10 @@ export type Database = {
         Args: { _planned: string; _reason: string; _report: string }
         Returns: string
       }
+      report_restore: {
+        Args: { _reason: string; _report: string }
+        Returns: undefined
+      }
       report_review: {
         Args: {
           _action: Database["public"]["Enums"]["report_review_action"]
@@ -3803,7 +3880,16 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["report_doc_status"]
       }
+      report_run_reminders: { Args: never; Returns: Json }
       report_section_visible: { Args: { _section: string }; Returns: boolean }
+      report_set_archived: {
+        Args: { _archived: boolean; _reason?: string; _report: string }
+        Returns: undefined
+      }
+      report_soft_delete: {
+        Args: { _reason: string; _report: string }
+        Returns: undefined
+      }
       report_submit: {
         Args: { _report: string }
         Returns: Database["public"]["Enums"]["report_doc_status"]

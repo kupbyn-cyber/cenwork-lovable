@@ -22,6 +22,8 @@ import { ReportConfigPanel } from "@/components/report/report-config-panel";
 import { ReportObligationsPanel } from "@/components/report/report-obligations-panel";
 import { ReportDocList } from "@/components/report/report-doc-list";
 import { TeamSummaryPanel } from "@/components/report/team-summary-panel";
+import { ReportStatsPanel } from "@/components/report/report-stats-panel";
+import { ReportArchivePanel } from "@/components/report/report-archive-panel";
 
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
@@ -300,11 +302,19 @@ function ReportsPage() {
           <TabsTrigger value="weekly">Báo cáo tuần</TabsTrigger>
           <TabsTrigger value="workflow">Xử lý báo cáo</TabsTrigger>
           <TabsTrigger value="summary">Tổng hợp Team</TabsTrigger>
+          <TabsTrigger value="stats">Thống kê</TabsTrigger>
+          <TabsTrigger value="archive">Lưu trữ</TabsTrigger>
           {canViewObligations ? (
             <TabsTrigger value="obligations">Nghĩa vụ</TabsTrigger>
           ) : null}
           {canConfigReports ? <TabsTrigger value="config">Cấu hình</TabsTrigger> : null}
         </TabsList>
+        <TabsContent value="stats" className="flex flex-col gap-3">
+          <ReportStatsPanel />
+        </TabsContent>
+        <TabsContent value="archive" className="flex flex-col gap-3">
+          <ReportArchivePanel />
+        </TabsContent>
         <TabsContent value="workflow" className="flex flex-col gap-3">
           <ReportDocList />
         </TabsContent>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { FormField } from "@/components/ui/form-field";
 import { Modal } from "@/components/ui/modal";
+import { setReportArchived } from "@/lib/report-stats-data";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -78,6 +79,8 @@ function ReportDocPage() {
 
   const [reviewNote, setReviewNote] = React.useState("");
   const [reopenOpen, setReopenOpen] = React.useState(false);
+  const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [archiveReason, setArchiveReason] = React.useState("");
   const [reopenReason, setReopenReason] = React.useState("");
   const [reopenPlanned, setReopenPlanned] = React.useState("");
 
@@ -129,6 +132,17 @@ function ReportDocPage() {
       cenToast.success("Đã gửi yêu cầu mở lại");
     },
     onError: (error: Error) => cenToast.error("Không gửi được", { description: error.message }),
+  });
+
+  const archive = useMutation({
+    mutationFn: () => setReportArchived(reportId, true, archiveReason.trim()),
+    onSuccess: () => {
+      setArchiveOpen(false);
+      setArchiveReason("");
+      invalidate();
+      cenToast.success("Đã lưu trữ báo cáo");
+    },
+    onError: (error: Error) => cenToast.error("Không lưu trữ được", { description: error.message }),
   });
 
   const decide = useMutation({
@@ -192,6 +206,11 @@ function ReportDocPage() {
             {editable ? (
               <Button size="sm" disabled={submit.isPending} onClick={() => submit.mutate()}>
                 {doc.first_submitted_at ? "Gửi lại" : "Gửi báo cáo"}
+              </Button>
+            ) : null}
+            {(access.isCmo || access.isAdmin) && (doc.status === "confirmed" || doc.status === "published") ? (
+              <Button size="sm" variant="secondary" onClick={() => setArchiveOpen(true)}>
+                Lưu trữ
               </Button>
             ) : null}
             {isAuthor && doc.status === "confirmed" && !pendingReopen ? (
@@ -385,6 +404,33 @@ function ReportDocPage() {
             )}
           </FormField>
         </div>
+      </Modal>
+
+      <Modal
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        title="Lưu trữ báo cáo"
+        description="Nhập lý do để ghi vào Audit Log. Báo cáo vẫn xem được trong tab Lưu trữ."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setArchiveOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              disabled={archiveReason.trim().length < 3 || archive.isPending}
+              onClick={() => archive.mutate()}
+            >
+              Lưu trữ
+            </Button>
+          </div>
+        }
+      >
+        <Textarea
+          value={archiveReason}
+          onChange={(event) => setArchiveReason(event.target.value)}
+          rows={4}
+          placeholder="Lý do lưu trữ (bắt buộc)"
+        />
       </Modal>
     </div>
   );
