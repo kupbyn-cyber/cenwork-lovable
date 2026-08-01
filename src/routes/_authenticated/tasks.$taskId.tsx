@@ -395,12 +395,39 @@ function TaskDetailPage() {
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title="Lưu trữ công việc?"
-        description="Công việc không bị xóa; toàn bộ lịch sử được giữ nguyên và chỉ còn xem lại."
-        confirmLabel="Lưu trữ"
+        title="Đưa công việc vào Lưu trữ?"
+        description="Công việc không bị xóa và trạng thái nghiệp vụ giữ nguyên; công việc chỉ chuyển sang tab Lưu trữ."
+        confirmLabel="Đưa vào Lưu trữ"
         loading={archiveMutation.isPending}
-        onConfirm={() => archiveMutation.mutate()}
+        onConfirm={() => archiveMutation.mutate(true)}
       />
+
+      <ConfirmDialog
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        title="Khôi phục công việc?"
+        description="Công việc quay lại danh sách đang hoạt động, trạng thái nghiệp vụ không đổi."
+        confirmLabel="Khôi phục"
+        loading={archiveMutation.isPending}
+        onConfirm={() => archiveMutation.mutate(false)}
+      />
+
+      <DeadlineRequestModal
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        entityType="task"
+        entityId={task.id}
+        entityName={task.name}
+        currentDeadline={task.deadline}
+      />
+
+      <DeadlineDecisionModal
+        open={decisionOpen}
+        onOpenChange={setDecisionOpen}
+        request={pendingRequest}
+        entityName={task.name}
+      />
+
     </div>
   );
 }
