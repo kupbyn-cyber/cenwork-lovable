@@ -71,7 +71,7 @@ function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = React.useState(ALL);
   const [projectFilter, setProjectFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
-  const [showArchived, setShowArchived] = React.useState(false);
+  const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
 
   const projects = projectsResult.data ?? [];
@@ -87,7 +87,7 @@ function TasksPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (tasksResult.data ?? []).filter((task) => {
-      if (!showArchived && task.is_archived) return false;
+      if (isTaskArchived(task) !== (view === "archived")) return false;
       if (keyword && !task.name.toLowerCase().includes(keyword)) return false;
       if (statusFilter !== ALL && task.status !== statusFilter) return false;
       if (priorityFilter !== ALL && task.priority !== priorityFilter) return false;
@@ -106,7 +106,7 @@ function TasksPage() {
     assigneeFilter,
     projectFilter,
     teamFilter,
-    showArchived,
+    view,
   ]);
 
   const columns = [
