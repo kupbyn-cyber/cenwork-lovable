@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cake, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
+import { Cake, Eye, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
+import { MemberDetailModal } from "@/components/org/member-detail-modal";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { setMemberStatus } from "@/lib/org.functions";
 import { testPersonalTelegram } from "@/lib/telegram.functions";
@@ -94,6 +95,7 @@ function MembersPage() {
   const [editing, setEditing] = React.useState<MemberRow | null>(null);
   const [lockTarget, setLockTarget] = React.useState<MemberRow | null>(null);
   const [testingId, setTestingId] = React.useState<string | null>(null);
+  const [detailTarget, setDetailTarget] = React.useState<MemberRow | null>(null);
 
   const avatarPaths = React.useMemo(
     () =>
@@ -174,29 +176,14 @@ function MembersPage() {
       header: "Chức danh",
       className: "min-w-[140px]",
       cell: (row: MemberRow) => (
-        <span className="text-text-secondary">{row.job_title || "—"}</span>
-      ),
-    },
-    {
-      id: "contact",
-      header: "Liên hệ",
-      className: "min-w-[150px]",
-      cell: (row: MemberRow) => (
-        <TableCellStack
-          primary={row.phone_number || "—"}
-          secondary={
-            row.birthday ? (
-              <span className="inline-flex items-center gap-1">
-                {isBirthdayThisMonth(row.birthday) ? (
-                  <Cake className="size-3.5 text-brand-primary" aria-hidden />
-                ) : null}
-                {formatBirthday(row.birthday)}
-              </span>
-            ) : (
-              "Chưa có sinh nhật"
-            )
-          }
-        />
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="text-text-secondary">{row.job_title || "—"}</span>
+          {isBirthdayThisMonth(row.birthday) ? (
+            <Badge variant="brand" className="gap-1">
+              <Cake className="size-3" aria-hidden /> Sinh nhật tháng này
+            </Badge>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -254,16 +241,6 @@ function MembersPage() {
       },
     },
     {
-      id: "role",
-      header: "Vai trò",
-      className: "min-w-[110px]",
-      cell: (row: MemberRow) => (
-        <Badge variant={row.role === "admin" ? "brand" : "neutral"}>
-          {row.role ? ROLE_LABEL[row.role] : "—"}
-        </Badge>
-      ),
-    },
-    {
       id: "team",
       header: "Team",
       className: "min-w-[180px]",
@@ -293,9 +270,23 @@ function MembersPage() {
       id: "actions",
       header: "Thao tác",
       align: "right" as const,
-      className: "min-w-[110px] w-[110px]",
+      className: "min-w-[140px] w-[140px]",
       cell: (row: MemberRow) => (
         <TableRowActions>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                aria-label={`Xem chi tiết ${row.display_name}`}
+                onClick={() => setDetailTarget(row)}
+              >
+                <Eye />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Xem chi tiết</TooltipContent>
+          </Tooltip>
           {/* Chỉ Admin và CMO được sửa thông tin thành viên. */}
           {access.isSystemAdmin ? (
             <Tooltip>
@@ -304,7 +295,7 @@ function MembersPage() {
                   variant="ghost"
                   size="icon-sm"
                   type="button"
-                  aria-label={`Sửa thông tin ${row.display_name}`}
+                  aria-label={`Sửa thành viên ${row.display_name}`}
                   onClick={() => {
                     setEditing(row);
                     setDrawerOpen(true);
@@ -313,7 +304,7 @@ function MembersPage() {
                   <Pencil />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Sửa thông tin</TooltipContent>
+              <TooltipContent>Sửa thành viên</TooltipContent>
             </Tooltip>
           ) : null}
           {access.canLockMember && row.id !== access.userId ? (
@@ -423,6 +414,20 @@ function MembersPage() {
         emptyTitle="Chưa có thành viên phù hợp"
         emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
         caption="Danh sách thành viên"
+      />
+
+      <MemberDetailModal
+        open={detailTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDetailTarget(null);
+        }}
+        member={detailTarget}
+        teams={teams}
+        avatarUrl={
+          detailTarget?.avatar_path
+            ? (avatarMap.data?.[detailTarget.avatar_path] as string | undefined)
+            : undefined
+        }
       />
 
       <MemberFormDrawer
