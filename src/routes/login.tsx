@@ -112,7 +112,7 @@ function LoginPage() {
       {/* Vùng thương hiệu: gradient + glow trôi rất chậm, không phủ lên form */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="cen-anim-aurora cen-hairlines absolute -inset-[8%] opacity-60"
+          className="cen-anim-aurora cen-hairlines absolute -inset-[6%]"
           style={{
             background:
               "radial-gradient(70% 55% at 50% -5%, oklch(0.30 0.045 160 / 85%), transparent 70%), radial-gradient(45% 40% at 88% 100%, oklch(0.7101 0.1541 53.2 / 8%), transparent 70%)",
@@ -129,13 +129,13 @@ function LoginPage() {
           />
           <h1
             className="cen-anim-rise mt-3 text-h2 font-bold tracking-[0.18em] text-text-primary uppercase"
-            style={{ animationDelay: "380ms" }}
+            style={{ animationDelay: "140ms" }}
           >
             CEN WORK
           </h1>
           <p
             className="cen-anim-rise mt-1 text-helper tracking-[0.24em] text-accent-yellow/80 uppercase"
-            style={{ animationDelay: "460ms" }}
+            style={{ animationDelay: "200ms" }}
           >
             Marketing Command Center
           </p>
@@ -144,7 +144,7 @@ function LoginPage() {
 
         <div
           className="cen-anim-rise mt-7 rounded-container border border-border-default/80 bg-background-elevated/85 p-6 shadow-level-3 backdrop-blur-xl"
-          style={{ animationDelay: "520ms" }}
+          style={{ animationDelay: "260ms" }}
         >
           <h2 className="text-h4 text-text-primary">Đăng nhập</h2>
           <p className="mt-1 text-helper text-text-muted">
@@ -225,7 +225,7 @@ function LoginPage() {
               fullWidth
               loading={submitting && !succeeded}
               disabled={succeeded}
-              className="cen-transition hover:brightness-110 active:scale-[0.98]"
+              className="cen-transition cen-dur-1 transform-gpu hover:brightness-110 active:scale-[0.98]"
             >
               {succeeded ? (
                 <>
