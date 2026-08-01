@@ -11,6 +11,8 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ReviewActions } from "@/components/report/review-actions";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
+import { RecognitionStatsPanel } from "@/components/recognition/recognition-stats-panel";
+
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
 import {
