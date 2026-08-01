@@ -199,8 +199,15 @@ export function canCmoDecide(project: ProjectRow, ctx: ProjectAccessContext) {
   return project.status === "proposal" && (ctx.role === "cmo" || ctx.role === "admin");
 }
 
+/** Chỉ dự án đã hoàn thành chính thức mới được đưa vào Lưu trữ. */
 export function canArchive(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status !== "archived" && (privileged(ctx) || isProjectOwner(project, ctx));
+  if (project.status !== "completed") return false;
+  return privileged(ctx) || isProjectOwner(project, ctx);
+}
+
+/** Dự án thuộc khu vực Lưu trữ: đã hoàn thành chính thức hoặc đã lưu trữ. */
+export function isProjectArchived(project: ProjectRow) {
+  return project.status === "completed" || project.status === "archived";
 }
 
 const RUN_TRANSITIONS: Partial<Record<ProjectStatus, ProjectStatus[]>> = {
