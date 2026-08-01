@@ -27,7 +27,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { setMemberStatus } from "@/lib/org.functions";
 import { testPersonalTelegram } from "@/lib/telegram.functions";
 import { avatarUrlMapQuery } from "@/lib/avatar-data";
-import { CEN_TIMEZONE, formatHanoiDate } from "@/lib/datetime";
+import { CEN_TIMEZONE } from "@/lib/datetime";
 import {
   ROLE_LABEL,
   STATUS_LABEL,
@@ -71,12 +71,6 @@ function isBirthdayThisMonth(birthday: string | null): boolean {
   if (!birthday) return false;
   const month = Number(birthday.slice(5, 7));
   return month === hanoiCurrentMonth();
-}
-
-/** Hiển thị ngày sinh dạng ngày/tháng, không lộ năm sinh nếu không cần. */
-function formatBirthday(birthday: string | null): string {
-  if (!birthday) return "—";
-  return formatHanoiDate(`${birthday}T00:00:00+07:00`);
 }
 
 function MembersPage() {
