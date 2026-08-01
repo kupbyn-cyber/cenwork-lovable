@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, RefreshCw } from "lucide-react";
 
@@ -38,6 +39,7 @@ import {
   type ReportObligationRow,
   type ReportPeriodRow,
 } from "@/lib/report-obligation-data";
+import { ensureReportForObligation } from "@/lib/report-workflow-data";
 
 /**
  * CEN 1.0 — REPORT-01: kỳ báo cáo và nghĩa vụ.
@@ -47,6 +49,7 @@ const ALL = "__all__";
 
 export function ReportObligationsPanel() {
   const access = useOrgAccess();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const canConfig = access.can(PERMISSIONS.REPORTS_CONFIG);
   const canGenerate = canConfig || access.isLeader;
@@ -66,6 +69,15 @@ export function ReportObligationsPanel() {
     void queryClient.invalidateQueries({ queryKey: ["report-obligations"] });
     void queryClient.invalidateQueries({ queryKey: ["report-exemptions"] });
   };
+
+  const openDoc = useMutation({
+    mutationFn: (obligationId: string) => ensureReportForObligation(obligationId),
+    onSuccess: (reportId) => {
+      invalidate();
+      void navigate({ to: "/reports/doc/$reportId", params: { reportId } });
+    },
+    onError: (error: Error) => cenToast.error("Không mở được báo cáo", { description: error.message }),
+  });
 
   const generate = useMutation({
     mutationFn: async (kind: "daily" | "weekly") => {
@@ -212,9 +224,20 @@ export function ReportObligationsPanel() {
     {
       id: "actions",
       header: "",
-      className: "min-w-[120px]",
-      cell: (row: ReportObligationRow) =>
-        row.is_exempt || row.first_submitted_at ? null : (
+      className: "min-w-[200px]",
+      cell: (row: ReportObligationRow) => (
+        <div className="flex flex-wrap gap-1">
+          {row.user_id === access.userId && !row.is_exempt ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={openDoc.isPending}
+              onClick={() => openDoc.mutate(row.id)}
+            >
+              {row.first_submitted_at ? "Mở báo cáo" : "Soạn báo cáo"}
+            </Button>
+          ) : null}
+          {row.is_exempt || row.first_submitted_at ? null : (
           <Button
             variant="ghost"
             size="sm"
@@ -225,7 +248,9 @@ export function ReportObligationsPanel() {
           >
             Đề nghị miễn
           </Button>
-        ),
+          )}
+        </div>
+      ),
     },
   ];
 
