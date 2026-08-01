@@ -298,7 +298,7 @@ function TasksPage() {
     {
       id: "name",
       header: "Công việc",
-      className: "min-w-[180px]",
+      className: "min-w-[180px] px-3",
       cell: (row: TaskRow) => <TableCellStack primary={row.name} />,
     },
     ...(show("project")
@@ -306,10 +306,10 @@ function TasksPage() {
           {
             id: "project",
             header: "Dự án",
-            className: "min-w-[110px]",
+            className: "px-3",
             cell: (row: TaskRow) =>
               row.projectName ? (
-                <span className="text-text-secondary">{row.projectName}</span>
+                <span className="block truncate text-text-secondary">{row.projectName}</span>
               ) : (
                 <Badge variant="outline" className="font-normal">
                   Công việc độc lập
@@ -323,9 +323,9 @@ function TasksPage() {
           {
             id: "assignee",
             header: "Người phụ trách",
-            className: "min-w-[120px]",
+            className: "w-[130px] max-w-[130px] px-3",
             cell: (row: TaskRow) => (
-              <span className="text-text-secondary">{row.assigneeName ?? "—"}</span>
+              <span className="block truncate text-text-secondary">{row.assigneeName ?? "—"}</span>
             ),
           },
         ]
@@ -335,9 +335,9 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            className: "min-w-[100px]",
+            className: "w-[120px] max-w-[120px] px-3",
             cell: (row: TaskRow) => (
-              <span className="text-text-secondary">{row.teamName ?? "—"}</span>
+              <span className="block truncate text-text-secondary">{row.teamName ?? "—"}</span>
             ),
           },
         ]
@@ -347,7 +347,7 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            className: "min-w-[120px] whitespace-nowrap",
+            className: "w-[130px] whitespace-nowrap px-3",
             cell: (row: TaskRow) => (
               <span className={isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary"}>
                 {formatDateTime(row.deadline)}
@@ -361,7 +361,7 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            className: "min-w-[90px]",
+            className: "px-3",
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_PRIORITY_LABEL[row.priority]}
@@ -376,7 +376,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            className: "min-w-[140px]",
+            className: "w-[150px] max-w-[150px] px-3",
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
@@ -390,7 +390,7 @@ function TasksPage() {
       id: "actions",
       header: "Hành động",
       align: "right" as const,
-      className: "w-[1%] whitespace-nowrap",
+      className: "w-[1%] whitespace-nowrap px-3",
       headerClassName: "text-right",
       cell: rowActions,
     },
@@ -582,6 +582,7 @@ function TasksPage() {
         <DataTable
           columns={tableColumns}
           data={visibleRows}
+          density="compact"
           getRowId={(row) => row.id}
           loading={tasksResult.isLoading}
           error={tasksResult.isError}
