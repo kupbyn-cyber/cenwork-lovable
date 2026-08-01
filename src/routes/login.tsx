@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createFileRoute, redirect, useNavigate, useSearch } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
