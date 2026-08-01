@@ -2483,6 +2483,7 @@ export type Database = {
         | "pending_acceptance"
         | "completed"
         | "archived"
+        | "rejected"
       report_status: "draft" | "submitted" | "changes_requested" | "approved"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
@@ -2657,6 +2658,7 @@ export const Constants = {
         "pending_acceptance",
         "completed",
         "archived",
+        "rejected",
       ],
       report_status: ["draft", "submitted", "changes_requested", "approved"],
       task_priority: ["low", "medium", "high"],
