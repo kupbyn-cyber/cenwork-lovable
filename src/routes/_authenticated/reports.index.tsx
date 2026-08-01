@@ -18,8 +18,11 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
+import { ReportConfigPanel } from "@/components/report/report-config-panel";
+import { ReportObligationsPanel } from "@/components/report/report-obligations-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
+import { PERMISSIONS } from "@/lib/permissions";
 import { formatHanoiDate } from "@/lib/datetime";
 import {
   REPORT_STATUS_LABEL,
@@ -79,6 +82,9 @@ function ReportsPage() {
   const teams = teamsResult.data ?? [];
   const members = membersResult.data ?? [];
   const me = members.find((member) => member.id === access.userId) ?? null;
+
+  const canViewObligations = access.can(PERMISSIONS.REPORTS_OBLIGATIONS_VIEW);
+  const canConfigReports = access.can(PERMISSIONS.REPORTS_CONFIG) || access.isLeader;
 
   const ctx = {
     userId: access.userId,
@@ -289,6 +295,10 @@ function ReportsPage() {
         <TabsList>
           <TabsTrigger value="daily">Báo cáo ngày</TabsTrigger>
           <TabsTrigger value="weekly">Báo cáo tuần</TabsTrigger>
+          {canViewObligations ? (
+            <TabsTrigger value="obligations">Nghĩa vụ</TabsTrigger>
+          ) : null}
+          {canConfigReports ? <TabsTrigger value="config">Cấu hình</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="daily" className="flex flex-col gap-3">
           <span className="text-caption text-text-muted">{dailyRows.length} báo cáo ngày</span>
@@ -324,6 +334,16 @@ function ReportsPage() {
             }
           />
         </TabsContent>
+        {canViewObligations ? (
+          <TabsContent value="obligations" className="flex flex-col gap-3">
+            <ReportObligationsPanel />
+          </TabsContent>
+        ) : null}
+        {canConfigReports ? (
+          <TabsContent value="config" className="flex flex-col gap-3">
+            <ReportConfigPanel />
+          </TabsContent>
+        ) : null}
       </Tabs>
 
       {access.userId ? (
