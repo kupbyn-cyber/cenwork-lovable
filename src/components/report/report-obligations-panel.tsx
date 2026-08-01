@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { SectionHeader } from "@/components/ui/section-header";
 import {
@@ -69,8 +68,11 @@ export function ReportObligationsPanel() {
   };
 
   const generate = useMutation({
-    mutationFn: (kind: "daily" | "weekly") =>
-      kind === "daily" ? generateDailyPeriods(null) : generateWeeklyPeriods(null),
+    mutationFn: async (kind: "daily" | "weekly") => {
+      const result =
+        kind === "daily" ? await generateDailyPeriods(null) : await generateWeeklyPeriods(null);
+      return result as { periods_created: number; obligations_created: number };
+    },
     onSuccess: (result) => {
       invalidate();
       cenToast.success("Đã chạy tạo kỳ", {
@@ -406,7 +408,6 @@ export function ReportObligationsPanel() {
         </FormField>
       </Modal>
 
-      <Input type="hidden" value="" readOnly aria-hidden className="hidden" />
     </div>
   );
 }
