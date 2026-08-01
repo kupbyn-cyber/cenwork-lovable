@@ -23,7 +23,8 @@ export const PERMISSIONS = {
   AUDIT_VIEW: "audit.view",
   PROJECTS_VIEW: "projects.view",
   PROJECTS_CREATE: "projects.create",
-  PROJECTS_CREATE_OFFICIAL: "projects.create_official",
+  PROJECTS_APPROVE_LEADER: "projects.approve_leader",
+  PROJECTS_APPROVE_CMO: "projects.approve_cmo",
   TASKS_VIEW: "tasks.view",
   TASKS_CREATE: "tasks.create",
   REPORTS_VIEW: "reports.view",
@@ -41,7 +42,6 @@ export const PERMISSIONS = {
   ANNOUNCEMENTS_CREATE: "announcements.create",
 } as const;
 
-
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<PermissionKey, string> = {
@@ -56,8 +56,9 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "settings.admin": "Cấu hình quản trị hệ thống",
   "audit.view": "Xem nhật ký hoạt động",
   "projects.view": "Xem dự án trong phạm vi",
-  "projects.create": "Gửi ý tưởng dự án",
-  "projects.create_official": "Tạo dự án",
+  "projects.create": "Tạo dự án",
+  "projects.approve_leader": "Duyệt dự án ở bước Leader",
+  "projects.approve_cmo": "Duyệt dự án ở bước CMO",
   "tasks.view": "Xem công việc trong phạm vi",
   "tasks.create": "Tạo công việc",
   "reports.view": "Xem báo cáo trong phạm vi",
@@ -88,7 +89,8 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "audit.view": "Hệ thống",
   "projects.view": "Dự án",
   "projects.create": "Dự án",
-  "projects.create_official": "Dự án",
+  "projects.approve_leader": "Dự án",
+  "projects.approve_cmo": "Dự án",
   "tasks.view": "Công việc",
   "tasks.create": "Công việc",
   "reports.view": "Báo cáo",
@@ -121,7 +123,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "audit.view",
     "projects.view",
     "projects.create",
-    "projects.create_official",
+    "projects.approve_leader",
+    "projects.approve_cmo",
     "tasks.view",
     "tasks.create",
     "reports.view",
@@ -145,6 +148,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "audit.view",
     "projects.view",
     "projects.create",
+    "projects.approve_cmo",
     "tasks.view",
     "tasks.create",
     "reports.view",
@@ -166,6 +170,7 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "organization.view",
     "projects.view",
     "projects.create",
+    "projects.approve_leader",
     "tasks.view",
     "tasks.create",
     "reports.view",

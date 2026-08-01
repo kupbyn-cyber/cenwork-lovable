@@ -17,6 +17,7 @@ import { membersQuery, teamsQuery } from "@/lib/org-data";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_STATUS_TONE,
+  isProjectApproved,
   projectsQuery,
   type ProjectStatus,
 } from "@/lib/project-data";
@@ -114,14 +115,16 @@ function Dashboard() {
   const activeProjects = projects.filter((project) =>
     ACTIVE_PROJECT_STATUSES.includes(project.status),
   );
+  /** Dự án chưa duyệt không được tính vào thống kê phạm vi. */
+  const approvedProjects = projects.filter(isProjectApproved);
 
   const projectByStatus = React.useMemo(() => {
     const map = new Map<ProjectStatus, number>();
-    for (const project of projects) {
+    for (const project of approvedProjects) {
       map.set(project.status, (map.get(project.status) ?? 0) + 1);
     }
     return map;
-  }, [projects]);
+  }, [approvedProjects]);
 
   const taskByStatus = React.useMemo(() => {
     const map = new Map<TaskRow["status"], number>();
@@ -210,7 +213,7 @@ function Dashboard() {
         <Metric
           label="Dự án đang chạy"
           value={activeProjects.length}
-          hint={`${projects.length} dự án trong phạm vi`}
+          hint={`${approvedProjects.length} dự án đã duyệt trong phạm vi`}
         />
         <Metric
           label="Công việc của tôi"
@@ -235,8 +238,8 @@ function Dashboard() {
             <CardTitle>Dự án theo trạng thái</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            {projects.length === 0 ? (
-              <p className="text-helper text-text-muted">Chưa có dự án nào trong phạm vi.</p>
+            {approvedProjects.length === 0 ? (
+              <p className="text-helper text-text-muted">Chưa có dự án đã duyệt trong phạm vi.</p>
             ) : (
               [...projectByStatus.entries()].map(([status, count]) => (
                 <span key={status} className="flex items-center gap-2">

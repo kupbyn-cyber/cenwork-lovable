@@ -14,6 +14,7 @@ export type ProjectStatus = Database["public"]["Enums"]["project_status"];
 
 export const PROJECT_STATUS_ORDER: ProjectStatus[] = [
   "idea",
+  "rejected",
   "leader_review",
   "proposal",
   "planning",
@@ -24,10 +25,11 @@ export const PROJECT_STATUS_ORDER: ProjectStatus[] = [
 ];
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
-  idea: "Ý tưởng",
-  leader_review: "Leader xem xét",
+  idea: "Bản nháp",
+  rejected: "Bị từ chối",
+  leader_review: "Chờ Leader duyệt",
   proposal: "Chờ CMO duyệt",
-  planning: "Lập kế hoạch",
+  planning: "Đã duyệt",
   in_progress: "Đang thực hiện",
   pending_acceptance: "Chờ nghiệm thu",
   completed: "Hoàn thành",
@@ -36,6 +38,7 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
 
 export const PROJECT_STATUS_TONE: Record<ProjectStatus, StatusTone> = {
   idea: "neutral",
+  rejected: "error",
   leader_review: "warning",
   proposal: "warning",
   planning: "progress",
@@ -61,6 +64,12 @@ export interface ProjectRow {
   completed_at: string | null;
   manually_archived_at: string | null;
   manually_archived_by: string | null;
+  responsible_team_id: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  approval_round: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -73,6 +82,7 @@ export interface ProjectRow {
 const SELECT = `
   id,name,objective,description,owner_id,start_date,deadline,status,last_decision_note,
   completed_at,manually_archived_at,manually_archived_by,
+  responsible_team_id,submitted_at,approved_at,rejected_at,rejection_reason,approval_round,
   created_by,created_at,updated_at,
   owner:profiles!projects_owner_id_fkey(id,display_name),
   creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
@@ -85,9 +95,7 @@ type RawProject = Record<string, unknown>;
 
 function mapProject(raw: RawProject): ProjectRow {
   const owner = raw["owner"] as { display_name: string } | null;
-  const creator = raw["creator"] as
-    | { display_name: string; primary_team_id: string | null }
-    | null;
+  const creator = raw["creator"] as { display_name: string; primary_team_id: string | null } | null;
   const teams = (raw["project_teams"] ?? []) as { team_id: string }[];
   const members = (raw["project_members"] ?? []) as {
     user_id: string;
@@ -111,6 +119,12 @@ function mapProject(raw: RawProject): ProjectRow {
     completed_at: (raw["completed_at"] as string | null) ?? null,
     manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
     manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
+    responsible_team_id: (raw["responsible_team_id"] as string | null) ?? null,
+    submitted_at: (raw["submitted_at"] as string | null) ?? null,
+    approved_at: (raw["approved_at"] as string | null) ?? null,
+    rejected_at: (raw["rejected_at"] as string | null) ?? null,
+    rejection_reason: (raw["rejection_reason"] as string | null) ?? null,
+    approval_round: (raw["approval_round"] as number | null) ?? 0,
     created_by: raw["created_by"] as string,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
@@ -142,8 +156,7 @@ export async function fetchProject(id: string): Promise<ProjectRow | null> {
   return data ? mapProject(data as RawProject) : null;
 }
 
-export const projectsQuery = () =>
-  queryOptions({ queryKey: ["projects"], queryFn: fetchProjects });
+export const projectsQuery = () => queryOptions({ queryKey: ["projects"], queryFn: fetchProjects });
 
 export const projectQuery = (id: string) =>
   queryOptions({ queryKey: ["project", id], queryFn: () => fetchProject(id) });
@@ -205,35 +218,73 @@ export function isProjectOwner(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(ctx.userId && project.owner_id === ctx.userId);
 }
 
-export function isIdeaAuthor(project: ProjectRow, ctx: ProjectAccessContext) {
+export function isProjectCreator(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(ctx.userId && project.created_by === ctx.userId);
 }
 
-/** Leader của Team chính người gửi — người duy nhất (ngoài Admin) được duyệt ý tưởng. */
-export function isReviewLeader(project: ProjectRow, ctx: ProjectAccessContext) {
+/** Trạng thái chưa được duyệt: bản nháp, đang chờ duyệt hoặc bị từ chối. */
+export const PROJECT_UNAPPROVED_STATUSES: ProjectStatus[] = [
+  "idea",
+  "leader_review",
+  "proposal",
+  "rejected",
+];
+
+export function isProjectApproved(project: ProjectRow) {
+  return !PROJECT_UNAPPROVED_STATUSES.includes(project.status);
+}
+
+export function isProjectPendingApproval(project: ProjectRow) {
+  return project.status === "leader_review" || project.status === "proposal";
+}
+
+export function isProjectDraft(project: ProjectRow) {
+  return project.status === "idea";
+}
+
+export function isProjectRejected(project: ProjectRow) {
+  return project.status === "rejected";
+}
+
+/** Leader của Team phụ trách — người duyệt bước đầu khi Member tạo dự án. */
+export function isResponsibleLeader(project: ProjectRow, ctx: ProjectAccessContext) {
   return Boolean(
-    ctx.leaderTeamId && project.creatorTeamId && ctx.leaderTeamId === project.creatorTeamId,
+    ctx.leaderTeamId &&
+    project.responsible_team_id &&
+    ctx.leaderTeamId === project.responsible_team_id,
   );
 }
 
 /** Sửa nội dung dự án (không gồm chuyển trạng thái). */
 export function canEditProject(project: ProjectRow, ctx: ProjectAccessContext) {
   if (project.status === "archived") return ctx.role === "admin";
-  if (project.status === "idea") return isIdeaAuthor(project, ctx) || ctx.role === "admin";
-  if (project.status === "leader_review" || project.status === "proposal") return privileged(ctx);
+  if (project.status === "idea" || project.status === "rejected") {
+    return isProjectCreator(project, ctx) || ctx.role === "admin";
+  }
+  if (isProjectPendingApproval(project)) return privileged(ctx);
   return privileged(ctx) || isProjectOwner(project, ctx);
 }
 
-export function canSubmitIdea(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "idea" && (isIdeaAuthor(project, ctx) || ctx.role === "admin");
+/** Gửi duyệt / gửi lại sau khi bị từ chối. */
+export function canSubmitProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  if (project.status !== "idea" && project.status !== "rejected") return false;
+  return isProjectCreator(project, ctx) || ctx.role === "admin";
 }
 
-export function canLeaderDecide(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "leader_review" && (isReviewLeader(project, ctx) || ctx.role === "admin");
+/** Bước duyệt hiện tại của dự án, nếu có. */
+export function approvalStage(project: ProjectRow): "leader" | "cmo" | null {
+  if (project.status === "leader_review") return "leader";
+  if (project.status === "proposal") return "cmo";
+  return null;
 }
 
-export function canCmoDecide(project: ProjectRow, ctx: ProjectAccessContext) {
-  return project.status === "proposal" && (ctx.role === "cmo" || ctx.role === "admin");
+/** Người dùng hiện tại được quyết định duyệt / từ chối ở bước đang chờ. */
+export function canDecideProject(project: ProjectRow, ctx: ProjectAccessContext) {
+  const stage = approvalStage(project);
+  if (!stage) return false;
+  if (ctx.role === "admin") return true;
+  if (stage === "cmo") return ctx.role === "cmo";
+  return isResponsibleLeader(project, ctx);
 }
 
 /** Lưu trữ thủ công: chỉ Admin và CMO, không đổi trạng thái nghiệp vụ. */
@@ -269,7 +320,7 @@ export function isCompletedEarly(project: ProjectRow) {
 
 /** Gửi yêu cầu đổi deadline: Project Owner, Leader đúng phạm vi, Admin và CMO. */
 export function canRequestProjectDeadline(project: ProjectRow, ctx: ProjectAccessContext) {
-  if (isProjectArchived(project)) return false;
+  if (isProjectArchived(project) || !isProjectApproved(project)) return false;
   if (privileged(ctx) || isProjectOwner(project, ctx)) return true;
   return Boolean(ctx.leaderTeamId && project.teamIds.includes(ctx.leaderTeamId));
 }
@@ -297,26 +348,87 @@ function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-export async function createProjectIdea(input: {
-  createdBy: string;
-  name: string;
-  objective: string;
-  description: string | null;
-}) {
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      name: input.name,
-      objective: input.objective,
-      description: input.description,
-      created_by: input.createdBy,
-      status: "idea",
-    })
-    .select("id")
-    .single();
-  fail(error);
-  return data!.id;
+/** Gửi duyệt (hoặc gửi lại sau khi bị từ chối). Quyền và bước duyệt do database quyết định. */
+export async function submitProject(projectId: string): Promise<ProjectStatus> {
+  const { data, error } = await supabase.rpc("project_submit", { _project: projectId });
+  if (error) throw new Error(error.message);
+  return data as ProjectStatus;
 }
+
+/** Duyệt hoặc từ chối ở bước hiện tại. Từ chối bắt buộc có lý do. */
+export async function decideProject(
+  projectId: string,
+  approve: boolean,
+  reason?: string | null,
+): Promise<ProjectStatus> {
+  const { data, error } = await supabase.rpc("project_decide", {
+    _project: projectId,
+    _approve: approve,
+    ...(reason ? { _reason: reason } : {}),
+  });
+  if (error) throw new Error(error.message);
+  return data as ProjectStatus;
+}
+
+/** Lịch sử phê duyệt của một dự án. */
+export interface ProjectApprovalEntry {
+  id: string;
+  round: number;
+  stage: string;
+  action: string;
+  actorName: string | null;
+  actor_role: string | null;
+  from_status: ProjectStatus | null;
+  to_status: ProjectStatus | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export const APPROVAL_ACTION_LABEL: Record<string, string> = {
+  submitted: "Gửi duyệt",
+  approved: "Duyệt",
+  rejected: "Từ chối",
+  auto_approved: "Tạo và duyệt ngay",
+};
+
+export const APPROVAL_STAGE_LABEL: Record<string, string> = {
+  leader: "Bước Leader",
+  cmo: "Bước CMO",
+  auto: "Tự động",
+};
+
+export async function fetchProjectApprovals(projectId: string): Promise<ProjectApprovalEntry[]> {
+  const { data, error } = await supabase
+    .from("project_approvals")
+    .select(
+      "id,round,stage,action,actor_role,from_status,to_status,reason,created_at,actor:profiles(display_name)",
+    )
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const raw = row as RawProject;
+    const actor = raw["actor"] as { display_name: string } | null;
+    return {
+      id: raw["id"] as string,
+      round: (raw["round"] as number | null) ?? 1,
+      stage: raw["stage"] as string,
+      action: raw["action"] as string,
+      actorName: actor?.display_name ?? null,
+      actor_role: (raw["actor_role"] as string | null) ?? null,
+      from_status: (raw["from_status"] as ProjectStatus | null) ?? null,
+      to_status: (raw["to_status"] as ProjectStatus | null) ?? null,
+      reason: (raw["reason"] as string | null) ?? null,
+      created_at: raw["created_at"] as string,
+    };
+  });
+}
+
+export const projectApprovalsQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ["project-approvals", projectId],
+    queryFn: () => fetchProjectApprovals(projectId),
+  });
 
 export interface ProjectDetailInput {
   name: string;
@@ -325,6 +437,7 @@ export interface ProjectDetailInput {
   ownerId: string | null;
   startDate: string | null;
   deadline: string | null;
+  responsibleTeamId?: string | null;
 }
 
 export async function updateProjectDetail(id: string, input: ProjectDetailInput) {
@@ -337,6 +450,9 @@ export async function updateProjectDetail(id: string, input: ProjectDetailInput)
       owner_id: input.ownerId,
       start_date: input.startDate,
       deadline: input.deadline,
+      ...(input.responsibleTeamId === undefined
+        ? {}
+        : { responsible_team_id: input.responsibleTeamId }),
     })
     .eq("id", id);
   fail(error);

@@ -36,7 +36,10 @@ import {
   canRequestProjectDeadline,
   canRestoreProject,
   formatDate,
+  isProjectApproved,
   isProjectArchived,
+  isProjectPendingApproval,
+  isProjectRejected,
   isOverdue,
   nextStatuses,
   projectTaskCountsQuery,
@@ -69,6 +72,22 @@ export const Route = createFileRoute("/_authenticated/projects/")({
 
 const ALL = "__all__";
 
+type ProjectView = "active" | "pending" | "rejected" | "archived";
+
+const EMPTY_TITLE: Record<ProjectView, string> = {
+  active: "Chưa có dự án nào",
+  pending: "Không có dự án chờ duyệt",
+  rejected: "Không có dự án bị từ chối",
+  archived: "Chưa có dự án lưu trữ",
+};
+
+const EMPTY_DESCRIPTION: Record<ProjectView, string> = {
+  active: "Tạo dự án đầu tiên để bắt đầu quy trình duyệt.",
+  pending: "Dự án đang chờ Leader hoặc CMO duyệt sẽ hiển thị ở đây.",
+  rejected: "Dự án bị từ chối có thể chỉnh sửa và gửi duyệt lại.",
+  archived: "Dự án sẽ xuất hiện ở đây sau khi hoàn thành chính thức.",
+};
+
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
@@ -85,9 +104,8 @@ function ProjectsPage() {
   const [ownerFilter, setOwnerFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [facilityFilter, setFacilityFilter] = React.useState(ALL);
-  const [view, setView] = React.useState<"active" | "archived">("active");
+  const [view, setView] = React.useState<"active" | "pending" | "rejected" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
-  const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<ProjectRow | null>(null);
   const [completeTarget, setCompleteTarget] = React.useState<ProjectRow | null>(null);
   const [deadlineTarget, setDeadlineTarget] = React.useState<ProjectRow | null>(null);
@@ -151,7 +169,14 @@ function ProjectsPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (projectsResult.data ?? []).filter((project) => {
-      if (isProjectArchived(project) !== (view === "archived")) return false;
+      const bucket = isProjectArchived(project)
+        ? "archived"
+        : isProjectRejected(project)
+          ? "rejected"
+          : isProjectPendingApproval(project) || !isProjectApproved(project)
+            ? "pending"
+            : "active";
+      if (bucket !== view) return false;
       if (keyword && !project.name.toLowerCase().includes(keyword)) return false;
       if (statusFilter !== ALL && project.status !== statusFilter) return false;
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
@@ -235,7 +260,10 @@ function ProjectsPage() {
       className: "w-[112px]",
       headerClassName: "w-[112px]",
       cell: (row: ProjectRow) => (
-        <StatusBadge label={PROJECT_STATUS_LABEL[row.status]} tone={PROJECT_STATUS_TONE[row.status]} />
+        <StatusBadge
+          label={PROJECT_STATUS_LABEL[row.status]}
+          tone={PROJECT_STATUS_TONE[row.status]}
+        />
       ),
     },
     {
@@ -244,10 +272,7 @@ function ProjectsPage() {
       className: "hidden w-[130px] lg:table-cell",
       headerClassName: "hidden w-[130px] lg:table-cell",
       cell: (row: ProjectRow) => (
-        <div
-          className="truncate text-text-secondary"
-          title={row.ownerName ?? "Chưa chỉ định"}
-        >
+        <div className="truncate text-text-secondary" title={row.ownerName ?? "Chưa chỉ định"}>
           {row.ownerName ?? "Chưa chỉ định"}
         </div>
       ),
@@ -313,27 +338,18 @@ function ProjectsPage() {
     },
   ];
 
-
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
         title="Dự án"
-        description="Ý tưởng, quy trình duyệt và dự án chính thức trong phạm vi bạn được xem."
+        description="Tạo dự án, theo dõi quy trình duyệt và dự án đã duyệt trong phạm vi bạn được xem."
         actions={
-          <div className="flex flex-wrap gap-2">
-            {access.can("projects.create") ? (
-              <Button variant="secondary" onClick={() => setCreateOpen(true)}>
-                <Plus />
-                Gửi ý tưởng
-              </Button>
-            ) : null}
-            {access.can("projects.create_official") ? (
-              <Button onClick={() => setCreateProjectOpen(true)}>
-                <Plus />
-                Tạo dự án
-              </Button>
-            ) : null}
-          </div>
+          access.can("projects.create") ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus />
+              Tạo dự án
+            </Button>
+          ) : null
         }
       />
 
@@ -399,25 +415,29 @@ function ProjectsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-md border border-border-subtle p-1" role="tablist">
-          <Button
-            role="tab"
-            aria-selected={view === "active"}
-            variant={view === "active" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setView("active")}
-          >
-            Đang hoạt động
-          </Button>
-          <Button
-            role="tab"
-            aria-selected={view === "archived"}
-            variant={view === "archived" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setView("archived")}
-          >
-            Lưu trữ
-          </Button>
+        <div
+          className="inline-flex flex-wrap rounded-md border border-border-subtle p-1"
+          role="tablist"
+        >
+          {(
+            [
+              ["active", "Đang hoạt động"],
+              ["pending", "Chờ duyệt"],
+              ["rejected", "Bị từ chối"],
+              ["archived", "Lưu trữ"],
+            ] as const
+          ).map(([key, label]) => (
+            <Button
+              key={key}
+              role="tab"
+              aria-selected={view === key}
+              variant={view === key ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView(key)}
+            >
+              {label}
+            </Button>
+          ))}
         </div>
         <span className="text-caption text-text-muted">{rows.length} dự án</span>
       </div>
@@ -433,12 +453,8 @@ function ProjectsPage() {
         error={projectsResult.isError}
         onRetry={() => void projectsResult.refetch()}
         errorTitle="Không tải được danh sách dự án"
-        emptyTitle={view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
-        emptyDescription={
-          view === "archived"
-            ? "Dự án sẽ xuất hiện ở đây sau khi hoàn thành chính thức."
-            : "Gửi ý tưởng đầu tiên để bắt đầu quy trình duyệt."
-        }
+        emptyTitle={EMPTY_TITLE[view]}
+        emptyDescription={EMPTY_DESCRIPTION[view]}
         onRowClick={(row) =>
           void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
         }
@@ -451,7 +467,7 @@ function ProjectsPage() {
           </div>
         ) : rows.length === 0 ? (
           <div className="rounded-card border border-border-default bg-surface p-4 text-body text-text-muted">
-            {view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
+            {EMPTY_TITLE[view]}
           </div>
         ) : (
           rows.map((row) => {
@@ -511,31 +527,13 @@ function ProjectsPage() {
         )}
       </div>
 
-
-
       {access.userId ? (
         <ProjectFormDrawer
           open={createOpen}
           onOpenChange={setCreateOpen}
           project={null}
           fullEdit={false}
-          currentUserId={access.userId}
-          teams={teams}
-          facilities={facilities}
-          people={people}
-          onCreated={(projectId) =>
-            void navigate({ to: "/projects/$projectId", params: { projectId } })
-          }
-        />
-      ) : null}
-
-      {access.userId && access.can("projects.create_official") ? (
-        <ProjectFormDrawer
-          open={createProjectOpen}
-          onOpenChange={setCreateProjectOpen}
-          project={null}
-          fullEdit={false}
-          createMode="official"
+          currentUserRole={access.role}
           currentUserId={access.userId}
           teams={teams}
           facilities={facilities}
@@ -553,7 +551,8 @@ function ProjectsPage() {
             if (!open) setEditTarget(null);
           }}
           project={editTarget}
-          fullEdit={editTarget.status !== "idea" && editTarget.status !== "leader_review"}
+          fullEdit={isProjectApproved(editTarget)}
+          currentUserRole={access.role}
           currentUserId={access.userId}
           teams={teams}
           facilities={facilities}

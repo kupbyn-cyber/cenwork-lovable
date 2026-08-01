@@ -18,32 +18,30 @@ import { cenToast } from "@/components/ui/toast";
 import type { FacilityRow, TeamRow } from "@/lib/org-data";
 import { createProject } from "@/lib/project.functions";
 import {
-  createProjectIdea,
   syncProjectLinks,
   updateProjectDetail,
   type PersonOption,
   type ProjectRow,
 } from "@/lib/project-data";
+import type { AppRoleKey } from "@/lib/permissions";
 
 /**
- * CEN 1.0 — M2 form Dự án.
- * Chế độ "idea": Member gửi ý tưởng (tên, mục tiêu, mô tả).
- * Chế độ "full": CMO/Admin/Project Owner cập nhật dự án đã duyệt.
+ * CEN — form Tạo và Chỉnh sửa Dự án (dùng chung cho mọi vai trò).
+ * Tạo mới luôn đi qua server function `createProject`; luồng duyệt do database quyết định:
+ * Admin/CMO duyệt ngay, Leader → CMO, Member → Leader Team phụ trách → CMO.
  */
 const NO_OWNER = "__none__";
+const NO_TEAM = "__none__";
 
 export interface ProjectFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** null = tạo ý tưởng mới. */
+  /** null = tạo dự án mới. */
   project: ProjectRow | null;
   /** Cho phép sửa Owner, thời gian, Team, thành viên và Cơ sở. */
   fullEdit: boolean;
-  /**
-   * Chế độ tạo mới: "idea" = gửi ý tưởng (mặc định),
-   * "official" = hành động "Tạo dự án" (yêu cầu quyền projects.create_official).
-   */
-  createMode?: "idea" | "official";
+  /** Vai trò người dùng hiện tại — quyết định bước duyệt và Team phụ trách bắt buộc. */
+  currentUserRole: AppRoleKey | null;
   currentUserId: string;
   teams: TeamRow[];
   facilities: FacilityRow[];
@@ -61,6 +59,7 @@ interface FormState {
   teamIds: string[];
   memberIds: string[];
   facilityIds: string[];
+  responsibleTeamId: string;
 }
 
 function initialState(project: ProjectRow | null): FormState {
@@ -74,6 +73,7 @@ function initialState(project: ProjectRow | null): FormState {
     teamIds: project?.teamIds ?? [],
     memberIds: project?.memberIds ?? [],
     facilityIds: project?.facilityIds ?? [],
+    responsibleTeamId: project?.responsible_team_id ?? NO_TEAM,
   };
 }
 
@@ -86,7 +86,7 @@ export function ProjectFormDrawer({
   onOpenChange,
   project,
   fullEdit,
-  createMode = "idea",
+  currentUserRole,
   currentUserId,
   teams,
   facilities,
@@ -95,8 +95,15 @@ export function ProjectFormDrawer({
 }: ProjectFormDrawerProps) {
   const queryClient = useQueryClient();
   const isCreate = project === null;
-  const isOfficialCreate = isCreate && createMode === "official";
-  const showFullFields = fullEdit || isOfficialCreate;
+  const showFullFields = fullEdit || isCreate;
+  /** Member phải chọn Team phụ trách để xác định Leader duyệt bước đầu. */
+  const needsResponsibleTeam = currentUserRole === "member";
+  const autoApproved = currentUserRole === "admin" || currentUserRole === "cmo";
+  const flowHint = autoApproved
+    ? "Bạn được duyệt ngay: dự án chuyển sang trạng thái Đã duyệt sau khi tạo."
+    : currentUserRole === "leader"
+      ? "Dự án sẽ được gửi tới CMO duyệt."
+      : "Dự án sẽ được Leader của Team phụ trách duyệt, sau đó CMO duyệt.";
 
   const [form, setForm] = React.useState<FormState>(() => initialState(project));
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
@@ -116,7 +123,7 @@ export function ProjectFormDrawer({
 
   const mutation = useMutation({
     mutationFn: async (state: FormState) => {
-      if (isOfficialCreate) {
+      if (isCreate) {
         const result = await createProject({
           data: {
             name: state.name.trim(),
@@ -128,18 +135,11 @@ export function ProjectFormDrawer({
             teamIds: state.teamIds,
             memberIds: state.memberIds,
             facilityIds: state.facilityIds,
+            responsibleTeamId: state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
+            submit: true,
           },
         });
         return result.projectId;
-      }
-
-      if (isCreate) {
-        return createProjectIdea({
-          createdBy: currentUserId,
-          name: state.name.trim(),
-          objective: state.objective.trim(),
-          description: state.description.trim() || null,
-        });
       }
 
       await updateProjectDetail(project.id, {
@@ -149,6 +149,7 @@ export function ProjectFormDrawer({
         ownerId: fullEdit ? (state.ownerId === NO_OWNER ? null : state.ownerId) : project.owner_id,
         startDate: fullEdit ? state.startDate || null : project.start_date,
         deadline: fullEdit ? state.deadline || null : project.deadline,
+        responsibleTeamId: state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
       });
 
       if (fullEdit) {
@@ -167,12 +168,13 @@ export function ProjectFormDrawer({
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
       void queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["project-approvals", projectId] });
       cenToast.success(
-        isOfficialCreate
-          ? "Đã tạo dự án."
-          : isCreate
-            ? "Đã gửi ý tưởng dự án."
-            : "Đã cập nhật dự án.",
+        isCreate
+          ? autoApproved
+            ? "Đã tạo và duyệt dự án."
+            : "Đã tạo dự án và gửi duyệt."
+          : "Đã cập nhật dự án.",
       );
       onOpenChange(false);
       if (isCreate) onCreated?.(projectId);
@@ -186,6 +188,9 @@ export function ProjectFormDrawer({
     else if (state.name.trim().length > 160) next.name = "Tên dự án tối đa 160 ký tự.";
     if (!state.objective.trim()) next.objective = "Nhập mục tiêu dự án.";
     if (state.description.length > 4000) next.description = "Mô tả tối đa 4000 ký tự.";
+    if (isCreate && needsResponsibleTeam && state.responsibleTeamId === NO_TEAM) {
+      next.responsibleTeamId = "Chọn Team phụ trách để xác định Leader duyệt.";
+    }
     if (showFullFields && state.startDate && state.deadline && state.deadline < state.startDate) {
       next.deadline = "Deadline không được trước ngày bắt đầu.";
     }
@@ -207,14 +212,8 @@ export function ProjectFormDrawer({
       size="xl"
       open={open}
       onOpenChange={mutation.isPending ? () => undefined : onOpenChange}
-      title={isOfficialCreate ? "Tạo dự án" : isCreate ? "Gửi ý tưởng dự án" : "Chỉnh sửa dự án"}
-      description={
-        isOfficialCreate
-          ? "Dự án mới bắt đầu ở trạng thái Ý tưởng và đi theo quy trình duyệt hiện hành."
-          : isCreate
-            ? "Ý tưởng sẽ được Leader của Team chính xem xét trước khi trình CMO."
-            : "Thay đổi quan trọng đều được ghi vào lịch sử dự án."
-      }
+      title={isCreate ? "Tạo dự án" : "Chỉnh sửa dự án"}
+      description={isCreate ? flowHint : "Thay đổi quan trọng đều được ghi vào lịch sử dự án."}
       footer={
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button
@@ -226,7 +225,7 @@ export function ProjectFormDrawer({
             Hủy
           </Button>
           <Button type="submit" form="project-form" loading={mutation.isPending}>
-            {isOfficialCreate ? "Tạo dự án" : isCreate ? "Gửi ý tưởng" : "Lưu thay đổi"}
+            {isCreate ? "Tạo dự án" : "Lưu thay đổi"}
           </Button>
         </div>
       }
@@ -277,6 +276,37 @@ export function ProjectFormDrawer({
             />
           )}
         </FormField>
+
+        {isCreate || needsResponsibleTeam ? (
+          <FormField
+            id="project-responsible-team"
+            label="Team phụ trách"
+            required={needsResponsibleTeam}
+            helperText="Leader của Team này duyệt dự án ở bước đầu"
+            error={errors.responsibleTeamId}
+          >
+            {(control) => (
+              <Select
+                value={form.responsibleTeamId}
+                onValueChange={(value) =>
+                  setForm((prev) => ({ ...prev, responsibleTeamId: value }))
+                }
+              >
+                <SelectTrigger id={control.id}>
+                  <SelectValue placeholder="Chọn Team phụ trách" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_TEAM}>Chưa chỉ định</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FormField>
+        ) : null}
 
         {showFullFields ? (
           <>
@@ -377,7 +407,9 @@ export function ProjectFormDrawer({
             </fieldset>
 
             <fieldset className="flex flex-col gap-2">
-              <legend className="text-label font-medium text-text-secondary">Cơ sở liên quan</legend>
+              <legend className="text-label font-medium text-text-secondary">
+                Cơ sở liên quan
+              </legend>
               <div className="flex flex-col gap-2 rounded-card border border-border-default p-3">
                 {activeFacilities.length === 0 ? (
                   <p className="text-body-sm text-text-muted">Chưa có Cơ sở đang hoạt động.</p>
