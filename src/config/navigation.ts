@@ -7,6 +7,8 @@ import {
   ListChecks,
   ClipboardList,
   LayoutDashboard,
+  Bell,
+  Send,
   Palette,
   ScrollText,
   ShieldCheck,
@@ -75,6 +77,12 @@ export const navGroups: NavGroup[] = [
         icon: ClipboardList,
         permissionKey: "reports.view",
       },
+      {
+        key: "notifications",
+        label: "Thông báo",
+        to: "/notifications",
+        icon: Bell,
+      },
     ],
   },
   {
@@ -127,6 +135,13 @@ export const navGroups: NavGroup[] = [
         to: "/audit-logs",
         icon: ScrollText,
         permissionKey: "audit.view",
+      },
+      {
+        key: "telegram",
+        label: "Kết nối Telegram",
+        to: "/telegram",
+        icon: Send,
+        permissionKey: "telegram.manage",
       },
       {
         key: "design-system",

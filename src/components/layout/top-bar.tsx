@@ -1,10 +1,10 @@
 import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, LogOut, Menu, Search, ShieldOff, User } from "lucide-react";
+import { LogOut, Menu, Search, ShieldOff, User } from "lucide-react";
 
 import { Button, IconButton } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,22 +81,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         </label>
       </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>
-            <IconButton
-              variant="ghost"
-              size="icon"
-              type="button"
-              disabled
-              label="Thông báo — chưa khả dụng"
-            >
-              <Bell />
-            </IconButton>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Thông báo — chưa khả dụng</TooltipContent>
-      </Tooltip>
+      <NotificationBell />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
