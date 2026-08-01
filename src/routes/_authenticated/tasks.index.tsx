@@ -27,6 +27,7 @@ import {
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
   formatDateTime,
+  isTaskArchived,
   isTaskOverdue,
   tasksQuery,
   type TaskAccessContext,
@@ -71,7 +72,7 @@ function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = React.useState(ALL);
   const [projectFilter, setProjectFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
-  const [showArchived, setShowArchived] = React.useState(false);
+  const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
 
   const projects = projectsResult.data ?? [];
@@ -87,7 +88,7 @@ function TasksPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (tasksResult.data ?? []).filter((task) => {
-      if (!showArchived && task.is_archived) return false;
+      if (isTaskArchived(task) !== (view === "archived")) return false;
       if (keyword && !task.name.toLowerCase().includes(keyword)) return false;
       if (statusFilter !== ALL && task.status !== statusFilter) return false;
       if (priorityFilter !== ALL && task.priority !== priorityFilter) return false;
@@ -106,7 +107,7 @@ function TasksPage() {
     assigneeFilter,
     projectFilter,
     teamFilter,
-    showArchived,
+    view,
   ]);
 
   const columns = [
@@ -257,15 +258,29 @@ function TasksPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant={showArchived ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setShowArchived((value) => !value)}
-        >
-          {showArchived ? "Đang hiện công việc lưu trữ" : "Hiện công việc lưu trữ"}
-        </Button>
+        <div className="inline-flex rounded-md border border-border-subtle p-1" role="tablist">
+          <Button
+            role="tab"
+            aria-selected={view === "active"}
+            variant={view === "active" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("active")}
+          >
+            Đang hoạt động
+          </Button>
+          <Button
+            role="tab"
+            aria-selected={view === "archived"}
+            variant={view === "archived" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("archived")}
+          >
+            Lưu trữ
+          </Button>
+        </div>
         <span className="text-caption text-text-muted">{rows.length} công việc</span>
       </div>
+
 
       <DataTable
         columns={columns}
@@ -275,8 +290,12 @@ function TasksPage() {
         error={tasksResult.isError}
         onRetry={() => void tasksResult.refetch()}
         errorTitle="Không tải được danh sách công việc"
-        emptyTitle="Chưa có công việc nào"
-        emptyDescription="Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
+        emptyTitle={view === "archived" ? "Chưa có công việc lưu trữ" : "Chưa có công việc nào"}
+        emptyDescription={
+          view === "archived"
+            ? "Công việc sẽ xuất hiện ở đây sau khi được xác nhận hoàn thành."
+            : "Tạo công việc đầu tiên để bắt đầu theo dõi tiến độ."
+        }
         onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
       />
 

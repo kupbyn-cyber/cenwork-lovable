@@ -25,6 +25,7 @@ import {
   PROJECT_STATUS_TONE,
   activePeopleQuery,
   formatDate,
+  isProjectArchived,
   isOverdue,
   projectsQuery,
   timeProgress,
@@ -67,6 +68,7 @@ function ProjectsPage() {
   const [ownerFilter, setOwnerFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [facilityFilter, setFacilityFilter] = React.useState(ALL);
+  const [view, setView] = React.useState<"active" | "archived">("active");
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
 
@@ -78,6 +80,7 @@ function ProjectsPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (projectsResult.data ?? []).filter((project) => {
+      if (isProjectArchived(project) !== (view === "archived")) return false;
       if (keyword && !project.name.toLowerCase().includes(keyword)) return false;
       if (statusFilter !== ALL && project.status !== statusFilter) return false;
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
@@ -85,7 +88,7 @@ function ProjectsPage() {
       if (facilityFilter !== ALL && !project.facilityIds.includes(facilityFilter)) return false;
       return true;
     });
-  }, [projectsResult.data, search, statusFilter, ownerFilter, teamFilter, facilityFilter]);
+  }, [projectsResult.data, search, statusFilter, ownerFilter, teamFilter, facilityFilter, view]);
 
   const columns = [
     {
@@ -233,6 +236,30 @@ function ProjectsPage() {
         </Select>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-md border border-border-subtle p-1" role="tablist">
+          <Button
+            role="tab"
+            aria-selected={view === "active"}
+            variant={view === "active" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("active")}
+          >
+            Đang hoạt động
+          </Button>
+          <Button
+            role="tab"
+            aria-selected={view === "archived"}
+            variant={view === "archived" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("archived")}
+          >
+            Lưu trữ
+          </Button>
+        </div>
+        <span className="text-caption text-text-muted">{rows.length} dự án</span>
+      </div>
+
       <DataTable
         columns={columns}
         data={rows}
@@ -241,12 +268,17 @@ function ProjectsPage() {
         error={projectsResult.isError}
         onRetry={() => void projectsResult.refetch()}
         errorTitle="Không tải được danh sách dự án"
-        emptyTitle="Chưa có dự án nào"
-        emptyDescription="Gửi ý tưởng đầu tiên để bắt đầu quy trình duyệt."
+        emptyTitle={view === "archived" ? "Chưa có dự án lưu trữ" : "Chưa có dự án nào"}
+        emptyDescription={
+          view === "archived"
+            ? "Dự án sẽ xuất hiện ở đây sau khi hoàn thành chính thức."
+            : "Gửi ý tưởng đầu tiên để bắt đầu quy trình duyệt."
+        }
         onRowClick={(row) =>
           void navigate({ to: "/projects/$projectId", params: { projectId: row.id } })
         }
       />
+
 
       {access.userId ? (
         <ProjectFormDrawer
