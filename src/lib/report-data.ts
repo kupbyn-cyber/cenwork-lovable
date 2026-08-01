@@ -530,3 +530,31 @@ export const reportHistoryQuery = (entityType: "daily_report" | "weekly_report",
     queryKey: ["report-history", entityType, id],
     queryFn: () => fetchReportHistory(entityType, id),
   });
+
+/* ================= Chống trùng báo cáo ngày ================= */
+
+/**
+ * Đọc lại báo cáo ngày của chính người dùng cho một ngày (nguồn sự thật ở server).
+ * Dùng ngay trước khi ghi để không tạo bản ghi trùng khi UI đang giữ dữ liệu cũ.
+ */
+export async function fetchMyDailyReport(
+  authorId: string,
+  reportDate: string,
+): Promise<DailyReportRow | null> {
+  const { data, error } = await supabase
+    .from("daily_reports")
+    .select(DAILY_SELECT)
+    .eq("author_id", authorId)
+    .eq("report_date", reportDate)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapDaily(data as Record<string, unknown>) : null;
+}
+
+export const myDailyReportQuery = (authorId: string | null, reportDate: string) =>
+  queryOptions({
+    queryKey: ["daily-report-mine", authorId, reportDate],
+    queryFn: () =>
+      authorId ? fetchMyDailyReport(authorId, reportDate) : Promise.resolve(null),
+    enabled: Boolean(authorId && reportDate),
+  });
