@@ -221,12 +221,43 @@ function TaskDetailPage() {
                 Cập nhật
               </Button>
             ) : null}
-            {canArchiveTask(task, ctx) ? (
-              <Button variant="ghost" onClick={() => setArchiveOpen(true)}>
-                <Archive />
-                Lưu trữ
+            {pendingRequest && canApproveTaskDeadline(task, ctx) ? (
+              <Button variant="secondary" onClick={() => setDecisionOpen(true)}>
+                <CalendarClock />
+                Duyệt đổi deadline
               </Button>
             ) : null}
+            <RowActionsMenu
+              actions={
+                [
+                  canRequestTaskDeadline(task, ctx) && !pendingRequest
+                    ? {
+                        key: "deadline",
+                        label: "Yêu cầu đổi deadline",
+                        icon: CalendarClock,
+                        onSelect: () => setRequestOpen(true),
+                      }
+                    : null,
+                  canManuallyArchiveTask(task, ctx)
+                    ? {
+                        key: "archive",
+                        label: "Đưa vào Lưu trữ",
+                        icon: Archive,
+                        onSelect: () => setArchiveOpen(true),
+                      }
+                    : null,
+                  canRestoreTask(task, ctx)
+                    ? {
+                        key: "restore",
+                        label: "Khôi phục",
+                        icon: ArchiveRestore,
+                        onSelect: () => setRestoreOpen(true),
+                      }
+                    : null,
+                ].filter(Boolean) as RowAction[]
+              }
+            />
+
           </div>
         }
       />
