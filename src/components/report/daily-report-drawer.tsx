@@ -17,7 +17,7 @@ import {
 } from "@/lib/task-data";
 import {
   createDailyReport,
-  dailyTaskRefsQuery,
+  dailyResultLinesQuery, dailyTaskRefsQuery,
   hanoiToday,
   updateDailyReport,
   type DailyReportRow,
@@ -66,6 +66,30 @@ export function DailyReportDrawer({
   }, [open, report]);
 
   const taskRefs = useQuery(dailyTaskRefsQuery(open ? authorId : null, reportDate));
+  const resultLines = useQuery(dailyResultLinesQuery(open ? authorId : null, reportDate));
+
+  /**
+   * Tự điền Kết quả đạt được từ các Task người gửi phụ trách đã hoàn thành
+   * trong ngày báo cáo. Chỉ điền khi ô đang trống, không ghi đè nội dung
+   * người dùng đã nhập hoặc nội dung báo cáo cũ.
+   */
+  const prefilled = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!open || report) return;
+    const lines = resultLines.data ?? [];
+    if (lines.length === 0) return;
+    const key = `${reportDate}`;
+    if (prefilled.current === key) return;
+    setResults((current) => {
+      if (current.trim()) return current;
+      prefilled.current = key;
+      return lines.map((line) => `- ${line}`).join("\n");
+    });
+  }, [open, report, reportDate, resultLines.data]);
+
+  React.useEffect(() => {
+    if (!open) prefilled.current = null;
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: async (status: "draft" | "submitted") => {

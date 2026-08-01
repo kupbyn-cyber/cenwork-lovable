@@ -1,13 +1,12 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatHanoiDateTime } from "@/lib/datetime";
-import { setTaskStatus } from "@/lib/task-data";
+import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import {
   ACTION_MODULE_LABEL,
   ACTION_REASON_LABEL,
@@ -23,16 +22,7 @@ export function ActionItemRow({ item, onDone }: { item: ActionItem; onDone?: () 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const complete = useMutation({
-    mutationFn: () => setTaskStatus(item.object_id, "done"),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
-      toast.success("Đã cập nhật công việc.");
-      onDone?.();
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
+  const [completeOpen, setCompleteOpen] = React.useState(false);
 
   const open = React.useCallback(() => {
     onDone?.();
@@ -64,12 +54,7 @@ export function ActionItemRow({ item, onDone }: { item: ActionItem; onDone?: () 
       </div>
       <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
         {item.quick_action === "complete_task" ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={complete.isPending}
-            onClick={() => complete.mutate()}
-          >
+          <Button variant="secondary" size="sm" onClick={() => setCompleteOpen(true)}>
             <CheckCircle2 />
             Hoàn thành
           </Button>
@@ -79,6 +64,15 @@ export function ActionItemRow({ item, onDone }: { item: ActionItem; onDone?: () 
           <ChevronRight />
         </Button>
       </div>
+
+      <TaskCompleteDialog
+        task={completeOpen ? { id: item.object_id, name: item.title } : null}
+        onOpenChange={(next) => setCompleteOpen(next)}
+        onCompleted={() => {
+          void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
+          onDone?.();
+        }}
+      />
     </div>
   );
 }

@@ -88,11 +88,22 @@ export function buildDailySummary(
   };
 }
 
-/** Một nhóm dạng văn bản: tiêu đề, đánh số lại từ 1, rỗng thì "Không có". */
-export function formatGroup(title: string, tasks: TaskRow[]): string {
+/**
+ * Một nhóm dạng văn bản: tiêu đề, đánh số lại từ 1, rỗng thì "Không có".
+ * Nhóm Hoàn thành hiển thị kèm Kết quả công việc: `Tên công việc — Kết quả công việc`.
+ */
+export function formatGroup(
+  title: string,
+  tasks: TaskRow[],
+  options?: { withResult?: boolean },
+): string {
   const header = `${title} (${tasks.length})`;
   if (tasks.length === 0) return `${header}\nKhông có`;
-  return `${header}\n${tasks.map((task, index) => `${index + 1}. ${task.name}`).join("\n")}`;
+  const lines = tasks.map((task, index) => {
+    const result = options?.withResult ? (task.result_text ?? "").trim() : "";
+    return `${index + 1}. ${task.name}${result ? ` — ${result}` : ""}`;
+  });
+  return `${header}\n${lines.join("\n")}`;
 }
 
 export const GROUP_TITLE = {
@@ -107,7 +118,7 @@ export function formatDailySummaryText(summary: DailySummary): string {
     `📋 BÁO CÁO NGÀY ${formatHanoiDate(summary.reportDate)}`,
     `👤 ${summary.authorName} | ${summary.teamName}`,
     "",
-    formatGroup(GROUP_TITLE.completed, summary.completed),
+    formatGroup(GROUP_TITLE.completed, summary.completed, { withResult: true }),
     "",
     formatGroup(GROUP_TITLE.overdue, summary.overdue),
     "",
@@ -122,7 +133,7 @@ export function formatDailySummaryText(summary: DailySummary): string {
  */
 export function summaryToReportContent(summary: DailySummary) {
   return {
-    results: formatGroup(GROUP_TITLE.completed, summary.completed),
+    results: formatGroup(GROUP_TITLE.completed, summary.completed, { withResult: true }),
     blockers: formatGroup(GROUP_TITLE.overdue, summary.overdue),
     nextPlan: formatGroup(GROUP_TITLE.pending, summary.pending),
   };
