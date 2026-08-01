@@ -17,6 +17,7 @@ import {
 import { cenToast } from "@/components/ui/toast";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { createMemberAccount, setMemberRole } from "@/lib/org.functions";
+import { isSystemAdminRole, roleRequiresTeam } from "@/lib/permissions";
 import {
   ROLE_LABEL,
   replaceCollaboratorTeams,
@@ -81,6 +82,9 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
   }, [open, member]);
 
   const canEditRoleTeam = access.canChangeRoleOrTeam;
+  /** Admin và CMO quản trị toàn hệ thống: Team chỉ là thông tin hồ sơ. */
+  const systemWide = isSystemAdminRole(form.role);
+  const teamRequired = roleRequiresTeam(form.role);
 
   const mutation = useMutation({
     mutationFn: async (values: FormState) => {
@@ -136,8 +140,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         next.email = "Email không đúng định dạng.";
       if (form.password.length < 8) next.password = "Mật khẩu khởi tạo tối thiểu 8 ký tự.";
     }
-    if (canEditRoleTeam && form.primaryTeamId === NO_TEAM)
-      next.primaryTeamId = "Mỗi thành viên phải có đúng một Team chính.";
+    if (canEditRoleTeam && teamRequired && form.primaryTeamId === NO_TEAM)
+      next.primaryTeamId = "Vai trò Leader và Member bắt buộc thuộc một Team chính.";
 
     setErrors(next);
     setFormError(null);
@@ -269,11 +273,22 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           )}
         </FormField>
 
+        {systemWide ? (
+          <p className="rounded-control border border-border-default bg-surface-subtle px-3 py-2 text-helper text-text-secondary">
+            Phạm vi dữ liệu: <strong className="text-text-primary">Toàn hệ thống</strong>. Vai trò
+            này có quyền quản trị toàn hệ thống. Team chỉ là thông tin hồ sơ.
+          </p>
+        ) : null}
+
         <FormField
           id="member-primary-team"
           label="Team chính"
-          required
-          {...(canEditRoleTeam ? {} : { helperText: "Chỉ Admin hoặc CMO được đổi Team chính." })}
+          required={teamRequired}
+          {...(!canEditRoleTeam
+            ? { helperText: "Chỉ Admin hoặc CMO được đổi Team chính." }
+            : systemWide
+              ? { helperText: "Không bắt buộc với Admin và CMO." }
+              : { helperText: "Bắt buộc với Leader và Member." })}
           {...(errors.primaryTeamId ? { error: errors.primaryTeamId } : {})}
         >
           {(controlProps) => (
@@ -292,7 +307,7 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                 <SelectValue placeholder="Chọn Team chính" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_TEAM}>Chưa gán Team</SelectItem>
+                {systemWide ? <SelectItem value={NO_TEAM}>Chưa gán Team</SelectItem> : null}
                 {teams.map((team) => (
                   <SelectItem key={team.id} value={team.id}>
                     {team.name}

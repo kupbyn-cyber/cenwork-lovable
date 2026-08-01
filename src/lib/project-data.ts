@@ -257,9 +257,9 @@ export function isResponsibleLeader(project: ProjectRow, ctx: ProjectAccessConte
 
 /** Sửa nội dung dự án (không gồm chuyển trạng thái). */
 export function canEditProject(project: ProjectRow, ctx: ProjectAccessContext) {
-  if (project.status === "archived") return ctx.role === "admin";
+  if (project.status === "archived") return privileged(ctx);
   if (project.status === "idea" || project.status === "rejected") {
-    return isProjectCreator(project, ctx) || ctx.role === "admin";
+    return isProjectCreator(project, ctx) || privileged(ctx);
   }
   if (isProjectPendingApproval(project)) return privileged(ctx);
   return privileged(ctx) || isProjectOwner(project, ctx);
@@ -268,7 +268,7 @@ export function canEditProject(project: ProjectRow, ctx: ProjectAccessContext) {
 /** Gửi duyệt / gửi lại sau khi bị từ chối. */
 export function canSubmitProject(project: ProjectRow, ctx: ProjectAccessContext) {
   if (project.status !== "idea" && project.status !== "rejected") return false;
-  return isProjectCreator(project, ctx) || ctx.role === "admin";
+  return isProjectCreator(project, ctx) || privileged(ctx);
 }
 
 /** Bước duyệt hiện tại của dự án, nếu có. */
@@ -282,8 +282,9 @@ export function approvalStage(project: ProjectRow): "leader" | "cmo" | null {
 export function canDecideProject(project: ProjectRow, ctx: ProjectAccessContext) {
   const stage = approvalStage(project);
   if (!stage) return false;
-  if (ctx.role === "admin") return true;
-  if (stage === "cmo") return ctx.role === "cmo";
+  // Admin và CMO là quản trị toàn hệ thống: duyệt được mọi bước, không phụ thuộc Team.
+  if (privileged(ctx)) return true;
+  if (stage === "cmo") return false;
   return isResponsibleLeader(project, ctx);
 }
 

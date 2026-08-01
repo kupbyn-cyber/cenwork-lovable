@@ -108,7 +108,19 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "announcements.create": "Thông báo nội bộ",
 };
 
-/** Ma trận quyền — giữ nguyên phạm vi đã chốt ở M1.4. */
+/** Vai trò quản trị toàn hệ thống: không giới hạn theo Team, quyền ngang nhau. */
+export const SYSTEM_ADMIN_ROLES: AppRoleKey[] = ["admin", "cmo"];
+
+export function isSystemAdminRole(role: string | null | undefined): boolean {
+  return role === "admin" || role === "cmo";
+}
+
+/** Vai trò bắt buộc phải thuộc một Team chính. */
+export function roleRequiresTeam(role: AppRoleKey | null | undefined): boolean {
+  return role === "leader" || role === "member";
+}
+
+/** Ma trận quyền — Admin và CMO dùng chung toàn bộ quyền quản trị hệ thống. */
 export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
   admin: [
     "members.view",
@@ -137,32 +149,11 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "announcements.view",
     "announcements.create",
     "mvp.manage",
-  ],
-  cmo: [
-    "members.view",
-    "members.create",
-    "members.edit_scoped",
-    "roles.view",
-    "roles.assign",
-    "organization.view",
-    "audit.view",
-    "projects.view",
-    "projects.create",
-    "projects.approve_cmo",
-    "tasks.view",
-    "tasks.create",
-    "reports.view",
-    "reports.submit_daily",
-    "reports.review_daily",
-    "reports.review_weekly",
-    "mvp.view",
-    "mvp.vote",
-    "announcements.view",
-    "announcements.create",
     "mvp.review",
     "mvp.approve",
-    "mvp.manage",
   ],
+  // CMO ngang quyền Admin — đồng bộ ngay dưới đây, không duy trì danh sách riêng.
+  cmo: [],
   leader: [
     "members.view",
     "members.edit_scoped",
@@ -205,3 +196,6 @@ export function hasPermission(role: AppRoleKey | null, permission: PermissionKey
 }
 
 export const PERMISSION_DENIED_MESSAGE = "Bạn không có quyền thực hiện thao tác này.";
+
+// CMO ngang quyền Admin: đồng bộ một chiều để CMO không bao giờ thiếu quyền mới của Admin.
+ROLE_PERMISSIONS.cmo = [...ROLE_PERMISSIONS.admin];

@@ -2504,6 +2504,7 @@ export type Database = {
       is_project_approved: { Args: { _project: string }; Returns: boolean }
       is_project_person: { Args: { _person: string }; Returns: boolean }
       is_project_team: { Args: { _team: string }; Returns: boolean }
+      is_system_admin: { Args: { _user_id?: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
       mvp_cycle_status_of: {
         Args: { _cycle: string }

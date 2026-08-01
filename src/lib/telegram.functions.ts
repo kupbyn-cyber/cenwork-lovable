@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * CEN WORK — M5 server function cấu hình và vận hành Telegram.
- * Chỉ Admin được cấu hình và kích hoạt; Bot Token và service role chỉ tồn tại phía server.
+ * Chỉ Admin và CMO được cấu hình và kích hoạt; Bot Token và service role chỉ tồn tại phía server.
  * Báo cáo ngày đi vào Group Chat chung + Daily Report Topic chung (hàng đợi do trigger DB tạo).
  * Notification cá nhân giữ nguyên: gửi tới Telegram User ID của từng thành viên.
  */
@@ -12,12 +12,12 @@ const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
 
 async function assertAdmin(context: { supabase: { rpc: Function }; userId: string }) {
-  const { data: isAdmin, error } = await (context.supabase.rpc as any)("has_role", {
+  // Quản trị toàn hệ thống = Admin hoặc CMO (hàm database is_system_admin là ràng buộc thật).
+  const { data: isSystemAdmin, error } = await (context.supabase.rpc as any)("is_system_admin", {
     _user_id: context.userId,
-    _role: "admin",
   });
   if (error) throw new Error((error as { message: string }).message);
-  if (!isAdmin) throw new Error("Chỉ Admin được quản trị Telegram.");
+  if (!isSystemAdmin) throw new Error("Chỉ Admin hoặc CMO được quản trị Telegram.");
 }
 
 export const getTelegramConfig = createServerFn({ method: "GET" })
