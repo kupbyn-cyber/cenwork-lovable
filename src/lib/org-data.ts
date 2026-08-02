@@ -137,6 +137,26 @@ export const myAccessQuery = (userId: string | undefined) =>
   });
 
 /** Cập nhật hồ sơ (không gồm vai trò và trạng thái — hai thao tác đó chạy ở backend). */
+export const PHONE_PATTERN = /^[0-9+][0-9 .()-]{7,19}$/;
+
+/** Kiểm tra bắt buộc số điện thoại và ngày sinh, dùng chung cho form và trước khi ghi dữ liệu. */
+export function validateContactFields(input: { phone_number: string | null; birthday: string | null }) {
+  const errors: { phone_number?: string; birthday?: string } = {};
+  const phone = (input.phone_number ?? "").trim();
+  const birthday = (input.birthday ?? "").trim();
+
+  if (!phone) errors.phone_number = "Số điện thoại là bắt buộc.";
+  else if (!PHONE_PATTERN.test(phone))
+    errors.phone_number = "Số điện thoại không hợp lệ (8–20 ký tự số).";
+
+  if (!birthday) errors.birthday = "Ngày sinh là bắt buộc.";
+  else if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) errors.birthday = "Sinh nhật không hợp lệ.";
+  else if (new Date(`${birthday}T00:00:00Z`).getTime() > Date.now())
+    errors.birthday = "Ngày sinh không được lớn hơn ngày hiện tại.";
+
+  return errors;
+}
+
 export async function updateMemberProfile(input: {
   id: string;
   display_name: string;
@@ -145,17 +165,21 @@ export async function updateMemberProfile(input: {
   canChangePrimaryTeam: boolean;
   telegram_user_id?: string | null;
   telegram_enabled?: boolean;
-  phone_number?: string | null;
-  birthday?: string | null;
+  phone_number: string | null;
+  birthday: string | null;
 }) {
+  const contactErrors = validateContactFields(input);
+  const firstError = contactErrors.phone_number ?? contactErrors.birthday;
+  if (firstError) throw new Error(firstError);
+
   const payload: Database["public"]["Tables"]["profiles"]["Update"] = {
     display_name: input.display_name,
     job_title: input.job_title,
     ...(input.canChangePrimaryTeam ? { primary_team_id: input.primary_team_id } : {}),
     ...(input.telegram_user_id !== undefined ? { telegram_user_id: input.telegram_user_id } : {}),
     ...(input.telegram_enabled !== undefined ? { telegram_enabled: input.telegram_enabled } : {}),
-    ...(input.phone_number !== undefined ? { phone_number: input.phone_number } : {}),
-    ...(input.birthday !== undefined ? { birthday: input.birthday } : {}),
+    phone_number: (input.phone_number ?? "").trim(),
+    birthday: input.birthday,
   };
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", input.id);
