@@ -1,6 +1,6 @@
 import type { LinkProps } from "@tanstack/react-router";
 
-import { hasPermission, type AppRoleKey, type PermissionKey } from "@/lib/permissions";
+import { type PermissionKey } from "@/lib/permissions";
 import {
   Brush,
   Building2,
@@ -204,14 +204,15 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
-/** Lọc navigation theo vai trò hiện tại (M1.5). Backend vẫn kiểm tra quyền độc lập. */
-export function visibleNavGroups(role: AppRoleKey | null): NavGroup[] {
+/**
+ * ROLE-01: lọc navigation bằng quyền hiệu lực động (truyền hàm `can` từ useOrgAccess).
+ * Backend vẫn kiểm tra quyền độc lập.
+ */
+export function visibleNavGroups(can: (permission: PermissionKey) => boolean): NavGroup[] {
   return navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => !item.permissionKey || hasPermission(role, item.permissionKey),
-      ),
+      items: group.items.filter((item) => !item.permissionKey || can(item.permissionKey)),
     }))
     .filter((group) => group.items.length > 0);
 }

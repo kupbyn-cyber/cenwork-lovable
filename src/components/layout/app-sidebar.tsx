@@ -105,7 +105,7 @@ export function SidebarNav({
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { role } = useOrgAccess();
-  const groups = React.useMemo(() => visibleNavGroups(role), [role]);
+  const groups = React.useMemo(() => visibleNavGroups(can), [can]);
 
   return (
     <nav aria-label="Điều hướng chính" className="flex flex-col gap-5 px-2.5 py-3">
