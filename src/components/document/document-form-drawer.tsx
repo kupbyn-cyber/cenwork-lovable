@@ -224,8 +224,11 @@ export function DocumentFormDrawer({
   };
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
+      size="lg"
+      dirty={dirty}
+      busy={submitting}
       onOpenChange={submitting ? () => undefined : onOpenChange}
       title={document ? "Sửa bản nháp tài liệu" : "Tạo bản nháp tài liệu"}
       description="Phiên bản đầu tiên luôn là v1 ở trạng thái nháp. Tên hiển thị do hệ thống tự tạo."
@@ -495,6 +498,6 @@ export function DocumentFormDrawer({
           )}
         </FormField>
       </form>
-    </DrawerPanel>
+    </FormModal>
   );
 }
