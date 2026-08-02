@@ -10,8 +10,10 @@ import {
   type PermissionKey,
 } from "@/lib/permissions";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Chấp nhận mọi Supabase client (browser, auth-middleware, admin) — chỉ cần gọi được rpc.
 export type RoleClient = {
-  rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error?: unknown }>;
+  rpc: (fn: any, args?: any) => PromiseLike<{ data: any; error?: any }>;
 };
 
 export async function resolveCallerRole(
