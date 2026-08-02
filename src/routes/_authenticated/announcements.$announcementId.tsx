@@ -7,6 +7,7 @@ import { AnnouncementActions } from "@/components/announcement/announcement-acti
 import { AnnouncementBody } from "@/components/announcement/announcement-body";
 import { AnnouncementProgress } from "@/components/announcement/announcement-progress";
 import { CommentThread } from "@/components/announcement/comment-thread";
+import { AnnouncementAttachments } from "@/components/attachment/module-attachments";
 import { SurveyForm } from "@/components/announcement/survey-form";
 import { SurveyResults } from "@/components/announcement/survey-results";
 import { VersionHistory } from "@/components/announcement/version-history";
@@ -222,6 +223,16 @@ function AnnouncementDetailPage() {
         </p>
       ) : null}
 
+      <Card>
+        <CardContent className="flex min-w-0 flex-col gap-4">
+          <SectionHeader
+            title="Tệp đính kèm"
+            description="Tài liệu tham khảo kèm theo thông báo; chỉ người soạn được thêm hoặc gỡ."
+          />
+          <AnnouncementAttachments announcementId={announcementId} canManage={isAuthor} />
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="content" className="min-w-0">
         <TabsList>
           <TabsTrigger value="content">Nội dung</TabsTrigger>
@@ -230,6 +241,7 @@ function AnnouncementDetailPage() {
           {canModerate ? <TabsTrigger value="progress">Tiến độ</TabsTrigger> : null}
           <TabsTrigger value="history">Phiên bản</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="content">
           <Card>

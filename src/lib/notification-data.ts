@@ -33,6 +33,15 @@ export const NOTIFICATION_EVENT_LABEL: Record<string, string> = {
   "project.member_added": "Thêm vào dự án",
   "project.member_removed": "Rời khỏi dự án",
   "recognition.received": "Ghi nhận từ đồng đội",
+  "approval.requested": "Yêu cầu phê duyệt mới",
+  "approval.resubmitted": "Yêu cầu phê duyệt gửi lại",
+  "approval.decision_recorded": "Có quyết định phê duyệt",
+  "approval.approved": "Yêu cầu được phê duyệt",
+  "approval.rejected": "Yêu cầu bị từ chối",
+  "approval.withdrawn": "Yêu cầu đã thu hồi",
+  "approval.approver_replaced": "Được chỉ định phê duyệt thay",
+  "approval.mentioned": "Được nhắc tên trong phê duyệt",
+  "approval.comment_created": "Bình luận mới trong phê duyệt",
 };
 
 export function notificationEventLabel(eventType: string): string {
