@@ -107,6 +107,10 @@ function ApprovalDetailPage() {
   const nameById = new Map(participants.map((item) => [item.id, item.display_name]));
   const senderName = nameById.get(request.sender_id) ?? "—";
   const historyVersions = versions.filter((item) => item.version_no !== request.current_version);
+  const isSender = request.sender_id === user?.id;
+  const isApprover = decisions.some((item) => item.approver_id === user?.id);
+  const canMention = isSender || isApprover;
+
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
