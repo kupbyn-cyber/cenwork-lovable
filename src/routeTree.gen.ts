@@ -26,6 +26,7 @@ import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authent
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as AuthenticatedAnnouncementsAnnouncementIdRouteImport } from './routes/_authenticated/announcements.$announcementId'
+import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
 import { Route as AuthenticatedMvpCycleIdRouteImport } from './routes/_authenticated/mvp.$cycleId'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
@@ -128,6 +129,12 @@ const AuthenticatedAnnouncementsAnnouncementIdRoute =
     path: '/announcements/$announcementId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDocumentsIndexRoute =
+  AuthenticatedDocumentsIndexRouteImport.update({
+    id: '/documents/',
+    path: '/documents/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMvpIndexRoute = AuthenticatedMvpIndexRouteImport.update({
   id: '/mvp/',
   path: '/mvp/',
@@ -206,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/mvp/': typeof AuthenticatedMvpIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
@@ -234,6 +242,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
+  '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/mvp': typeof AuthenticatedMvpIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
@@ -264,6 +273,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/mvp/': typeof AuthenticatedMvpIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements/'
+    | '/documents/'
     | '/mvp/'
     | '/projects/'
     | '/reports/'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements'
+    | '/documents'
     | '/mvp'
     | '/projects'
     | '/reports'
@@ -351,6 +363,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
     | '/_authenticated/announcements/'
+    | '/_authenticated/documents/'
     | '/_authenticated/mvp/'
     | '/_authenticated/projects/'
     | '/_authenticated/reports/'
@@ -487,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documents/': {
+      id: '/_authenticated/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof AuthenticatedDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/mvp/': {
       id: '/_authenticated/mvp/'
       path: '/mvp'
@@ -578,6 +598,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedTasksTaskIdRoute: typeof AuthenticatedTasksTaskIdRoute
   AuthenticatedAnnouncementsIndexRoute: typeof AuthenticatedAnnouncementsIndexRoute
+  AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMvpIndexRoute: typeof AuthenticatedMvpIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
@@ -606,6 +627,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedTasksTaskIdRoute: AuthenticatedTasksTaskIdRoute,
   AuthenticatedAnnouncementsIndexRoute: AuthenticatedAnnouncementsIndexRoute,
+  AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMvpIndexRoute: AuthenticatedMvpIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
   AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
