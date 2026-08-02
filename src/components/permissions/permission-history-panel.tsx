@@ -9,7 +9,7 @@ import { FormModal } from "@/components/ui/form-modal";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
-import { formatDateTime } from "@/lib/datetime";
+import { formatHanoiDateTime } from "@/lib/datetime";
 import { permissionChangeSetsQuery, revertChangeSet } from "@/lib/permission-data";
 
 const KIND_LABEL: Record<string, string> = {
@@ -60,7 +60,7 @@ export function PermissionHistoryPanel({ canManage }: { canManage: boolean }) {
               <Badge variant="neutral" size="sm">
                 {KIND_LABEL[row.kind] ?? row.kind}
               </Badge>
-              <span className="text-xs text-text-muted">{formatDateTime(row.created_at)}</span>
+              <span className="text-xs text-text-muted">{formatHanoiDateTime(row.created_at)}</span>
               {row.reverted_at ? (
                 <Badge variant="warning" size="sm">
                   Đã hoàn tác
