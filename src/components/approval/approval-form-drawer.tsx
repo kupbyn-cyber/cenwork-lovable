@@ -339,6 +339,6 @@ export function ApprovalFormDrawer({ open, onOpenChange, resubmitOf }: Props) {
           </>
         )}
       </div>
-    </DrawerPanel>
+    </FormModal>
   );
 }
