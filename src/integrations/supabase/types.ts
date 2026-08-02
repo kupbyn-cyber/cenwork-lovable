@@ -2675,6 +2675,7 @@ export type Database = {
           id: string
           job_title: string | null
           must_change_password: boolean
+          password_changed_at: string | null
           phone_number: string | null
           primary_team_id: string | null
           status: Database["public"]["Enums"]["account_status"]
@@ -2694,6 +2695,7 @@ export type Database = {
           id: string
           job_title?: string | null
           must_change_password?: boolean
+          password_changed_at?: string | null
           phone_number?: string | null
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -2713,6 +2715,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          password_changed_at?: string | null
           phone_number?: string | null
           primary_team_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
