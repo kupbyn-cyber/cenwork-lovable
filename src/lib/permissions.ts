@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   MEMBERS_RESET_PASSWORD: "members.reset_password",
   ROLES_VIEW: "roles.view",
   ROLES_ASSIGN: "roles.assign",
+  PERMISSIONS_MANAGE: "permissions.manage",
   ORG_VIEW: "organization.view",
   ORG_MANAGE: "organization.manage",
   SETTINGS_ADMIN: "settings.admin",
@@ -58,6 +59,7 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "members.reset_password": "Cấp mật khẩu tạm cho Leader / Member",
   "roles.view": "Xem vai trò và quyền",
   "roles.assign": "Gán vai trò hệ thống",
+  "permissions.manage": "Quản lý phân quyền động",
   "organization.view": "Xem Team và Cơ sở",
   "organization.manage": "Tạo / sửa Team và Cơ sở",
   "settings.admin": "Cấu hình quản trị hệ thống",
@@ -96,6 +98,7 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "members.reset_password": "Thành viên",
   "roles.view": "Vai trò",
   "roles.assign": "Vai trò",
+  "permissions.manage": "Vai trò",
   "organization.view": "Tổ chức",
   "organization.manage": "Tổ chức",
   "settings.admin": "Hệ thống",
@@ -138,10 +141,15 @@ export function roleRequiresTeam(role: AppRoleKey | null | undefined): boolean {
   return role === "leader" || role === "member";
 }
 
-/** Ma trận quyền — Admin và CMO dùng chung toàn bộ quyền quản trị hệ thống. */
-export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
+/**
+ * ROLE-01: ma trận này KHÔNG còn là nguồn quyền lúc chạy.
+ * Nó chỉ là mặc định gốc dùng để seed database và để khôi phục mặc định.
+ * Quyền hiệu lực luôn đọc từ bảng role_permission_config + user_permission_overrides.
+ */
+export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
   admin: [
     "members.view",
+    "permissions.manage",
     "members.create",
     "members.edit_scoped",
     "members.lock",
@@ -219,14 +227,15 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
   ],
 };
 
-export function hasPermission(role: AppRoleKey | null, permission: PermissionKey): boolean {
+/** Kiểm tra theo mặc định gốc — chỉ dùng cho seed/khôi phục, KHÔNG dùng để chặn quyền lúc chạy. */
+export function hasDefaultPermission(role: AppRoleKey | null, permission: PermissionKey): boolean {
   if (!role) return false;
-  return ROLE_PERMISSIONS[role].includes(permission);
+  return DEFAULT_ROLE_PERMISSIONS[role].includes(permission);
 }
 
 export const PERMISSION_DENIED_MESSAGE = "Bạn không có quyền thực hiện thao tác này.";
 
 // CMO ngang quyền Admin: đồng bộ một chiều để CMO không bao giờ thiếu quyền mới của Admin.
-ROLE_PERMISSIONS.cmo = [...ROLE_PERMISSIONS.admin];
+DEFAULT_ROLE_PERMISSIONS.cmo = [...DEFAULT_ROLE_PERMISSIONS.admin];
 // REPORT-01: cấu hình nghiệp vụ báo cáo chỉ thuộc CMO; Admin không có quyền nghiệp vụ mặc định.
-ROLE_PERMISSIONS.cmo.push("reports.config");
+DEFAULT_ROLE_PERMISSIONS.cmo.push("reports.config");
