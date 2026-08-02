@@ -8,6 +8,7 @@ import {
   Trophy,
   Gauge,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Bell,
   Megaphone,
