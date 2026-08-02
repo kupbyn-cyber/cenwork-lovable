@@ -101,8 +101,20 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
   ) as DocumentVersionRow[];
 
   const personIds = Array.from(
-    new Set(rows.flatMap((r) => [r["owner_id"] as string, r["created_by"] as string])),
+    new Set(
+      [
+        ...rows.flatMap((r) => [r["owner_id"] as string, r["created_by"] as string]),
+        ...versions.flatMap((v) => [
+          v.submitted_by,
+          v.approver_id,
+          v.alt_approver_id,
+          v.approved_by,
+          v.rejected_by,
+        ]),
+      ].filter(Boolean) as string[],
+    ),
   );
+
   const teamIds = Array.from(
     new Set(rows.map((r) => r["team_id"] as string | null).filter(Boolean) as string[]),
   );
