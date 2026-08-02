@@ -77,7 +77,7 @@ export function QuickActions() {
       <CardContent className="flex flex-wrap gap-2">
         {actions.map((action) => (
           <Button key={action.key} variant="secondary" size="sm" asChild>
-            <Link to={action.to}>
+            <Link to={action.to!}>
               <action.icon />
               {action.label}
             </Link>
