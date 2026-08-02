@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { FormModal } from "@/components/ui/form-modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -166,8 +166,11 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
   }
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
+      size="lg"
+      dirty={JSON.stringify(form) !== JSON.stringify(initialState(member))}
+      busy={mutation.isPending}
       onOpenChange={(next) => {
         if (mutation.isPending) return;
         onOpenChange(next);
@@ -474,6 +477,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           </p>
         ) : null}
       </form>
-    </DrawerPanel>
+    </FormModal>
   );
 }

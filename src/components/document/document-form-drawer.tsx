@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { FormModal } from "@/components/ui/form-modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import {
@@ -103,13 +103,9 @@ export function DocumentFormDrawer({
   const [detectedSource, setDetectedSource] = React.useState<DocumentSource | null>(null);
   const [sourceTouched, setSourceTouched] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!open) return;
-    setErrors({});
-    setDetectedSource(null);
-    setSourceTouched(Boolean(document));
+  const initialForm = React.useMemo<FormState>(() => {
     if (document) {
-      setForm({
+      return {
         name: document.name,
         doc_type: document.doc_type,
         scope: document.scope,
@@ -123,11 +119,20 @@ export function DocumentFormDrawer({
         effective_to: document.latestVersion?.effective_to ?? "",
         keywords: document.keywords.join(", "),
         change_note: document.latestVersion?.change_note ?? "",
-      });
-    } else {
-      setForm({ ...EMPTY, owner_id: defaultOwnerId ?? "", effective_from: todayISO() });
+      };
     }
-  }, [open, document, defaultOwnerId]);
+    return { ...EMPTY, owner_id: defaultOwnerId ?? "", effective_from: todayISO() };
+  }, [document, defaultOwnerId]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setErrors({});
+    setDetectedSource(null);
+    setSourceTouched(Boolean(document));
+    setForm(initialForm);
+  }, [open, document, initialForm]);
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -219,8 +224,11 @@ export function DocumentFormDrawer({
   };
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
+      size="lg"
+      dirty={dirty}
+      busy={submitting}
       onOpenChange={submitting ? () => undefined : onOpenChange}
       title={document ? "Sửa bản nháp tài liệu" : "Tạo bản nháp tài liệu"}
       description="Phiên bản đầu tiên luôn là v1 ở trạng thái nháp. Tên hiển thị do hệ thống tự tạo."
@@ -490,6 +498,6 @@ export function DocumentFormDrawer({
           )}
         </FormField>
       </form>
-    </DrawerPanel>
+    </FormModal>
   );
 }
