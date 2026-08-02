@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { FormModal } from "@/components/ui/form-modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import {
@@ -79,11 +79,9 @@ export function DutyFormDrawer({
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
 
-  React.useEffect(() => {
-    if (!open) return;
-    setErrors({});
+  const initialForm = React.useMemo<FormState>(() => {
     if (assignment) {
-      setForm({
+      return {
         duty_date: assignment.duty_date,
         area_id: assignment.area_id,
         job_type_id: assignment.job_type_id,
@@ -95,11 +93,18 @@ export function DutyFormDrawer({
           : assignment.assignee_id
             ? [assignment.assignee_id]
             : [],
-      });
-    } else {
-      setForm({ ...EMPTY, duty_date: todayISO() });
+      };
     }
-  }, [open, assignment]);
+    return { ...EMPTY, duty_date: todayISO() };
+  }, [assignment]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setErrors({});
+    setForm(initialForm);
+  }, [open, initialForm]);
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
