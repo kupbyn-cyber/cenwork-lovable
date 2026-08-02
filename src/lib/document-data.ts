@@ -198,6 +198,10 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
       submitterName: nameOf(latest?.submitted_by),
       approvedByName: nameOf(latest?.approved_by),
       rejectedByName: nameOf(latest?.rejected_by),
+      linkReporterName: nameOf(latest?.link_reported_by),
+      linkResolverName: nameOf(latest?.link_resolved_by),
+      archivedByName: nameOf(latest?.archived_by ?? (row["archived_by"] as string | null)),
+      restoredByName: nameOf(latest?.restored_by ?? (row["restored_by"] as string | null)),
     } as DocumentRow;
   });
 
