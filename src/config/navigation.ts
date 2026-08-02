@@ -2,6 +2,7 @@ import type { LinkProps } from "@tanstack/react-router";
 
 import { hasPermission, type AppRoleKey, type PermissionKey } from "@/lib/permissions";
 import {
+  Brush,
   Building2,
   FolderKanban,
   ListChecks,
@@ -107,6 +108,12 @@ export const navGroups: NavGroup[] = [
         to: "/announcements",
         icon: Megaphone,
         permissionKey: "announcements.view",
+      },
+      {
+        key: "duty",
+        label: "Lịch trực nhật",
+        to: "/duty",
+        icon: Brush,
       },
       {
         key: "recognitions",
