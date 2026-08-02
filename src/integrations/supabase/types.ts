@@ -4939,6 +4939,8 @@ export type Database = {
         Args: { _mime: string; _name: string; _size: number }
         Returns: undefined
       }
+      attachment_path_can_read: { Args: { _name: string }; Returns: boolean }
+      attachment_path_can_write: { Args: { _name: string }; Returns: boolean }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_approve_deadline_change: {
