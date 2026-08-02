@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { ApprovalActions } from "@/components/approval/approval-actions";
 import { ApprovalApproverList } from "@/components/approval/approval-approver-list";
+import { ApprovalCommentThread } from "@/components/approval/approval-comment-thread";
+import { ApprovalAttachments } from "@/components/attachment/module-attachments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,6 +15,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/use-auth";
+import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   APPROVAL_MODE_LABEL,
   APPROVAL_STATUS_LABEL,
@@ -21,6 +24,7 @@ import {
   DECISION_STATUS_LABEL,
 } from "@/lib/approval-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
+
 
 const TITLE = "Chi tiết yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Xem tiến độ, quyết định và lịch sử phiên bản của yêu cầu phê duyệt.";
@@ -42,7 +46,9 @@ export const Route = createFileRoute("/_authenticated/approvals/$approvalId")({
 function ApprovalDetailPage() {
   const { approvalId } = Route.useParams();
   const { user } = useAuth();
+  const { isAdmin, isCmo } = useOrgAccess();
   const detail = useQuery(approvalDetailQuery(approvalId));
+
 
   const back = (
     <Button asChild variant="secondary" size="sm">
@@ -103,6 +109,10 @@ function ApprovalDetailPage() {
   const nameById = new Map(participants.map((item) => [item.id, item.display_name]));
   const senderName = nameById.get(request.sender_id) ?? "—";
   const historyVersions = versions.filter((item) => item.version_no !== request.current_version);
+  const isSender = request.sender_id === user?.id;
+  const isApprover = decisions.some((item) => item.approver_id === user?.id);
+  const canMention = isSender || isApprover;
+
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -155,6 +165,36 @@ function ApprovalDetailPage() {
           <ApprovalApproverList detail={detail.data} userId={user?.id ?? null} />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="flex min-w-0 flex-col gap-3">
+          <SectionHeader
+            title="Tệp đính kèm"
+            description="Chỉ người gửi thêm hoặc gỡ tệp; tệp của phiên bản cũ vẫn được giữ lại."
+          />
+          <ApprovalAttachments
+            requestId={request.id}
+            currentVersion={request.current_version}
+            canManage={isSender}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex min-w-0 flex-col gap-3">
+          <SectionHeader
+            title="Trao đổi"
+            description="Chỉ người liên quan tới yêu cầu này xem được. Nhắc tên chỉ mở quyền xem và bình luận."
+          />
+          <ApprovalCommentThread
+            detail={detail.data}
+            canMention={canMention}
+            canModerate={Boolean(isAdmin || isCmo)}
+          />
+        </CardContent>
+      </Card>
+
+
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">

@@ -132,20 +132,65 @@ export async function buildTodayHub(
     }
   });
 
+  // NAP-05. Yêu cầu phê duyệt đang chờ chính mình xử lý (chỉ phiên bản hiện tại).
+  await source("approvals", async () => {
+    const { data, error } = await supabase
+      .from("approval_decisions")
+      .select(
+        "id,version_no,approval_request_id,decision_status,approval_requests!inner(id,title,status,due_at,current_version,created_at)",
+      )
+      .eq("approver_id", userId)
+      .eq("decision_status", "pending")
+      .limit(100);
+    check(error);
+    for (const raw of data ?? []) {
+      const request = raw.approval_requests as unknown as {
+        title: string;
+        status: string;
+        due_at: string;
+        current_version: number;
+        created_at: string;
+      };
+      if (raw.version_no !== request.current_version) continue;
+      if (request.status !== "pending" && request.status !== "overdue") continue;
+      const overdue = new Date(request.due_at).getTime() < now.getTime();
+      rows.push(
+        item({
+          module: "approval",
+          objectId: raw.approval_request_id,
+          title: request.title,
+          summary: overdue
+            ? "Yêu cầu phê duyệt đã quá hạn xử lý."
+            : "Yêu cầu phê duyệt đang chờ bạn quyết định.",
+          reason: overdue ? "approval_overdue" : "awaiting_my_approval",
+          deadline: request.due_at,
+          createdAt: request.created_at,
+          route: `/approvals/${raw.approval_request_id}`,
+          quickAction: "open_review",
+        }),
+      );
+    }
+  });
+
   // 8. Nhắc tên và trả lời bình luận chưa đọc.
+
   await source("mentions", async () => {
     const { data, error } = await supabase
       .from("notifications")
       .select("id,title,body,entity_id,link,created_at,event_type")
       .is("read_at", null)
-      .in("event_type", ["announcement.mentioned", "announcement.comment_replied"])
+      .in("event_type", [
+        "announcement.mentioned",
+        "announcement.comment_replied",
+        "approval.mentioned",
+      ])
       .order("created_at", { ascending: false })
       .limit(50);
     check(error);
     for (const row of data ?? []) {
       rows.push(
         item({
-          module: "announcement",
+          module: row.event_type.startsWith("approval.") ? "approval" : "announcement",
           objectId: row.entity_id ?? row.id,
           title: row.body ?? row.title,
           summary: row.title,

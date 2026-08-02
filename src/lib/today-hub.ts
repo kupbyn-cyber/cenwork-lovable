@@ -4,13 +4,20 @@
  * Không chứa Business Rule mới: mọi mục việc đều suy ra từ dữ liệu module gốc.
  */
 
-export type ActionModule = "announcement" | "task" | "project" | "daily_report" | "weekly_report";
+export type ActionModule =
+  | "announcement"
+  | "approval"
+  | "task"
+  | "project"
+  | "daily_report"
+  | "weekly_report";
 
 export type ActionPriority = "critical" | "high" | "medium" | "low";
 
 /** Lý do một mục xuất hiện trong hub. Thứ tự trọng số quyết định mức ưu tiên. */
 export type ActionReason =
   | "announcement_overdue"
+  | "approval_overdue"
   | "changes_requested"
   | "awaiting_my_approval"
   | "task_overdue"
@@ -21,6 +28,7 @@ export type ActionReason =
 
 export const ACTION_REASON_WEIGHT: Record<ActionReason, number> = {
   announcement_overdue: 100,
+  approval_overdue: 95,
   changes_requested: 90,
   awaiting_my_approval: 80,
   task_overdue: 70,
@@ -32,6 +40,7 @@ export const ACTION_REASON_WEIGHT: Record<ActionReason, number> = {
 
 export const ACTION_REASON_LABEL: Record<ActionReason, string> = {
   announcement_overdue: "Thông báo quá hạn",
+  approval_overdue: "Phê duyệt quá hạn",
   changes_requested: "Bị yêu cầu chỉnh sửa",
   awaiting_my_approval: "Chờ bạn duyệt",
   task_overdue: "Quá hạn",
@@ -46,6 +55,7 @@ export const ACTION_REASON_TONE: Record<
   "neutral" | "progress" | "success" | "warning" | "error"
 > = {
   announcement_overdue: "error",
+  approval_overdue: "error",
   changes_requested: "error",
   awaiting_my_approval: "warning",
   task_overdue: "error",
@@ -57,6 +67,7 @@ export const ACTION_REASON_TONE: Record<
 
 export const ACTION_MODULE_LABEL: Record<ActionModule, string> = {
   announcement: "Thông báo nội bộ",
+  approval: "Phê duyệt",
   task: "Công việc",
   project: "Dự án",
   daily_report: "Báo cáo ngày",
