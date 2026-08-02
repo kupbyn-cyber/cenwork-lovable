@@ -535,3 +535,99 @@ export async function setDocumentApprover(documentId: string, approverId: string
   });
   if (error) throw approvalError(error.message);
 }
+
+/* ================= DOC-06 — Kiểm soát sau phát hành ================= */
+
+/** Tài liệu đang có cảnh báo đường dẫn. */
+export function needsLinkReview(doc: DocumentRow): boolean {
+  return Boolean(doc.latestVersion?.needs_link_review);
+}
+
+/** Tài liệu đang ở trạng thái lưu trữ. */
+export function isArchivedDocument(doc: DocumentRow): boolean {
+  return Boolean(doc.archived_at) || doc.latestVersion?.status === "archived";
+}
+
+/** Mọi tài khoản xem được đều báo link lỗi, trừ khi tài liệu còn là nháp hoặc đang chờ xử lý. */
+export function canReportLink(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  if (!ctx.userId) return false;
+  const v = doc.latestVersion;
+  return Boolean(v) && v!.status !== "draft" && !v!.needs_link_review;
+}
+
+/** Người phụ trách / Leader phạm vi / CMO / Admin xử lý cảnh báo link. */
+export function canResolveLink(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return needsLinkReview(doc) && canManageDocument(doc, ctx);
+}
+
+/** Chỉ CMO/Admin lưu trữ, và chỉ khi tài liệu đã được duyệt. */
+export function canArchiveDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  if (!privileged(ctx)) return false;
+  const v = doc.latestVersion;
+  if (!v || isArchivedDocument(doc)) return false;
+  return Boolean(v.approved_at) && ["active", "scheduled", "expired"].includes(v.status);
+}
+
+/** Chỉ CMO/Admin khôi phục, và chỉ khi không có phiên bản thay thế. */
+export function canRestoreDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return privileged(ctx) && isArchivedDocument(doc);
+}
+
+/** Lý do chặn khôi phục để hiển thị tooltip (null nghĩa là hợp lệ). */
+export function restoreBlockReason(doc: DocumentRow): string | null {
+  const archived = doc.latestVersion;
+  if (!archived || archived.status !== "archived") {
+    return "Phiên bản mới nhất không ở trạng thái lưu trữ nên không thể khôi phục.";
+  }
+  if (archived.superseded_by_version_id) {
+    return "Phiên bản này đã bị phiên bản khác thay thế.";
+  }
+  return null;
+}
+
+function lifecycleError(message: string): Error {
+  if (/permission denied|row-level security/i.test(message)) {
+    return new Error("Bạn không có quyền thực hiện thao tác này.");
+  }
+  return new Error(message.replace(/^.*?ERROR:\s*/i, ""));
+}
+
+export async function reportDocumentLink(documentId: string, note: string): Promise<void> {
+  const trimmed = note.trim();
+  const { error } = await supabase.rpc("document_report_link", {
+    _document: documentId,
+    ...(trimmed ? { _note: trimmed } : {}),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function resolveDocumentLink(
+  documentId: string,
+  note: string,
+  newUrl?: string | null,
+): Promise<void> {
+  const trimmedNote = note.trim();
+  const trimmedUrl = newUrl?.trim();
+  const { error } = await supabase.rpc("document_resolve_link", {
+    _document: documentId,
+    ...(trimmedNote ? { _note: trimmedNote } : {}),
+    ...(trimmedUrl ? { _new_url: trimmedUrl } : {}),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function archiveDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_archive", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function restoreDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_restore", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw lifecycleError(error.message);
+}
