@@ -29,40 +29,30 @@ function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-/** Team mà người dùng được phép gửi (Leader: Team phụ trách + Team chính + Team cộng tác). */
-async function scopeTeamIds(supabase: Client, userId: string): Promise<string[]> {
-  const [profile, leaderTeams, collaborations] = await Promise.all([
-    supabase.from("profiles").select("primary_team_id").eq("id", userId).maybeSingle(),
-    supabase.from("teams").select("id").eq("leader_id", userId),
-    supabase.from("team_collaborators").select("team_id").eq("user_id", userId),
-  ]);
-  fail(profile.error);
-  fail(leaderTeams.error);
-  fail(collaborations.error);
-  const ids = new Set<string>();
-  if (profile.data?.primary_team_id) ids.add(profile.data.primary_team_id);
-  for (const row of leaderTeams.data ?? []) ids.add(row.id);
-  for (const row of collaborations.data ?? []) ids.add(row.team_id);
-  return [...ids];
+/** NAP-01 — lọc lại theo trạng thái tài khoản tại server (không tin danh sách từ client). */
+async function activeUserIds(supabase: Client, ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.rpc("announcement_active_user_ids", {
+    _ids: [...new Set(ids)],
+  });
+  fail(error);
+  return (data ?? []) as string[];
 }
 
+/** Mở rộng Team thành thành viên đang hoạt động (Team chính + cộng tác). */
 async function usersOfTeams(supabase: Client, teamIds: string[]): Promise<string[]> {
   if (teamIds.length === 0) return [];
-  const [primary, collaborators] = await Promise.all([
-    supabase.from("profiles").select("id").in("primary_team_id", teamIds),
-    supabase.from("team_collaborators").select("user_id").in("team_id", teamIds),
-  ]);
-  fail(primary.error);
-  fail(collaborators.error);
-  return [
-    ...(primary.data ?? []).map((row) => row.id),
-    ...(collaborators.data ?? []).map((row) => row.user_id),
-  ];
+  const { data, error } = await supabase.rpc("announcement_team_member_ids", {
+    _teams: [...new Set(teamIds)],
+  });
+  fail(error);
+  return (data ?? []) as string[];
 }
 
 /**
- * Tính danh sách người nhận (đã khử trùng lặp theo User ID) từ tiêu chí.
- * Quyền được kiểm tra lại tại đây, không dựa vào UI.
+ * NAP-01 — Tính danh sách người nhận (khử trùng lặp) từ tiêu chí.
+ * Người gửi đang hoạt động gửi được cho mọi người đang hoạt động, không giới hạn Team/dự án.
+ * Trạng thái tài khoản luôn được kiểm tra lại tại server.
  */
 export async function resolveAudienceUserIds(
   supabase: Client,
@@ -79,34 +69,29 @@ export async function resolveAudienceUserIds(
   const result = new Set<string>(criteria.userIds);
   const manualTeams = [...criteria.teamIds];
 
-  if (callerRole === "admin" || callerRole === "cmo") {
+  if (wantsBulk) {
     if (criteria.allUsers) {
-      const { data, error } = await supabase.from("profiles").select("id");
+      const { data, error } = await supabase.rpc("announcement_audience_users");
       fail(error);
-      for (const row of data ?? []) result.add(row.id);
+      for (const row of (data ?? []) as { id: string }[]) result.add(row.id);
     }
     if (criteria.allTeams) {
-      const { data, error } = await supabase.from("teams").select("id");
+      const { data, error } = await supabase.rpc("announcement_audience_teams");
       fail(error);
-      manualTeams.push(...(data ?? []).map((row) => row.id));
-    }
-  } else if (wantsBulk) {
-    // Leader: chỉ trong phạm vi được phép gửi, không bao giờ toàn hệ thống.
-    const teams = await scopeTeamIds(supabase, userId);
-    if (criteria.allTeams) manualTeams.push(...teams);
-    if (criteria.allUsers) {
-      for (const id of await usersOfTeams(supabase, teams)) result.add(id);
-      result.add(userId);
+      manualTeams.push(...((data ?? []) as { id: string }[]).map((row) => row.id));
     }
   }
 
-  for (const id of await usersOfTeams(supabase, [...new Set(manualTeams)])) result.add(id);
+  for (const id of await usersOfTeams(supabase, manualTeams)) result.add(id);
 
   if (criteria.includeSelf) result.add(userId);
   else if (!criteria.userIds.includes(userId)) result.delete(userId);
 
-  return [...result];
+  // Chốt cuối: chỉ giữ tài khoản đang hoạt động (bao gồm cả người gửi).
+  return activeUserIds(supabase, [...result]);
 }
+
+
 
 export async function publishAnnouncementCore(
   supabase: Client,
