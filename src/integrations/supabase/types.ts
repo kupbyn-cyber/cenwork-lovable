@@ -932,8 +932,12 @@ export type Database = {
       }
       document_versions: {
         Row: {
+          alt_approver_id: string | null
           approved_at: string | null
           approved_by: string | null
+          approver_assigned_at: string | null
+          approver_assigned_by: string | null
+          approver_id: string | null
           archived_at: string | null
           archived_by: string | null
           change_note: string | null
@@ -966,10 +970,15 @@ export type Database = {
           version_label: string | null
           version_no: number
           withdrawn_at: string | null
+          withdrawn_by: string | null
         }
         Insert: {
+          alt_approver_id?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          approver_assigned_at?: string | null
+          approver_assigned_by?: string | null
+          approver_id?: string | null
           archived_at?: string | null
           archived_by?: string | null
           change_note?: string | null
@@ -1002,10 +1011,15 @@ export type Database = {
           version_label?: string | null
           version_no: number
           withdrawn_at?: string | null
+          withdrawn_by?: string | null
         }
         Update: {
+          alt_approver_id?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          approver_assigned_at?: string | null
+          approver_assigned_by?: string | null
+          approver_id?: string | null
           archived_at?: string | null
           archived_by?: string | null
           change_note?: string | null
@@ -1038,11 +1052,33 @@ export type Database = {
           version_label?: string | null
           version_no?: number
           withdrawn_at?: string | null
+          withdrawn_by?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "document_versions_alt_approver_id_fkey"
+            columns: ["alt_approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_versions_approved_by_fkey"
             columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_approver_assigned_by_fkey"
+            columns: ["approver_assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_approver_id_fkey"
+            columns: ["approver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1108,6 +1144,13 @@ export type Database = {
             columns: ["supersedes_version_id"]
             isOneToOne: false
             referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_withdrawn_by_fkey"
+            columns: ["withdrawn_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4085,7 +4128,26 @@ export type Database = {
         Args: { _t: Database["public"]["Enums"]["document_type"] }
         Returns: string
       }
+      document_approve: {
+        Args: { _document: string; _self_reason?: string }
+        Returns: Database["public"]["Enums"]["document_version_status"]
+      }
       document_is_published: { Args: { _document: string }; Returns: boolean }
+      document_pick_admin: { Args: { _exclude: string[] }; Returns: string }
+      document_reject: {
+        Args: { _document: string; _reason: string }
+        Returns: undefined
+      }
+      document_resolve_approver: {
+        Args: { _document: string; _exclude?: string[] }
+        Returns: string
+      }
+      document_set_approver: {
+        Args: { _approver: string; _document: string }
+        Returns: undefined
+      }
+      document_submit: { Args: { _document: string }; Returns: string }
+      document_withdraw: { Args: { _document: string }; Returns: undefined }
       enqueue_telegram_user: {
         Args: {
           _dedupe: string

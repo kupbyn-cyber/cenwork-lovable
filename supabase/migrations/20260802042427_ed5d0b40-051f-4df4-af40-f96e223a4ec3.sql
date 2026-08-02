@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.is_active_account(uuid) TO authenticated;

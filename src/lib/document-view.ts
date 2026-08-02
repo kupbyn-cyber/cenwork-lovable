@@ -204,20 +204,27 @@ export interface DocumentOverviewMetrics {
 
 export function buildOverviewMetrics(
   docs: DocumentRow[],
-  _ctx: DocumentAccessContext,
+  ctx: DocumentAccessContext,
 ): DocumentOverviewMetrics {
   const visible = docs.filter((doc) => !doc.archived_at);
   return {
     active: visible.filter((doc) => documentStatus(doc) === "active").length,
     scheduled: visible.filter((doc) => documentStatus(doc) === "scheduled").length,
     needsReview: visible.filter((doc) => doc.latestVersion?.needs_link_review).length,
-    // DOC-04 (gửi duyệt/phê duyệt) chưa triển khai → không tạo logic giả.
-    pendingMyApproval: null,
+    // DOC-04: đếm đúng số tài liệu đang chờ chính người dùng duyệt.
+    pendingMyApproval: ctx.userId
+      ? visible.filter((doc) => {
+          const v = doc.latestVersion;
+          if (!v || v.status !== "pending_approval") return false;
+          return v.approver_id === ctx.userId || v.alt_approver_id === ctx.userId;
+        }).length
+      : null,
     recentlyUpdated: [...visible]
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
       .slice(0, 5),
   };
 }
+
 
 export function scopeText(doc: DocumentRow): string {
   if (doc.scope === "system") return DOCUMENT_SCOPE_LABEL.system;

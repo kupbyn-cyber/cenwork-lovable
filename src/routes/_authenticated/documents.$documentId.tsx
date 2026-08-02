@@ -15,12 +15,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cenToast } from "@/components/ui/toast";
 import { DocumentFormDrawer } from "@/components/document/document-form-drawer";
+import { DocumentApprovalPanel } from "@/components/document/document-approval-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   DOCUMENT_SOURCE_LABEL,
   DOCUMENT_VERSION_STATUS_LABEL,
 } from "@/lib/document-catalog";
 import {
+  approveDocument,
   canDeleteDocument,
   canManageDocument,
   deleteDocumentDraft,
@@ -28,13 +30,18 @@ import {
   documentStatus,
   isDraftDocument,
   myScopeAccessQuery,
+  rejectDocument,
+  setDocumentApprover,
+  submitDocument,
   updateDocumentDraft,
+  withdrawDocument,
   type DocumentAccessContext,
   type DocumentDraftInput,
 } from "@/lib/document-data";
 import { DOCUMENT_STATUS_TONE, formatDate, scopeText, typeText } from "@/lib/document-view";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import { teamsQuery } from "@/lib/org-data";
+
 
 export const Route = createFileRoute("/_authenticated/documents/$documentId")({
   head: () => ({
@@ -115,6 +122,36 @@ function DocumentDetailPage() {
       setConfirmDelete(false);
     },
   });
+
+  const [approvalPending, setApprovalPending] = React.useState<
+    "submit" | "withdraw" | "approve" | "reject" | "reassign" | null
+  >(null);
+
+  const refreshDocument = () => {
+    void queryClient.invalidateQueries({ queryKey: ["document", documentId] });
+    void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  };
+
+  const runApproval = async (
+    kind: "submit" | "withdraw" | "approve" | "reject" | "reassign",
+    action: () => Promise<void>,
+    successMessage: string,
+  ) => {
+    if (approvalPending) return;
+    setApprovalPending(kind);
+    try {
+      await action();
+      cenToast.success(successMessage);
+      refreshDocument();
+    } catch (error) {
+      cenToast.error((error as Error).message);
+    } finally {
+      setApprovalPending(null);
+    }
+  };
+
+
 
   if (document.isLoading) {
     return (
@@ -282,6 +319,38 @@ function DocumentDetailPage() {
           </Field>
         </CardContent>
       </Card>
+
+      <DocumentApprovalPanel
+        document={doc}
+        ctx={ctx}
+        people={people.data ?? []}
+        pending={approvalPending}
+        onSubmit={() =>
+          void runApproval("submit", () => submitDocument(doc.id), "Đã gửi duyệt tài liệu.")
+        }
+        onWithdraw={() =>
+          void runApproval("withdraw", () => withdrawDocument(doc.id), "Đã thu hồi yêu cầu duyệt.")
+        }
+        onApprove={(selfReason) =>
+          void runApproval(
+            "approve",
+            () => approveDocument(doc.id, selfReason ?? undefined),
+            "Đã duyệt tài liệu.",
+          )
+        }
+        onReject={(reason) =>
+          void runApproval("reject", () => rejectDocument(doc.id, reason), "Đã từ chối tài liệu.")
+        }
+        onReassign={(approverId) =>
+          void runApproval(
+            "reassign",
+            () => setDocumentApprover(doc.id, approverId),
+            "Đã chỉ định người duyệt thay thế.",
+          )
+        }
+      />
+
+
 
       <DocumentFormDrawer
         open={editOpen}

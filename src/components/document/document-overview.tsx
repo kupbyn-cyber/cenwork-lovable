@@ -78,9 +78,10 @@ export function DocumentOverview({ metrics, loading, onOpen }: DocumentOverviewP
         <MetricCard
           label="Chờ tôi duyệt"
           value={metrics.pendingMyApproval ?? "—"}
-          hint="Sẵn sàng khi bật luồng duyệt tài liệu."
+          hint="Tài liệu đang chờ chính bạn duyệt."
           icon={ShieldQuestion}
         />
+
       </div>
 
       <Card>

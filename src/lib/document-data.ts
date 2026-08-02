@@ -27,6 +27,19 @@ export interface DocumentVersionRow {
   change_note: string | null;
   needs_link_review: boolean;
   ever_submitted: boolean;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  withdrawn_at: string | null;
+  approver_id: string | null;
+  alt_approver_id: string | null;
+  approver_assigned_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  reject_reason: string | null;
+  self_approved: boolean;
+  self_approval_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,13 +70,19 @@ export interface DocumentRow {
   creatorName: string | null;
   teamName: string | null;
   projectName: string | null;
+  /** Tên người liên quan tới luồng duyệt của phiên bản mới nhất. */
+  approverName: string | null;
+  submitterName: string | null;
+  approvedByName: string | null;
+  rejectedByName: string | null;
 }
 
 const DOCUMENT_COLUMNS =
   "id,code,name,display_name,doc_type,scope,team_id,project_id,description,source_type,source_url,keywords,created_by,owner_id,archived_at,created_at,updated_at";
 
 const VERSION_COLUMNS =
-  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,created_at,updated_at";
+  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,created_at,updated_at";
+
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
@@ -82,8 +101,20 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
   ) as DocumentVersionRow[];
 
   const personIds = Array.from(
-    new Set(rows.flatMap((r) => [r["owner_id"] as string, r["created_by"] as string])),
+    new Set(
+      [
+        ...rows.flatMap((r) => [r["owner_id"] as string, r["created_by"] as string]),
+        ...versions.flatMap((v) => [
+          v.submitted_by,
+          v.approver_id,
+          v.alt_approver_id,
+          v.approved_by,
+          v.rejected_by,
+        ]),
+      ].filter(Boolean) as string[],
+    ),
   );
+
   const teamIds = Array.from(
     new Set(rows.map((r) => r["team_id"] as string | null).filter(Boolean) as string[]),
   );
@@ -119,13 +150,16 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
   return rows.map((row) => {
     const id = row["id"] as string;
     const mine = versions.filter((v) => v.document_id === id);
+    const latest = mine[0] ?? null;
+    const nameOf = (value: string | null | undefined) =>
+      value ? (nameById.get(value) ?? null) : null;
     return {
       ...(row as unknown as Omit<
         DocumentRow,
         "latestVersion" | "activeVersion" | "ownerName" | "creatorName" | "teamName" | "projectName"
       >),
       keywords: (row["keywords"] as string[] | null) ?? [],
-      latestVersion: mine[0] ?? null,
+      latestVersion: latest,
       activeVersion: mine.find((v) => v.status === "active") ?? null,
       ownerName: nameById.get(row["owner_id"] as string) ?? null,
       creatorName: nameById.get(row["created_by"] as string) ?? null,
@@ -133,8 +167,13 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
       projectName: row["project_id"]
         ? (projectById.get(row["project_id"] as string) ?? null)
         : null,
+      approverName: nameOf(latest?.alt_approver_id ?? latest?.approver_id),
+      submitterName: nameOf(latest?.submitted_by),
+      approvedByName: nameOf(latest?.approved_by),
+      rejectedByName: nameOf(latest?.rejected_by),
     } as DocumentRow;
   });
+
 }
 
 export async function fetchDocuments(): Promise<DocumentRow[]> {
@@ -376,4 +415,92 @@ export async function deleteDocumentDraft(documentId: string): Promise<void> {
   if (versionError) throw friendlyError(versionError.message);
   const { error } = await supabase.from("documents").delete().eq("id", documentId);
   if (error) throw friendlyError(error.message);
+}
+
+/* ================= DOC-04 — Luồng duyệt ================= */
+
+function approvalError(message: string): Error {
+  if (/permission denied|row-level security/i.test(message)) {
+    return new Error("Bạn không có quyền thực hiện thao tác duyệt này.");
+  }
+  return new Error(message.replace(/^.*?ERROR:\s*/i, ""));
+}
+
+/** Có đang chờ duyệt không (theo phiên bản mới nhất). */
+export function isPendingApproval(doc: DocumentRow): boolean {
+  return doc.latestVersion?.status === "pending_approval";
+}
+
+/** Người quản lý tài liệu gửi duyệt khi bản mới nhất là nháp. */
+export function canSubmitDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return canManageDocument(doc, ctx) && isDraftDocument(doc);
+}
+
+/** Chỉ người gửi duyệt được thu hồi khi chưa có quyết định. */
+export function canWithdrawDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId) return false;
+  return (
+    v.status === "pending_approval" &&
+    v.submitted_by === ctx.userId &&
+    !v.approved_at &&
+    !v.rejected_at
+  );
+}
+
+/** Người duyệt được chỉ định (hoặc người duyệt thay thế) mới thấy nút duyệt/từ chối. */
+export function canDecideDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId) return false;
+  if (v.status !== "pending_approval" || v.approved_at || v.rejected_at) return false;
+  return v.approver_id === ctx.userId || v.alt_approver_id === ctx.userId;
+}
+
+/** Ngoại lệ: Admin/CMO tự duyệt tài liệu mình tạo/gửi, bắt buộc nhập lý do. */
+export function needsSelfApprovalReason(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId || !privileged(ctx)) return false;
+  if (v.status !== "pending_approval") return false;
+  return v.submitted_by === ctx.userId || doc.created_by === ctx.userId;
+}
+
+/** Admin/CMO được đổi người duyệt khi tài liệu đang chờ duyệt. */
+export function canReassignApprover(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return privileged(ctx) && isPendingApproval(doc);
+}
+
+export async function submitDocument(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_submit", { _document: documentId });
+  if (error) throw approvalError(error.message);
+}
+
+export async function withdrawDocument(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_withdraw", { _document: documentId });
+  if (error) throw approvalError(error.message);
+}
+
+export async function approveDocument(documentId: string, selfReason?: string): Promise<void> {
+  const trimmed = selfReason?.trim();
+  const { error } = await supabase.rpc("document_approve", {
+    _document: documentId,
+    ...(trimmed ? { _self_reason: trimmed } : {}),
+  });
+  if (error) throw approvalError(error.message);
+}
+
+
+export async function rejectDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_reject", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw approvalError(error.message);
+}
+
+export async function setDocumentApprover(documentId: string, approverId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_set_approver", {
+    _document: documentId,
+    _approver: approverId,
+  });
+  if (error) throw approvalError(error.message);
 }
