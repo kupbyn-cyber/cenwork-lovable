@@ -179,14 +179,18 @@ export async function buildTodayHub(
       .from("notifications")
       .select("id,title,body,entity_id,link,created_at,event_type")
       .is("read_at", null)
-      .in("event_type", ["announcement.mentioned", "announcement.comment_replied"])
+      .in("event_type", [
+        "announcement.mentioned",
+        "announcement.comment_replied",
+        "approval.mentioned",
+      ])
       .order("created_at", { ascending: false })
       .limit(50);
     check(error);
     for (const row of data ?? []) {
       rows.push(
         item({
-          module: "announcement",
+          module: row.event_type.startsWith("approval.") ? "approval" : "announcement",
           objectId: row.entity_id ?? row.id,
           title: row.body ?? row.title,
           summary: row.title,
