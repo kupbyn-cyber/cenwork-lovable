@@ -1,40 +1,62 @@
 /**
- * CEN 1.0 — M1.5 chốt quyền phía server.
- * Dùng chung ma trận permissions với UI; đọc vai trò thật qua RLS bằng phiên người gọi.
+ * CEN 1.0 — M1.5 / ROLE-01 chốt quyền phía server.
+ * Quyền hiệu lực do database quyết định (role config + user override + system invariant),
+ * đọc bằng phiên của người gọi qua hàm has_perm / perm_scope.
+ * Không còn ma trận hardcode song song ở server.
  */
 import {
-  hasPermission,
   PERMISSION_DENIED_MESSAGE,
   type AppRoleKey,
   type PermissionKey,
 } from "@/lib/permissions";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Chấp nhận mọi Supabase client (browser, auth-middleware, admin) — chỉ cần gọi được rpc.
 export type RoleClient = {
-  rpc: (
-    fn: "has_role",
-    args: { _user_id: string; _role: AppRoleKey },
-  ) => PromiseLike<{ data: boolean | null }>;
+  rpc: (fn: any, args?: any) => PromiseLike<{ data: any; error?: any }>;
 };
 
 export async function resolveCallerRole(
   supabase: RoleClient,
   userId: string,
 ): Promise<AppRoleKey | null> {
-  const roles: AppRoleKey[] = ["admin", "cmo", "leader", "member"];
-  const results = await Promise.all(
-    roles.map((role) => supabase.rpc("has_role", { _user_id: userId, _role: role })),
-  );
-  const index = results.findIndex((result) => Boolean(result.data));
-  return index === -1 ? null : (roles[index] as AppRoleKey);
+  const result = await supabase.rpc("perm_role_of", { _user: userId });
+  return (result.data as AppRoleKey | null) ?? null;
 }
 
+/** Quyền hiệu lực của một người dùng cho một permission cụ thể. */
+export async function hasEffectivePermission(
+  supabase: RoleClient,
+  userId: string,
+  permission: PermissionKey | string,
+): Promise<boolean> {
+  const result = await supabase.rpc("has_perm", { _user: userId, _key: permission });
+  return result.data === true;
+}
+
+/** Phạm vi dữ liệu hiệu lực; trả "none" khi không có quyền. */
+export async function effectiveScope(
+  supabase: RoleClient,
+  userId: string,
+  permission: PermissionKey | string,
+): Promise<string> {
+  const result = await supabase.rpc("perm_scope", { _user: userId, _key: permission });
+  return (result.data as string | null) ?? "none";
+}
+
+/** Fail closed: mọi lỗi khi tải quyền đều coi như không có quyền. */
 export async function requirePermission(
   supabase: RoleClient,
   userId: string,
   permission: PermissionKey,
   message = PERMISSION_DENIED_MESSAGE,
 ): Promise<AppRoleKey> {
-  const role = await resolveCallerRole(supabase, userId);
-  if (!hasPermission(role, permission)) throw new Error(message);
-  return role as AppRoleKey;
+  let allowed = false;
+  try {
+    allowed = await hasEffectivePermission(supabase, userId, permission);
+  } catch {
+    allowed = false;
+  }
+  if (!allowed) throw new Error(message);
+  return (await resolveCallerRole(supabase, userId)) as AppRoleKey;
 }

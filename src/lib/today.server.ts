@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
-import { hasPermission, isSystemAdminRole, PERMISSIONS, type AppRoleKey } from "@/lib/permissions";
+import { isSystemAdminRole, PERMISSIONS, type AppRoleKey } from "@/lib/permissions";
 import {
   ACTION_REASON_WEIGHT,
   mergeActionItems,
@@ -75,6 +75,18 @@ export async function buildTodayHub(
   const today = hanoiToday(now);
   const thisWeek = weekStartOf(today);
   const privileged = isSystemAdminRole(role);
+
+  // ROLE-01: quyền hiệu lực đọc từ database, fail closed khi không tải được.
+  const permissionSet = new Set<string>();
+  try {
+    const perms = await supabase.rpc("perm_effective_for", { _user: userId });
+    for (const row of (perms.data ?? []) as { permission_key: string; enabled: boolean }[]) {
+      if (row.enabled) permissionSet.add(row.permission_key);
+    }
+  } catch (error) {
+    console.error("[today-hub] permissions", error);
+  }
+  const can = (permission: string) => permissionSet.has(permission);
 
   const rows: ActionItem[] = [];
   const failedSources: string[] = [];
@@ -339,7 +351,7 @@ export async function buildTodayHub(
         report.status === "submitted" &&
         report.author_id !== userId &&
         (privileged || (leaderTeamId !== null && report.team_id === leaderTeamId)) &&
-        hasPermission(role, PERMISSIONS.REPORTS_REVIEW_DAILY);
+        can(PERMISSIONS.REPORTS_REVIEW_DAILY);
       if (canReviewDaily) {
         rows.push(
           item({
@@ -356,7 +368,7 @@ export async function buildTodayHub(
       }
     }
 
-    if (hasPermission(role, PERMISSIONS.REPORTS_SUBMIT_DAILY)) {
+    if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY)) {
       const mineToday = list.find(
         (row) => row.author_id === userId && row.report_date === today,
       );
@@ -407,7 +419,7 @@ export async function buildTodayHub(
       if (
         report.status === "submitted" &&
         report.leader_id !== userId &&
-        hasPermission(role, PERMISSIONS.REPORTS_REVIEW_WEEKLY)
+        can(PERMISSIONS.REPORTS_REVIEW_WEEKLY)
       ) {
         rows.push(
           item({
@@ -424,7 +436,7 @@ export async function buildTodayHub(
       }
     }
 
-    if (leaderTeamId && hasPermission(role, PERMISSIONS.REPORTS_SUBMIT_WEEKLY)) {
+    if (leaderTeamId && can(PERMISSIONS.REPORTS_SUBMIT_WEEKLY)) {
       const mine = list.find(
         (row) => row.team_id === leaderTeamId && row.week_start === thisWeek,
       );
