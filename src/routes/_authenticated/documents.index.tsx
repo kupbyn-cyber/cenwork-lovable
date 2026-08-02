@@ -194,6 +194,22 @@ function DocumentsPage() {
         },
       });
     }
+    if (canReportLink(doc, ctx)) {
+      actions.push({
+        key: "report-link",
+        label: "Báo link lỗi",
+        icon: Flag,
+        onSelect: () => setReporting(doc),
+      });
+    }
+    if (canResolveLink(doc, ctx) || canArchiveDocument(doc, ctx) || canRestoreDocument(doc, ctx)) {
+      actions.push({
+        key: "lifecycle",
+        label: isArchivedDocument(doc) ? "Khôi phục / xử lý" : "Lưu trữ / xử lý link",
+        icon: Archive,
+        onSelect: () => openDetail(doc),
+      });
+    }
     if (canDeleteDocument(doc, ctx)) {
       actions.push({
         key: "delete",
@@ -204,6 +220,7 @@ function DocumentsPage() {
     }
     return actions;
   };
+
 
   const columns = [
     {
