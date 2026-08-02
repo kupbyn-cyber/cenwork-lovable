@@ -1040,6 +1040,48 @@ export type Database = {
           },
         ]
       }
+      approval_reminders: {
+        Row: {
+          approval_request_id: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+          version_no: number
+        }
+        Insert: {
+          approval_request_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          user_id: string
+          version_no: number
+        }
+        Update: {
+          approval_request_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_reminders_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_request_versions: {
         Row: {
           approval_mode: Database["public"]["Enums"]["approval_mode"]
@@ -5102,6 +5144,8 @@ export type Database = {
       }
       my_primary_team_id: { Args: never; Returns: string }
       my_team_ids: { Args: never; Returns: string[] }
+      nap_operation_stats: { Args: never; Returns: Json }
+      nap_run_reminders: { Args: never; Returns: Json }
       notify_team_telegram: {
         Args: { _dedupe: string; _message: string; _team: string }
         Returns: undefined
