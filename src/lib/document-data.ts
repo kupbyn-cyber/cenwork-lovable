@@ -40,6 +40,21 @@ export interface DocumentVersionRow {
   reject_reason: string | null;
   self_approved: boolean;
   self_approval_reason: string | null;
+  /** DOC-06 — kiểm soát sau phát hành. */
+  link_review_note: string | null;
+  supersedes_version_id: string | null;
+  superseded_by_version_id: string | null;
+  link_reported_by: string | null;
+  link_reported_at: string | null;
+  link_resolved_by: string | null;
+  link_resolved_at: string | null;
+  archived_at: string | null;
+  archived_by: string | null;
+  archive_reason: string | null;
+  restored_at: string | null;
+  restored_by: string | null;
+  restore_reason: string | null;
+  status_before_archive: DocumentVersionStatus | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +75,11 @@ export interface DocumentRow {
   created_by: string;
   owner_id: string;
   archived_at: string | null;
+  archived_by: string | null;
+  archive_reason: string | null;
+  restored_at: string | null;
+  restored_by: string | null;
+  restore_reason: string | null;
   created_at: string;
   updated_at: string;
   /** Phiên bản mới nhất (theo version_no) mà người dùng đọc được. */
@@ -75,13 +95,18 @@ export interface DocumentRow {
   submitterName: string | null;
   approvedByName: string | null;
   rejectedByName: string | null;
+  /** DOC-06 — tên người báo/xử lý link và người lưu trữ. */
+  linkReporterName: string | null;
+  linkResolverName: string | null;
+  archivedByName: string | null;
+  restoredByName: string | null;
 }
 
 const DOCUMENT_COLUMNS =
-  "id,code,name,display_name,doc_type,scope,team_id,project_id,description,source_type,source_url,keywords,created_by,owner_id,archived_at,created_at,updated_at";
+  "id,code,name,display_name,doc_type,scope,team_id,project_id,description,source_type,source_url,keywords,created_by,owner_id,archived_at,archived_by,archive_reason,restored_at,restored_by,restore_reason,created_at,updated_at";
 
 const VERSION_COLUMNS =
-  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,created_at,updated_at";
+  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,link_review_note,supersedes_version_id,superseded_by_version_id,link_reported_by,link_reported_at,link_resolved_by,link_resolved_at,archived_at,archived_by,archive_reason,restored_at,restored_by,restore_reason,status_before_archive,created_at,updated_at";
 
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
@@ -110,6 +135,10 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
           v.alt_approver_id,
           v.approved_by,
           v.rejected_by,
+          v.link_reported_by,
+          v.link_resolved_by,
+          v.archived_by,
+          v.restored_by,
         ]),
       ].filter(Boolean) as string[],
     ),
@@ -171,6 +200,10 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
       submitterName: nameOf(latest?.submitted_by),
       approvedByName: nameOf(latest?.approved_by),
       rejectedByName: nameOf(latest?.rejected_by),
+      linkReporterName: nameOf(latest?.link_reported_by),
+      linkResolverName: nameOf(latest?.link_resolved_by),
+      archivedByName: nameOf(latest?.archived_by ?? (row["archived_by"] as string | null)),
+      restoredByName: nameOf(latest?.restored_by ?? (row["restored_by"] as string | null)),
     } as DocumentRow;
   });
 
@@ -503,4 +536,100 @@ export async function setDocumentApprover(documentId: string, approverId: string
     _approver: approverId,
   });
   if (error) throw approvalError(error.message);
+}
+
+/* ================= DOC-06 — Kiểm soát sau phát hành ================= */
+
+/** Tài liệu đang có cảnh báo đường dẫn. */
+export function needsLinkReview(doc: DocumentRow): boolean {
+  return Boolean(doc.latestVersion?.needs_link_review);
+}
+
+/** Tài liệu đang ở trạng thái lưu trữ. */
+export function isArchivedDocument(doc: DocumentRow): boolean {
+  return Boolean(doc.archived_at) || doc.latestVersion?.status === "archived";
+}
+
+/** Mọi tài khoản xem được đều báo link lỗi, trừ khi tài liệu còn là nháp hoặc đang chờ xử lý. */
+export function canReportLink(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  if (!ctx.userId) return false;
+  const v = doc.latestVersion;
+  return Boolean(v) && v!.status !== "draft" && !v!.needs_link_review;
+}
+
+/** Người phụ trách / Leader phạm vi / CMO / Admin xử lý cảnh báo link. */
+export function canResolveLink(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return needsLinkReview(doc) && canManageDocument(doc, ctx);
+}
+
+/** Chỉ CMO/Admin lưu trữ, và chỉ khi tài liệu đã được duyệt. */
+export function canArchiveDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  if (!privileged(ctx)) return false;
+  const v = doc.latestVersion;
+  if (!v || isArchivedDocument(doc)) return false;
+  return Boolean(v.approved_at) && ["active", "scheduled", "expired"].includes(v.status);
+}
+
+/** Chỉ CMO/Admin khôi phục, và chỉ khi không có phiên bản thay thế. */
+export function canRestoreDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return privileged(ctx) && isArchivedDocument(doc);
+}
+
+/** Lý do chặn khôi phục để hiển thị tooltip (null nghĩa là hợp lệ). */
+export function restoreBlockReason(doc: DocumentRow): string | null {
+  const archived = doc.latestVersion;
+  if (!archived || archived.status !== "archived") {
+    return "Phiên bản mới nhất không ở trạng thái lưu trữ nên không thể khôi phục.";
+  }
+  if (archived.superseded_by_version_id) {
+    return "Phiên bản này đã bị phiên bản khác thay thế.";
+  }
+  return null;
+}
+
+function lifecycleError(message: string): Error {
+  if (/permission denied|row-level security/i.test(message)) {
+    return new Error("Bạn không có quyền thực hiện thao tác này.");
+  }
+  return new Error(message.replace(/^.*?ERROR:\s*/i, ""));
+}
+
+export async function reportDocumentLink(documentId: string, note: string): Promise<void> {
+  const trimmed = note.trim();
+  const { error } = await supabase.rpc("document_report_link", {
+    _document: documentId,
+    ...(trimmed ? { _note: trimmed } : {}),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function resolveDocumentLink(
+  documentId: string,
+  note: string,
+  newUrl?: string | null,
+): Promise<void> {
+  const trimmedNote = note.trim();
+  const trimmedUrl = newUrl?.trim();
+  const { error } = await supabase.rpc("document_resolve_link", {
+    _document: documentId,
+    ...(trimmedNote ? { _note: trimmedNote } : {}),
+    ...(trimmedUrl ? { _new_url: trimmedUrl } : {}),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function archiveDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_archive", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw lifecycleError(error.message);
+}
+
+export async function restoreDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_restore", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw lifecycleError(error.message);
 }

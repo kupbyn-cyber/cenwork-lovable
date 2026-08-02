@@ -16,6 +16,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cenToast } from "@/components/ui/toast";
 import { DocumentFormDrawer } from "@/components/document/document-form-drawer";
 import { DocumentApprovalPanel } from "@/components/document/document-approval-panel";
+import {
+  DocumentLifecyclePanel,
+  type LifecyclePending,
+} from "@/components/document/document-lifecycle-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   DOCUMENT_SOURCE_LABEL,
@@ -23,6 +27,7 @@ import {
 } from "@/lib/document-catalog";
 import {
   approveDocument,
+  archiveDocument,
   canDeleteDocument,
   canManageDocument,
   deleteDocumentDraft,
@@ -31,6 +36,9 @@ import {
   isDraftDocument,
   myScopeAccessQuery,
   rejectDocument,
+  reportDocumentLink,
+  resolveDocumentLink,
+  restoreDocument,
   setDocumentApprover,
   submitDocument,
   updateDocumentDraft,
@@ -151,6 +159,25 @@ function DocumentDetailPage() {
     }
   };
 
+  const [lifecyclePending, setLifecyclePending] = React.useState<LifecyclePending>(null);
+
+  const runLifecycle = async (
+    kind: Exclude<LifecyclePending, null>,
+    action: () => Promise<void>,
+    successMessage: string,
+  ) => {
+    if (lifecyclePending) return;
+    setLifecyclePending(kind);
+    try {
+      await action();
+      cenToast.success(successMessage);
+      refreshDocument();
+    } catch (error) {
+      cenToast.error((error as Error).message);
+    } finally {
+      setLifecyclePending(null);
+    }
+  };
 
 
   if (document.isLoading) {
@@ -349,6 +376,33 @@ function DocumentDetailPage() {
           )
         }
       />
+
+      <DocumentLifecyclePanel
+        document={doc}
+        ctx={ctx}
+        pending={lifecyclePending}
+        onReport={(note) =>
+          void runLifecycle("report", () => reportDocumentLink(doc.id, note), "Đã báo link lỗi.")
+        }
+        onResolve={(note, newUrl) =>
+          void runLifecycle(
+            "resolve",
+            () => resolveDocumentLink(doc.id, note, newUrl),
+            "Đã xác nhận xử lý đường dẫn.",
+          )
+        }
+        onArchive={(reason) =>
+          void runLifecycle("archive", () => archiveDocument(doc.id, reason), "Đã lưu trữ tài liệu.")
+        }
+        onRestore={(reason) =>
+          void runLifecycle(
+            "restore",
+            () => restoreDocument(doc.id, reason),
+            "Đã khôi phục tài liệu.",
+          )
+        }
+      />
+
 
 
 

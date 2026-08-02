@@ -938,6 +938,7 @@ export type Database = {
           approver_assigned_at: string | null
           approver_assigned_by: string | null
           approver_id: string | null
+          archive_reason: string | null
           archived_at: string | null
           archived_by: string | null
           change_note: string | null
@@ -950,11 +951,14 @@ export type Database = {
           id: string
           link_reported_at: string | null
           link_reported_by: string | null
+          link_resolved_at: string | null
+          link_resolved_by: string | null
           link_review_note: string | null
           needs_link_review: boolean
           reject_reason: string | null
           rejected_at: string | null
           rejected_by: string | null
+          restore_reason: string | null
           restored_at: string | null
           restored_by: string | null
           self_approval_reason: string | null
@@ -962,6 +966,9 @@ export type Database = {
           source_type: Database["public"]["Enums"]["document_source"]
           source_url: string
           status: Database["public"]["Enums"]["document_version_status"]
+          status_before_archive:
+            | Database["public"]["Enums"]["document_version_status"]
+            | null
           submitted_at: string | null
           submitted_by: string | null
           superseded_by_version_id: string | null
@@ -979,6 +986,7 @@ export type Database = {
           approver_assigned_at?: string | null
           approver_assigned_by?: string | null
           approver_id?: string | null
+          archive_reason?: string | null
           archived_at?: string | null
           archived_by?: string | null
           change_note?: string | null
@@ -991,11 +999,14 @@ export type Database = {
           id?: string
           link_reported_at?: string | null
           link_reported_by?: string | null
+          link_resolved_at?: string | null
+          link_resolved_by?: string | null
           link_review_note?: string | null
           needs_link_review?: boolean
           reject_reason?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          restore_reason?: string | null
           restored_at?: string | null
           restored_by?: string | null
           self_approval_reason?: string | null
@@ -1003,6 +1014,9 @@ export type Database = {
           source_type: Database["public"]["Enums"]["document_source"]
           source_url: string
           status?: Database["public"]["Enums"]["document_version_status"]
+          status_before_archive?:
+            | Database["public"]["Enums"]["document_version_status"]
+            | null
           submitted_at?: string | null
           submitted_by?: string | null
           superseded_by_version_id?: string | null
@@ -1020,6 +1034,7 @@ export type Database = {
           approver_assigned_at?: string | null
           approver_assigned_by?: string | null
           approver_id?: string | null
+          archive_reason?: string | null
           archived_at?: string | null
           archived_by?: string | null
           change_note?: string | null
@@ -1032,11 +1047,14 @@ export type Database = {
           id?: string
           link_reported_at?: string | null
           link_reported_by?: string | null
+          link_resolved_at?: string | null
+          link_resolved_by?: string | null
           link_review_note?: string | null
           needs_link_review?: boolean
           reject_reason?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          restore_reason?: string | null
           restored_at?: string | null
           restored_by?: string | null
           self_approval_reason?: string | null
@@ -1044,6 +1062,9 @@ export type Database = {
           source_type?: Database["public"]["Enums"]["document_source"]
           source_url?: string
           status?: Database["public"]["Enums"]["document_version_status"]
+          status_before_archive?:
+            | Database["public"]["Enums"]["document_version_status"]
+            | null
           submitted_at?: string | null
           submitted_by?: string | null
           superseded_by_version_id?: string | null
@@ -1112,6 +1133,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_versions_link_resolved_by_fkey"
+            columns: ["link_resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_versions_rejected_by_fkey"
             columns: ["rejected_by"]
             isOneToOne: false
@@ -1158,7 +1186,9 @@ export type Database = {
       documents: {
         Row: {
           active_version_id: string | null
+          archive_reason: string | null
           archived_at: string | null
+          archived_by: string | null
           code: string
           created_at: string
           created_by: string
@@ -1173,6 +1203,9 @@ export type Database = {
           normalized_name: string
           owner_id: string
           project_id: string | null
+          restore_reason: string | null
+          restored_at: string | null
+          restored_by: string | null
           scope: Database["public"]["Enums"]["document_scope"]
           source_type: Database["public"]["Enums"]["document_source"]
           source_url: string
@@ -1181,7 +1214,9 @@ export type Database = {
         }
         Insert: {
           active_version_id?: string | null
+          archive_reason?: string | null
           archived_at?: string | null
+          archived_by?: string | null
           code: string
           created_at?: string
           created_by: string
@@ -1196,6 +1231,9 @@ export type Database = {
           normalized_name: string
           owner_id: string
           project_id?: string | null
+          restore_reason?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
           scope: Database["public"]["Enums"]["document_scope"]
           source_type: Database["public"]["Enums"]["document_source"]
           source_url: string
@@ -1204,7 +1242,9 @@ export type Database = {
         }
         Update: {
           active_version_id?: string | null
+          archive_reason?: string | null
           archived_at?: string | null
+          archived_by?: string | null
           code?: string
           created_at?: string
           created_by?: string
@@ -1219,6 +1259,9 @@ export type Database = {
           normalized_name?: string
           owner_id?: string
           project_id?: string | null
+          restore_reason?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
           scope?: Database["public"]["Enums"]["document_scope"]
           source_type?: Database["public"]["Enums"]["document_source"]
           source_url?: string
@@ -1231,6 +1274,13 @@ export type Database = {
             columns: ["active_version_id"]
             isOneToOne: false
             referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1259,6 +1309,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_restored_by_fkey"
+            columns: ["restored_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4090,6 +4147,10 @@ export type Database = {
         Args: { _entity_id: string; _entity_type: string }
         Returns: boolean
       }
+      can_resolve_document_link: {
+        Args: { _document: string }
+        Returns: boolean
+      }
       can_review_daily_report: { Args: { _author: string }; Returns: boolean }
       can_review_mvp: { Args: { _subject: string }; Returns: boolean }
       can_review_weekly_report: { Args: never; Returns: boolean }
@@ -4132,15 +4193,32 @@ export type Database = {
         Args: { _document: string; _self_reason?: string }
         Returns: Database["public"]["Enums"]["document_version_status"]
       }
+      document_archive: {
+        Args: { _document: string; _reason: string }
+        Returns: undefined
+      }
       document_is_published: { Args: { _document: string }; Returns: boolean }
+      document_link_identity: { Args: { _url: string }; Returns: string }
       document_pick_admin: { Args: { _exclude: string[] }; Returns: string }
       document_reject: {
         Args: { _document: string; _reason: string }
         Returns: undefined
       }
+      document_report_link: {
+        Args: { _document: string; _note?: string }
+        Returns: undefined
+      }
       document_resolve_approver: {
         Args: { _document: string; _exclude?: string[] }
         Returns: string
+      }
+      document_resolve_link: {
+        Args: { _document: string; _new_url?: string; _note?: string }
+        Returns: undefined
+      }
+      document_restore: {
+        Args: { _document: string; _reason: string }
+        Returns: Database["public"]["Enums"]["document_version_status"]
       }
       document_set_approver: {
         Args: { _approver: string; _document: string }
