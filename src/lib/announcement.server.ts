@@ -138,23 +138,13 @@ export async function publishAnnouncementCore(
 
   if (candidates.length === 0) throw new Error("Phải có ít nhất một người nhận hợp lệ.");
 
-  const { data: profiles, error: profileError } = await supabase
-    .from("profiles")
-    .select("id,status")
-    .in("id", candidates);
-  if (profileError) throw new Error(profileError.message);
-
-  const valid = profiles ?? [];
-  if (valid.length === 0) throw new Error("Phải có ít nhất một người nhận hợp lệ.");
-
-  const rows = valid.map((profile) => ({
+  // NAP-01: candidates đã được server lọc chỉ còn tài khoản đang hoạt động.
+  const rows = [...new Set(candidates)].map((id) => ({
     announcement_id: announcementId,
-    user_id: profile.id,
+    user_id: id,
     due_at: announcement.due_at as string,
-    ...(String(profile.status) === "resigned"
-      ? { status: "exempt" as const, exempt_reason: "Tài khoản đã nghỉ" }
-      : {}),
   }));
+
 
   const { error: insertError } = await supabase
     .from("announcement_recipients")
