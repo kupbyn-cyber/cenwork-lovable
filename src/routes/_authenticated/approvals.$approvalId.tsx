@@ -157,6 +157,7 @@ function ApprovalDetailPage() {
       </Card>
 
       <Card>
+      <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
           <SectionHeader
             title="Người phê duyệt"
@@ -165,6 +166,36 @@ function ApprovalDetailPage() {
           <ApprovalApproverList detail={detail.data} userId={user?.id ?? null} />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="flex min-w-0 flex-col gap-3">
+          <SectionHeader
+            title="Tệp đính kèm"
+            description="Chỉ người gửi thêm hoặc gỡ tệp; tệp của phiên bản cũ vẫn được giữ lại."
+          />
+          <ApprovalAttachments
+            requestId={request.id}
+            currentVersion={request.current_version}
+            canManage={isSender}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex min-w-0 flex-col gap-3">
+          <SectionHeader
+            title="Trao đổi"
+            description="Chỉ người liên quan tới yêu cầu này xem được. Nhắc tên chỉ mở quyền xem và bình luận."
+          />
+          <ApprovalCommentThread
+            detail={detail.data}
+            canMention={canMention}
+            canModerate={Boolean(isAdmin || isCmo)}
+          />
+        </CardContent>
+      </Card>
+
+
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
