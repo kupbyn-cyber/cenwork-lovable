@@ -416,3 +416,89 @@ export async function deleteDocumentDraft(documentId: string): Promise<void> {
   const { error } = await supabase.from("documents").delete().eq("id", documentId);
   if (error) throw friendlyError(error.message);
 }
+
+/* ================= DOC-04 — Luồng duyệt ================= */
+
+function approvalError(message: string): Error {
+  if (/permission denied|row-level security/i.test(message)) {
+    return new Error("Bạn không có quyền thực hiện thao tác duyệt này.");
+  }
+  return new Error(message.replace(/^.*?ERROR:\s*/i, ""));
+}
+
+/** Có đang chờ duyệt không (theo phiên bản mới nhất). */
+export function isPendingApproval(doc: DocumentRow): boolean {
+  return doc.latestVersion?.status === "pending_approval";
+}
+
+/** Người quản lý tài liệu gửi duyệt khi bản mới nhất là nháp. */
+export function canSubmitDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return canManageDocument(doc, ctx) && isDraftDocument(doc);
+}
+
+/** Chỉ người gửi duyệt được thu hồi khi chưa có quyết định. */
+export function canWithdrawDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId) return false;
+  return (
+    v.status === "pending_approval" &&
+    v.submitted_by === ctx.userId &&
+    !v.approved_at &&
+    !v.rejected_at
+  );
+}
+
+/** Người duyệt được chỉ định (hoặc người duyệt thay thế) mới thấy nút duyệt/từ chối. */
+export function canDecideDocument(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId) return false;
+  if (v.status !== "pending_approval" || v.approved_at || v.rejected_at) return false;
+  return v.approver_id === ctx.userId || v.alt_approver_id === ctx.userId;
+}
+
+/** Ngoại lệ: Admin/CMO tự duyệt tài liệu mình tạo/gửi, bắt buộc nhập lý do. */
+export function needsSelfApprovalReason(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  const v = doc.latestVersion;
+  if (!v || !ctx.userId || !privileged(ctx)) return false;
+  if (v.status !== "pending_approval") return false;
+  return v.submitted_by === ctx.userId || doc.created_by === ctx.userId;
+}
+
+/** Admin/CMO được đổi người duyệt khi tài liệu đang chờ duyệt. */
+export function canReassignApprover(doc: DocumentRow, ctx: DocumentAccessContext): boolean {
+  return privileged(ctx) && isPendingApproval(doc);
+}
+
+export async function submitDocument(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_submit", { _document: documentId });
+  if (error) throw approvalError(error.message);
+}
+
+export async function withdrawDocument(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_withdraw", { _document: documentId });
+  if (error) throw approvalError(error.message);
+}
+
+export async function approveDocument(documentId: string, selfReason?: string): Promise<void> {
+  const { error } = await supabase.rpc("document_approve", {
+    _document: documentId,
+    _self_reason: selfReason?.trim() ? selfReason.trim() : null,
+  });
+  if (error) throw approvalError(error.message);
+}
+
+export async function rejectDocument(documentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("document_reject", {
+    _document: documentId,
+    _reason: reason.trim(),
+  });
+  if (error) throw approvalError(error.message);
+}
+
+export async function setDocumentApprover(documentId: string, approverId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_set_approver", {
+    _document: documentId,
+    _approver: approverId,
+  });
+  if (error) throw approvalError(error.message);
+}
