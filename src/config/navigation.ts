@@ -82,6 +82,12 @@ export const navGroups: NavGroup[] = [
         permissionKey: "reports.view",
       },
       {
+        key: "documents",
+        label: "Tài liệu",
+        to: "/documents",
+        icon: FileText,
+      },
+      {
         key: "performance",
         label: "Hiệu suất",
         to: "/performance",
