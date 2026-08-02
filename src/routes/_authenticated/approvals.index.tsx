@@ -7,6 +7,7 @@ import { ClipboardCheck } from "lucide-react";
 import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
 import { ModuleCreateActions } from "@/components/announcement/module-create-actions";
 import { ApprovalFormDrawer } from "@/components/approval/approval-form-drawer";
+import { NapStatsCards } from "@/components/announcement/nap-stats-cards";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -151,6 +152,8 @@ function ApprovalsPage() {
       >
         <AnnouncementModuleTabs />
       </PageHeader>
+
+      <NapStatsCards scope="approval" onSelect={setStatus} />
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">
