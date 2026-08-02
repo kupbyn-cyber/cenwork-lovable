@@ -83,14 +83,7 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function isValidUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+const isValidUrl = isValidDocumentUrl;
 
 export function DocumentFormDrawer({
   open,
@@ -107,10 +100,14 @@ export function DocumentFormDrawer({
 }: DocumentFormDrawerProps) {
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
+  const [detectedSource, setDetectedSource] = React.useState<DocumentSource | null>(null);
+  const [sourceTouched, setSourceTouched] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
     setErrors({});
+    setDetectedSource(null);
+    setSourceTouched(Boolean(document));
     if (document) {
       setForm({
         name: document.name,
@@ -136,6 +133,20 @@ export function DocumentFormDrawer({
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
+
+  /** DOC-03A — nhập URL mới thì nhận diện lại loại nguồn. */
+  const handleUrlChange = (value: string) => {
+    const detected = detectDocumentSource(value);
+    setDetectedSource(detected);
+    setSourceTouched(false);
+    setErrors((prev) => ({ ...prev, source_url: undefined, source_type: undefined }));
+    setForm((prev) => ({
+      ...prev,
+      source_url: value,
+      source_type: detected ?? prev.source_type,
+    }));
+  };
+
 
   const scopeOptions = DOCUMENT_SCOPE_OPTIONS.filter(
     (option) => option.value !== "system" || allowSystemScope,
