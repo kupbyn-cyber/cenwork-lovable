@@ -23,6 +23,9 @@ export const Route = createFileRoute("/login")({
     if (data.user) {
       throw redirect({ to: safeRedirect(search.redirect) });
     }
+    // Môi trường/database mới chưa có quản trị viên: đưa về bước thiết lập ban đầu.
+    const status = await getBootstrapStatus().catch(() => ({ setup_required: false }));
+    if (status.setup_required) throw redirect({ to: "/setup" });
   },
   head: () => ({
     meta: [
