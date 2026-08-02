@@ -477,6 +477,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           </p>
         ) : null}
       </form>
-    </DrawerPanel>
+    </FormModal>
   );
 }
