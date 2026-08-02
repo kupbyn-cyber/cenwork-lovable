@@ -480,12 +480,14 @@ export async function withdrawDocument(documentId: string): Promise<void> {
 }
 
 export async function approveDocument(documentId: string, selfReason?: string): Promise<void> {
+  const trimmed = selfReason?.trim();
   const { error } = await supabase.rpc("document_approve", {
     _document: documentId,
-    _self_reason: selfReason?.trim() ? selfReason.trim() : null,
+    ...(trimmed ? { _self_reason: trimmed } : {}),
   });
   if (error) throw approvalError(error.message);
 }
+
 
 export async function rejectDocument(documentId: string, reason: string): Promise<void> {
   const { error } = await supabase.rpc("document_reject", {
