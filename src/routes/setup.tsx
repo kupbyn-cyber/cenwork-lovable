@@ -188,7 +188,7 @@ function SetupPage() {
               id="setup-password"
               label="Mật khẩu"
               required
-              helper="Tối thiểu 8 ký tự, gồm cả chữ và số."
+              helperText="Tối thiểu 8 ký tự, gồm cả chữ và số."
               {...(errors.password ? { error: errors.password } : {})}
             >
               {(controlProps) => (
@@ -225,7 +225,7 @@ function SetupPage() {
               id="setup-token"
               label="Mã thiết lập"
               required
-              helper="Mã do quản trị hạ tầng cấu hình trên máy chủ."
+              helperText="Mã do quản trị hạ tầng cấu hình trên máy chủ."
               {...(errors.token ? { error: errors.token } : {})}
             >
               {(controlProps) => (
