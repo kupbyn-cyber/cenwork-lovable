@@ -180,7 +180,7 @@ export function RoleMatrixPanel({
                   <div className="mb-2 flex items-start justify-between gap-2">
                     <span className="text-sm font-medium">{row.label}</span>
                     {row.is_sensitive ? (
-                      <Badge variant="warning-subtle" size="sm">
+                      <Badge variant="warning" size="sm">
                         Nhạy cảm
                       </Badge>
                     ) : null}
