@@ -353,11 +353,42 @@ export function DocumentFormDrawer({
           )}
         </FormField>
 
-        <FormField id="doc-source" label="Loại nguồn" required error={errors.source_type}>
+        <FormField
+          id="doc-url"
+          label="Đường dẫn tài liệu"
+          required
+          error={errors.source_url}
+          helperText="Nhập link trước, hệ thống sẽ tự nhận diện loại nguồn."
+        >
+          {(props) => (
+            <Input
+              {...props}
+              value={form.source_url}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="https://"
+              inputMode="url"
+            />
+          )}
+        </FormField>
+
+        <FormField
+          id="doc-source"
+          label="Loại nguồn"
+          required
+          error={errors.source_type}
+          helperText={
+            detectedSource && !sourceTouched
+              ? `Đã tự nhận diện: ${DOCUMENT_SOURCE_LABEL[detectedSource]}. Sửa lại nếu chưa đúng.`
+              : "Có thể chọn lại thủ công."
+          }
+        >
           {(props) => (
             <Select
               value={form.source_type}
-              onValueChange={(v) => set("source_type", v as DocumentSource)}
+              onValueChange={(v) => {
+                setSourceTouched(true);
+                set("source_type", v as DocumentSource);
+              }}
             >
               <SelectTrigger id={props.id} aria-invalid={props["aria-invalid"]}>
                 <SelectValue placeholder="Chọn nguồn tài liệu" />
@@ -373,17 +404,6 @@ export function DocumentFormDrawer({
           )}
         </FormField>
 
-        <FormField id="doc-url" label="Đường dẫn tài liệu" required error={errors.source_url}>
-          {(props) => (
-            <Input
-              {...props}
-              value={form.source_url}
-              onChange={(e) => set("source_url", e.target.value)}
-              placeholder="https://"
-              inputMode="url"
-            />
-          )}
-        </FormField>
 
         <FormField id="doc-owner" label="Người phụ trách" required error={errors.owner_id}>
           {(props) => (
