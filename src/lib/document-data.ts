@@ -150,13 +150,16 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
   return rows.map((row) => {
     const id = row["id"] as string;
     const mine = versions.filter((v) => v.document_id === id);
+    const latest = mine[0] ?? null;
+    const nameOf = (value: string | null | undefined) =>
+      value ? (nameById.get(value) ?? null) : null;
     return {
       ...(row as unknown as Omit<
         DocumentRow,
         "latestVersion" | "activeVersion" | "ownerName" | "creatorName" | "teamName" | "projectName"
       >),
       keywords: (row["keywords"] as string[] | null) ?? [],
-      latestVersion: mine[0] ?? null,
+      latestVersion: latest,
       activeVersion: mine.find((v) => v.status === "active") ?? null,
       ownerName: nameById.get(row["owner_id"] as string) ?? null,
       creatorName: nameById.get(row["created_by"] as string) ?? null,
@@ -164,8 +167,13 @@ async function decorate(rows: Record<string, unknown>[]): Promise<DocumentRow[]>
       projectName: row["project_id"]
         ? (projectById.get(row["project_id"] as string) ?? null)
         : null,
+      approverName: nameOf(latest?.alt_approver_id ?? latest?.approver_id),
+      submitterName: nameOf(latest?.submitted_by),
+      approvedByName: nameOf(latest?.approved_by),
+      rejectedByName: nameOf(latest?.rejected_by),
     } as DocumentRow;
   });
+
 }
 
 export async function fetchDocuments(): Promise<DocumentRow[]> {
