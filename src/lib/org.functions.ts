@@ -22,18 +22,20 @@ const createMemberSchema = z.object({
   primaryTeamId: z.string().uuid().nullable(),
   collaboratorTeamIds: z.array(z.string().uuid()).max(20).default([]),
   initialPassword: z.string().min(8).max(72),
+  // Bắt buộc: số điện thoại và ngày sinh (ngày sinh không được ở tương lai).
   phoneNumber: z
     .string()
     .trim()
-    .regex(/^[0-9+][0-9 .()-]{7,19}$/, "Số điện thoại không hợp lệ.")
-    .optional()
-    .nullable(),
+    .min(1, "Số điện thoại là bắt buộc.")
+    .regex(/^[0-9+][0-9 .()-]{7,19}$/, "Số điện thoại không hợp lệ."),
   birthday: z
     .string()
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Sinh nhật không hợp lệ.")
-    .optional()
-    .nullable(),
+    .refine((value) => {
+      const parsed = new Date(`${value}T00:00:00Z`);
+      return !Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now();
+    }, "Ngày sinh không được lớn hơn ngày hiện tại."),
 });
 
 
@@ -74,8 +76,8 @@ export const createMemberAccount = createServerFn({ method: "POST" })
         display_name: data.displayName,
         job_title: data.jobTitle?.trim() || null,
         primary_team_id: data.primaryTeamId,
-        phone_number: data.phoneNumber?.trim() || null,
-        birthday: data.birthday || null,
+        phone_number: data.phoneNumber.trim(),
+        birthday: data.birthday,
       })
       .eq("id", userId);
     if (profileError) throw new Error("Không lưu được hồ sơ thành viên.");
