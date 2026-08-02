@@ -1,7 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -121,7 +120,6 @@ function AnnouncementsPage() {
       >
         <AnnouncementModuleTabs />
       </PageHeader>
-
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">

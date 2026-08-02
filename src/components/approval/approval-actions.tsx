@@ -8,11 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { ApprovalFormDrawer } from "@/components/approval/approval-form-drawer";
-import {
-  APPROVAL_MODE_LABEL,
-  isOpenStatus,
-  type ApprovalDetail,
-} from "@/lib/approval-data";
+import { APPROVAL_MODE_LABEL, isOpenStatus, type ApprovalDetail } from "@/lib/approval-data";
 import { decideApprovalRequest, withdrawApprovalRequest } from "@/lib/approval.functions";
 
 /**
@@ -139,11 +135,7 @@ export function ApprovalActions({ detail, userId, sticky = false }: Props) {
       ) : null}
 
       {canResubmit ? (
-        <Button
-          type="button"
-          className="flex-1 sm:flex-none"
-          onClick={() => setResubmitOpen(true)}
-        >
+        <Button type="button" className="flex-1 sm:flex-none" onClick={() => setResubmitOpen(true)}>
           <RotateCcw />
           Sửa và gửi lại
         </Button>
@@ -230,11 +222,7 @@ export function ApprovalActions({ detail, userId, sticky = false }: Props) {
         </FormField>
       </ConfirmDialog>
 
-      <ApprovalFormDrawer
-        open={resubmitOpen}
-        onOpenChange={setResubmitOpen}
-        resubmitOf={request}
-      />
+      <ApprovalFormDrawer open={resubmitOpen} onOpenChange={setResubmitOpen} resubmitOf={request} />
     </div>
   );
 }

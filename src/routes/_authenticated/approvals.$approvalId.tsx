@@ -148,7 +148,10 @@ function ApprovalDetailPage() {
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
-          <SectionHeader title="Người phê duyệt" description="Kết quả xử lý của phiên bản hiện tại." />
+          <SectionHeader
+            title="Người phê duyệt"
+            description="Kết quả xử lý của phiên bản hiện tại."
+          />
           <ApprovalApproverList detail={detail.data} userId={user?.id ?? null} />
         </CardContent>
       </Card>

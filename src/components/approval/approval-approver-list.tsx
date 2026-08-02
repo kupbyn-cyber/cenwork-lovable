@@ -89,9 +89,7 @@ export function ApprovalApproverList({ detail, userId }: Props) {
               <p className="break-words text-label font-medium text-text-primary">
                 {profile?.display_name ?? "Người dùng"}
                 {inactive ? (
-                  <span className="ml-2 text-helper text-state-warning">
-                    (không còn hoạt động)
-                  </span>
+                  <span className="ml-2 text-helper text-state-warning">(không còn hoạt động)</span>
                 ) : null}
               </p>
               <p className="break-words text-helper text-text-muted">{profile?.email ?? "—"}</p>
@@ -172,9 +170,7 @@ export function ApprovalApproverList({ detail, userId }: Props) {
                     selected === item.id ? "bg-surface-raised" : ""
                   }`}
                 >
-                  <span className="truncate text-label text-text-primary">
-                    {item.display_name}
-                  </span>
+                  <span className="truncate text-label text-text-primary">{item.display_name}</span>
                   <span className="truncate text-helper text-text-muted">{item.email}</span>
                 </button>
               ))

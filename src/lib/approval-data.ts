@@ -121,10 +121,7 @@ function fail(error: { message: string } | null) {
 }
 
 /** Trạng thái hiển thị: quá hạn tính động khi cron chưa kịp cập nhật. */
-export function effectiveStatus(row: {
-  status: ApprovalStatus;
-  due_at: string;
-}): ApprovalStatus {
+export function effectiveStatus(row: { status: ApprovalStatus; due_at: string }): ApprovalStatus {
   if (row.status === "pending" && new Date(row.due_at).getTime() < Date.now()) return "overdue";
   return row.status;
 }

@@ -191,7 +191,12 @@ export function ApprovalFormDrawer({ open, onOpenChange, resubmitOf }: Props) {
           )}
         </FormField>
 
-        <FormField id="approval-content" label="Nội dung đề nghị" required error={errors["content"]}>
+        <FormField
+          id="approval-content"
+          label="Nội dung đề nghị"
+          required
+          error={errors["content"]}
+        >
           {(control) => (
             <Textarea
               {...control}
