@@ -123,6 +123,36 @@ function DocumentDetailPage() {
     },
   });
 
+  const [approvalPending, setApprovalPending] = React.useState<
+    "submit" | "withdraw" | "approve" | "reject" | "reassign" | null
+  >(null);
+
+  const refreshDocument = () => {
+    void queryClient.invalidateQueries({ queryKey: ["document", documentId] });
+    void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  };
+
+  const runApproval = async (
+    kind: "submit" | "withdraw" | "approve" | "reject" | "reassign",
+    action: () => Promise<void>,
+    successMessage: string,
+  ) => {
+    if (approvalPending) return;
+    setApprovalPending(kind);
+    try {
+      await action();
+      cenToast.success(successMessage);
+      refreshDocument();
+    } catch (error) {
+      cenToast.error((error as Error).message);
+    } finally {
+      setApprovalPending(null);
+    }
+  };
+
+
+
   if (document.isLoading) {
     return (
       <div className="flex flex-col gap-4">
