@@ -1,14 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardCheck, Plus } from "lucide-react";
+import * as React from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { ClipboardCheck } from "lucide-react";
 
 import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
-import { Button } from "@/components/ui/button";
+import { ModuleCreateActions } from "@/components/announcement/module-create-actions";
+import { ApprovalFormDrawer } from "@/components/approval/approval-form-drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/use-auth";
+import { useOrgAccess } from "@/hooks/use-org-access";
+import {
+  APPROVAL_MODE_LABEL,
+  APPROVAL_STATUS_LABEL,
+  APPROVAL_STATUS_TONE,
+  approvalListQuery,
+  type ApprovalListItem,
+} from "@/lib/approval-data";
+import { formatHanoiDateTime } from "@/lib/datetime";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const TITLE = "Yêu cầu phê duyệt — CEN WORK";
-const DESCRIPTION = "Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt trong CEN WORK.";
+const DESCRIPTION = "Tạo, theo dõi và xử lý các yêu cầu phê duyệt nội bộ trong CEN WORK.";
 
 export const Route = createFileRoute("/_authenticated/approvals/")({
   head: () => ({
@@ -24,31 +50,139 @@ export const Route = createFileRoute("/_authenticated/approvals/")({
   component: ApprovalsPage,
 });
 
+const FILTERS = [
+  { value: "all", label: "Tất cả" },
+  { value: "pending", label: "Chờ xử lý" },
+  { value: "overdue", label: "Quá hạn" },
+  { value: "approved", label: "Đã phê duyệt" },
+  { value: "rejected", label: "Đã từ chối" },
+  { value: "withdrawn", label: "Đã thu hồi" },
+];
+
+function ApprovalCard({ item, senderLabel }: { item: ApprovalListItem; senderLabel: string }) {
+  const { request } = item;
+  const needsAction = item.myDecision?.decision_status === "pending" && item.status !== "withdrawn";
+  return (
+    <Link
+      to="/approvals/$approvalId"
+      params={{ approvalId: request.id }}
+      className="flex min-w-0 flex-col gap-2 rounded-control border border-border-default p-4 transition-colors duration-fast hover:bg-surface-raised"
+    >
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <p className="min-w-0 break-words text-body-lg font-semibold text-text-primary">
+          {request.title}
+        </p>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {needsAction ? <StatusBadge tone="progress" label="Chưa xử lý" /> : null}
+          <StatusBadge
+            tone={APPROVAL_STATUS_TONE[item.status]}
+            label={APPROVAL_STATUS_LABEL[item.status]}
+          />
+        </div>
+      </div>
+      <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-helper text-text-muted">
+        <span>Người gửi: {senderLabel}</span>
+        <span>{APPROVAL_MODE_LABEL[request.approval_mode]}</span>
+        <span>
+          Tiến độ: {item.approvedCount}/{item.totalCount} đồng ý
+        </span>
+        <span>Hạn: {formatHanoiDateTime(request.due_at)}</span>
+        <span>Phiên bản V{request.current_version}</span>
+      </div>
+    </Link>
+  );
+}
+
 function ApprovalsPage() {
+  const { user } = useAuth();
+  const { can } = useOrgAccess();
+  const navigate = useNavigate();
+  const [status, setStatus] = React.useState("all");
+  const [createOpen, setCreateOpen] = React.useState(false);
+
+  const list = useQuery(approvalListQuery(user?.id));
+
+  const filtered = React.useMemo(
+    () => (list.data ?? []).filter((item) => status === "all" || item.status === status),
+    [list.data, status],
+  );
+
+  const inbox = filtered.filter((item) => item.myDecision !== null);
+  const sent = filtered.filter((item) => item.request.sender_id === user?.id);
+
+  function senderLabel(item: ApprovalListItem) {
+    return item.request.sender_id === user?.id ? "Bạn" : "Thành viên khác";
+  }
+
+  function renderList(items: ApprovalListItem[], emptyText: string) {
+    if (list.isLoading) return <SkeletonCard lines={3} />;
+    if (list.isError)
+      return (
+        <ErrorState
+          title="Không tải được danh sách phê duyệt"
+          description="Thử lại để tải các yêu cầu phê duyệt."
+          onRetry={() => void list.refetch()}
+        />
+      );
+    if (items.length === 0)
+      return <EmptyState icon={ClipboardCheck} title="Chưa có yêu cầu" description={emptyText} />;
+    return (
+      <div className="flex min-w-0 flex-col gap-3">
+        {items.map((item) => (
+          <ApprovalCard key={item.request.id} item={item} senderLabel={senderLabel(item)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="Thông báo & Phê duyệt"
         description="Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt."
         actions={
-          <Button type="button" disabled title="Sẽ mở trong gói NAP-03">
-            <Plus />
-            Tạo phê duyệt
-          </Button>
+          <ModuleCreateActions
+            canCreateAnnouncement={can(PERMISSIONS.ANNOUNCEMENTS_CREATE)}
+            canCreateApproval={can(PERMISSIONS.APPROVALS_CREATE)}
+            onCreateAnnouncement={() => void navigate({ to: "/announcements" })}
+            onCreateApproval={() => setCreateOpen(true)}
+          />
         }
       >
         <AnnouncementModuleTabs />
       </PageHeader>
 
       <Card>
-        <CardContent>
-          <EmptyState
-            icon={ClipboardCheck}
-            title="Chưa có yêu cầu phê duyệt"
-            description="Luồng phê duyệt sẽ được mở trong gói tiếp theo."
-          />
+        <CardContent className="flex min-w-0 flex-col gap-4">
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger aria-label="Lọc trạng thái" className="w-full sm:w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FILTERS.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Tabs defaultValue="inbox">
+            <TabsList>
+              <TabsTrigger value="inbox">Cần tôi xử lý</TabsTrigger>
+              <TabsTrigger value="sent">Đã gửi</TabsTrigger>
+            </TabsList>
+            <TabsContent value="inbox" className="mt-4">
+              {renderList(inbox, "Yêu cầu cần bạn phê duyệt sẽ xuất hiện tại đây.")}
+            </TabsContent>
+            <TabsContent value="sent" className="mt-4">
+              {renderList(sent, "Yêu cầu bạn đã gửi sẽ xuất hiện tại đây.")}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
+      <ApprovalFormDrawer open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }
