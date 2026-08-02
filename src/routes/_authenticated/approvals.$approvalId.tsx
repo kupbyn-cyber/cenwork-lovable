@@ -46,7 +46,9 @@ export const Route = createFileRoute("/_authenticated/approvals/$approvalId")({
 function ApprovalDetailPage() {
   const { approvalId } = Route.useParams();
   const { user } = useAuth();
+  const { isAdmin, isCmo } = useOrgAccess();
   const detail = useQuery(approvalDetailQuery(approvalId));
+
 
   const back = (
     <Button asChild variant="secondary" size="sm">
