@@ -15,12 +15,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cenToast } from "@/components/ui/toast";
 import { DocumentFormDrawer } from "@/components/document/document-form-drawer";
+import { DocumentApprovalPanel } from "@/components/document/document-approval-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   DOCUMENT_SOURCE_LABEL,
   DOCUMENT_VERSION_STATUS_LABEL,
 } from "@/lib/document-catalog";
 import {
+  approveDocument,
   canDeleteDocument,
   canManageDocument,
   deleteDocumentDraft,
@@ -28,13 +30,18 @@ import {
   documentStatus,
   isDraftDocument,
   myScopeAccessQuery,
+  rejectDocument,
+  setDocumentApprover,
+  submitDocument,
   updateDocumentDraft,
+  withdrawDocument,
   type DocumentAccessContext,
   type DocumentDraftInput,
 } from "@/lib/document-data";
 import { DOCUMENT_STATUS_TONE, formatDate, scopeText, typeText } from "@/lib/document-view";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import { teamsQuery } from "@/lib/org-data";
+
 
 export const Route = createFileRoute("/_authenticated/documents/$documentId")({
   head: () => ({
