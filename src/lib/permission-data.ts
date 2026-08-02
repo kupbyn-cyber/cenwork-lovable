@@ -133,7 +133,7 @@ export const userOverridesQuery = (userId: string | null) =>
           .from("user_permission_overrides")
           .select("user_id,permission_key,override_type,data_scope,reason,created_at,updated_at")
           .eq("user_id", userId!),
-      ),
+      ) as OverrideRow[],
     enabled: Boolean(userId),
   });
 
