@@ -320,6 +320,38 @@ function DocumentDetailPage() {
         </CardContent>
       </Card>
 
+      <DocumentApprovalPanel
+        document={doc}
+        ctx={ctx}
+        people={people.data ?? []}
+        pending={approvalPending}
+        onSubmit={() =>
+          void runApproval("submit", () => submitDocument(doc.id), "Đã gửi duyệt tài liệu.")
+        }
+        onWithdraw={() =>
+          void runApproval("withdraw", () => withdrawDocument(doc.id), "Đã thu hồi yêu cầu duyệt.")
+        }
+        onApprove={(selfReason) =>
+          void runApproval(
+            "approve",
+            () => approveDocument(doc.id, selfReason ?? undefined),
+            "Đã duyệt tài liệu.",
+          )
+        }
+        onReject={(reason) =>
+          void runApproval("reject", () => rejectDocument(doc.id, reason), "Đã từ chối tài liệu.")
+        }
+        onReassign={(approverId) =>
+          void runApproval(
+            "reassign",
+            () => setDocumentApprover(doc.id, approverId),
+            "Đã chỉ định người duyệt thay thế.",
+          )
+        }
+      />
+
+
+
       <DocumentFormDrawer
         open={editOpen}
         onOpenChange={(open) => {
