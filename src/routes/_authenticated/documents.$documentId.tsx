@@ -27,6 +27,7 @@ import {
 } from "@/lib/document-catalog";
 import {
   approveDocument,
+  archiveDocument,
   canDeleteDocument,
   canManageDocument,
   deleteDocumentDraft,
@@ -35,6 +36,9 @@ import {
   isDraftDocument,
   myScopeAccessQuery,
   rejectDocument,
+  reportDocumentLink,
+  resolveDocumentLink,
+  restoreDocument,
   setDocumentApprover,
   submitDocument,
   updateDocumentDraft,
