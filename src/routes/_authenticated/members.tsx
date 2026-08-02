@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cake, Eye, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
+import { Cake, Eye, KeyRound, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
 import { MemberDetailModal } from "@/components/org/member-detail-modal";
+import { TempPasswordModal } from "@/components/org/temp-password-modal";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { setMemberStatus } from "@/lib/org.functions";
 import { testPersonalTelegram } from "@/lib/telegram.functions";
@@ -302,6 +303,26 @@ function MembersPage() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Sửa thành viên</TooltipContent>
+            </Tooltip>
+          ) : null}
+          {/* MEMBER-AUTH: chỉ Admin/CMO, chỉ cho Leader/Member đang hoạt động, không cho chính mình. */}
+          {access.canIssueTempPassword &&
+          row.id !== access.userId &&
+          row.status === "active" &&
+          (row.role === "leader" || row.role === "member") ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  aria-label={`Cấp mật khẩu tạm cho ${row.display_name}`}
+                  onClick={() => setTempPasswordTarget(row)}
+                >
+                  <KeyRound />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Cấp mật khẩu tạm</TooltipContent>
             </Tooltip>
           ) : null}
           {access.canLockMember && row.id !== access.userId ? (
