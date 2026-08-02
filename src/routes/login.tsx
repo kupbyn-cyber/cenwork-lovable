@@ -10,6 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/integrations/supabase/client";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { getBootstrapStatus } from "@/lib/bootstrap.functions";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -23,6 +24,9 @@ export const Route = createFileRoute("/login")({
     if (data.user) {
       throw redirect({ to: safeRedirect(search.redirect) });
     }
+    // Môi trường/database mới chưa có quản trị viên: đưa về bước thiết lập ban đầu.
+    const status = await getBootstrapStatus().catch(() => ({ setup_required: false }));
+    if (status.setup_required) throw redirect({ to: "/setup" });
   },
   head: () => ({
     meta: [
