@@ -73,3 +73,48 @@ export const DOCUMENT_PUBLIC_STATUSES: DocumentVersionStatus[] = [
 export function normalizeDocumentName(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
+
+/** URL hợp lệ khi là http/https. */
+export function isValidDocumentUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * DOC-03A — Nhận diện loại nguồn từ URL.
+ * Không phân biệt hoa/thường, bỏ qua query parameters.
+ * Trả về null khi URL không hợp lệ.
+ */
+export function detectDocumentSource(value: string): DocumentSource | null {
+  const raw = value.trim();
+  if (!isValidDocumentUrl(raw)) return null;
+
+  const url = new URL(raw);
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  const path = url.pathname.toLowerCase();
+
+  if (host === "docs.google.com") {
+    if (path.startsWith("/document")) return "google_docs";
+    if (path.startsWith("/spreadsheets")) return "google_sheets";
+    if (path.startsWith("/presentation")) return "google_slides";
+    return "google_drive";
+  }
+  if (host === "sheets.google.com") return "google_sheets";
+  if (host === "slides.google.com") return "google_slides";
+  if (host === "drive.google.com") return "google_drive";
+  if (host === "canva.com" || host.endsWith(".canva.com")) return "canva";
+  if (
+    host === "notion.so" ||
+    host.endsWith(".notion.so") ||
+    host === "notion.site" ||
+    host.endsWith(".notion.site")
+  ) {
+    return "notion";
+  }
+  return "website";
+}
+
