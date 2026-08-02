@@ -42,6 +42,13 @@ export const NOTIFICATION_EVENT_LABEL: Record<string, string> = {
   "approval.approver_replaced": "Được chỉ định phê duyệt thay",
   "approval.mentioned": "Được nhắc tên trong phê duyệt",
   "approval.comment_created": "Bình luận mới trong phê duyệt",
+  "approval.due_24h": "Sắp đến hạn phê duyệt",
+  "approval.overdue_reminder": "Phê duyệt đã quá hạn",
+  "approval.sender_overdue": "Yêu cầu của bạn đã quá hạn",
+  "announcement.due_24h": "Sắp đến hạn xác nhận thông báo",
+  "announcement.due_2h": "Còn 2 giờ đến hạn xác nhận",
+  "announcement.overdue_reminder": "Thông báo đã quá hạn xác nhận",
+  "announcement.sender_overdue": "Thông báo của bạn đã quá hạn",
 };
 
 export function notificationEventLabel(eventType: string): string {
