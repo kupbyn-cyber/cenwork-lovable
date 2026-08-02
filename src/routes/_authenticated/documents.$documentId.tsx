@@ -350,6 +350,33 @@ function DocumentDetailPage() {
         }
       />
 
+      <DocumentLifecyclePanel
+        document={doc}
+        ctx={ctx}
+        pending={lifecyclePending}
+        onReport={(note) =>
+          void runLifecycle("report", () => reportDocumentLink(doc.id, note), "Đã báo link lỗi.")
+        }
+        onResolve={(note, newUrl) =>
+          void runLifecycle(
+            "resolve",
+            () => resolveDocumentLink(doc.id, note, newUrl),
+            "Đã xác nhận xử lý đường dẫn.",
+          )
+        }
+        onArchive={(reason) =>
+          void runLifecycle("archive", () => archiveDocument(doc.id, reason), "Đã lưu trữ tài liệu.")
+        }
+        onRestore={(reason) =>
+          void runLifecycle(
+            "restore",
+            () => restoreDocument(doc.id, reason),
+            "Đã khôi phục tài liệu.",
+          )
+        }
+      />
+
+
 
 
       <DocumentFormDrawer
