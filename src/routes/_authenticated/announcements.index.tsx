@@ -19,6 +19,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnnouncementFormDrawer } from "@/components/announcement/announcement-form-drawer";
 import { AnnouncementAckCard } from "@/components/announcement/announcement-ack-card";
+import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
+
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonCard } from "@/components/ui/skeleton";
