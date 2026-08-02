@@ -752,6 +752,201 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_decisions: {
+        Row: {
+          approval_note: string | null
+          approval_request_id: string
+          approver_id: string
+          created_at: string
+          decision_at: string | null
+          decision_status: Database["public"]["Enums"]["approval_decision_status"]
+          id: string
+          rejection_reason: string | null
+          replaced_at: string | null
+          replaced_by: string | null
+          updated_at: string
+          version_no: number
+        }
+        Insert: {
+          approval_note?: string | null
+          approval_request_id: string
+          approver_id: string
+          created_at?: string
+          decision_at?: string | null
+          decision_status?: Database["public"]["Enums"]["approval_decision_status"]
+          id?: string
+          rejection_reason?: string | null
+          replaced_at?: string | null
+          replaced_by?: string | null
+          updated_at?: string
+          version_no: number
+        }
+        Update: {
+          approval_note?: string | null
+          approval_request_id?: string
+          approver_id?: string
+          created_at?: string
+          decision_at?: string | null
+          decision_status?: Database["public"]["Enums"]["approval_decision_status"]
+          id?: string
+          rejection_reason?: string | null
+          replaced_at?: string | null
+          replaced_by?: string | null
+          updated_at?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_decisions_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_decisions_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_decisions_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_request_versions: {
+        Row: {
+          approval_mode: Database["public"]["Enums"]["approval_mode"]
+          approval_request_id: string
+          approver_ids: string[]
+          content: string
+          created_at: string
+          due_at: string
+          ended_at: string | null
+          id: string
+          outcome_status:
+            | Database["public"]["Enums"]["approval_request_status"]
+            | null
+          submitted_at: string
+          submitted_by: string
+          title: string
+          version_no: number
+        }
+        Insert: {
+          approval_mode: Database["public"]["Enums"]["approval_mode"]
+          approval_request_id: string
+          approver_ids: string[]
+          content?: string
+          created_at?: string
+          due_at: string
+          ended_at?: string | null
+          id?: string
+          outcome_status?:
+            | Database["public"]["Enums"]["approval_request_status"]
+            | null
+          submitted_at?: string
+          submitted_by: string
+          title: string
+          version_no: number
+        }
+        Update: {
+          approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          approval_request_id?: string
+          approver_ids?: string[]
+          content?: string
+          created_at?: string
+          due_at?: string
+          ended_at?: string | null
+          id?: string
+          outcome_status?:
+            | Database["public"]["Enums"]["approval_request_status"]
+            | null
+          submitted_at?: string
+          submitted_by?: string
+          title?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_request_versions_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_request_versions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_requests: {
+        Row: {
+          approval_mode: Database["public"]["Enums"]["approval_mode"]
+          approved_at: string | null
+          archived_at: string | null
+          content: string
+          created_at: string
+          current_version: number
+          due_at: string
+          id: string
+          rejected_at: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["approval_request_status"]
+          title: string
+          updated_at: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          approval_mode: Database["public"]["Enums"]["approval_mode"]
+          approved_at?: string | null
+          archived_at?: string | null
+          content?: string
+          created_at?: string
+          current_version?: number
+          due_at: string
+          id?: string
+          rejected_at?: string | null
+          sender_id: string
+          status?: Database["public"]["Enums"]["approval_request_status"]
+          title: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          approved_at?: string | null
+          archived_at?: string | null
+          content?: string
+          created_at?: string
+          current_version?: number
+          due_at?: string
+          id?: string
+          rejected_at?: string | null
+          sender_id?: string
+          status?: Database["public"]["Enums"]["approval_request_status"]
+          title?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -4427,6 +4622,47 @@ export type Database = {
         Args: { _teams: string[] }
         Returns: string[]
       }
+      approval_can_view: { Args: { _request: string }; Returns: boolean }
+      approval_create: {
+        Args: {
+          _approvers: string[]
+          _content: string
+          _due_at: string
+          _mode: Database["public"]["Enums"]["approval_mode"]
+          _title: string
+        }
+        Returns: string
+      }
+      approval_decide: {
+        Args: { _approve: boolean; _note?: string; _request: string }
+        Returns: Database["public"]["Enums"]["approval_request_status"]
+      }
+      approval_finalize: {
+        Args: { _request: string }
+        Returns: Database["public"]["Enums"]["approval_request_status"]
+      }
+      approval_is_current_approver: {
+        Args: { _request: string; _user?: string }
+        Returns: boolean
+      }
+      approval_mark_overdue: { Args: never; Returns: number }
+      approval_replace_approver: {
+        Args: { _new: string; _old: string; _request: string }
+        Returns: undefined
+      }
+      approval_resubmit: {
+        Args: {
+          _content: string
+          _due_at: string
+          _request: string
+          _title: string
+        }
+        Returns: number
+      }
+      approval_withdraw: {
+        Args: { _reason?: string; _request: string }
+        Returns: undefined
+      }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
       can_approve_deadline_change: {
@@ -4773,6 +5009,14 @@ export type Database = {
       announcement_status: "draft" | "published"
       announcement_target_type: "user" | "team"
       app_role: "admin" | "cmo" | "leader" | "member"
+      approval_decision_status: "pending" | "approved" | "rejected" | "replaced"
+      approval_mode: "any_one" | "all_required"
+      approval_request_status:
+        | "pending"
+        | "overdue"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
       delivery_status: "pending" | "sent" | "failed"
       document_scope: "system" | "team" | "project"
       document_source:
@@ -5001,6 +5245,15 @@ export const Constants = {
       announcement_status: ["draft", "published"],
       announcement_target_type: ["user", "team"],
       app_role: ["admin", "cmo", "leader", "member"],
+      approval_decision_status: ["pending", "approved", "rejected", "replaced"],
+      approval_mode: ["any_one", "all_required"],
+      approval_request_status: [
+        "pending",
+        "overdue",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
       delivery_status: ["pending", "sent", "failed"],
       document_scope: ["system", "team", "project"],
       document_source: [
