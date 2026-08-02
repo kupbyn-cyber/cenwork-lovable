@@ -68,7 +68,7 @@ export async function decideApproval(
   const { data, error } = await supabase.rpc("approval_decide", {
     _request: requestId,
     _approve: approve,
-    _note: note?.trim() ? note.trim() : null,
+    _note: note?.trim() ? note.trim() : undefined,
   });
   fail(error);
   return { status: data as string };
@@ -77,7 +77,7 @@ export async function decideApproval(
 export async function withdrawApproval(supabase: Client, requestId: string, reason: string | null) {
   const { error } = await supabase.rpc("approval_withdraw", {
     _request: requestId,
-    _reason: reason?.trim() ? reason.trim() : null,
+    _reason: reason?.trim() ? reason.trim() : undefined,
   });
   fail(error);
   return { ok: true as const };
