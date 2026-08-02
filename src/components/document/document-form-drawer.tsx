@@ -139,7 +139,12 @@ export function DocumentFormDrawer({
     const detected = detectDocumentSource(value);
     setDetectedSource(detected);
     setSourceTouched(false);
-    setErrors((prev) => ({ ...prev, source_url: undefined, source_type: undefined }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.source_url;
+      delete next.source_type;
+      return next;
+    });
     setForm((prev) => ({
       ...prev,
       source_url: value,
