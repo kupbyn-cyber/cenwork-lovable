@@ -103,13 +103,9 @@ export function DocumentFormDrawer({
   const [detectedSource, setDetectedSource] = React.useState<DocumentSource | null>(null);
   const [sourceTouched, setSourceTouched] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!open) return;
-    setErrors({});
-    setDetectedSource(null);
-    setSourceTouched(Boolean(document));
+  const initialForm = React.useMemo<FormState>(() => {
     if (document) {
-      setForm({
+      return {
         name: document.name,
         doc_type: document.doc_type,
         scope: document.scope,
@@ -123,11 +119,20 @@ export function DocumentFormDrawer({
         effective_to: document.latestVersion?.effective_to ?? "",
         keywords: document.keywords.join(", "),
         change_note: document.latestVersion?.change_note ?? "",
-      });
-    } else {
-      setForm({ ...EMPTY, owner_id: defaultOwnerId ?? "", effective_from: todayISO() });
+      };
     }
-  }, [open, document, defaultOwnerId]);
+    return { ...EMPTY, owner_id: defaultOwnerId ?? "", effective_from: todayISO() };
+  }, [document, defaultOwnerId]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setErrors({});
+    setDetectedSource(null);
+    setSourceTouched(Boolean(document));
+    setForm(initialForm);
+  }, [open, document, initialForm]);
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
