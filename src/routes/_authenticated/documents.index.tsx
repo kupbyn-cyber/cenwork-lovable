@@ -529,6 +529,23 @@ function DocumentsPage() {
         loading={deleteMutation.isPending}
         onConfirm={() => deleting && deleteMutation.mutate(deleting)}
       />
+
+      <ConfirmDialog
+        open={Boolean(reporting)}
+        onOpenChange={(open) => {
+          if (!open) setReporting(null);
+        }}
+        title="Báo link tài liệu bị lỗi?"
+        description={
+          reporting
+            ? `"${reporting.name}" sẽ được đánh dấu "Cần kiểm tra" và gửi thông báo tới người phụ trách. Mở trang chi tiết nếu bạn muốn mô tả lỗi cụ thể.`
+            : undefined
+        }
+        confirmLabel="Báo link lỗi"
+        loading={reportMutation.isPending}
+        onConfirm={() => reporting && reportMutation.mutate(reporting)}
+      />
     </div>
+
   );
 }
