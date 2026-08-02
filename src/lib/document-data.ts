@@ -106,7 +106,7 @@ const DOCUMENT_COLUMNS =
   "id,code,name,display_name,doc_type,scope,team_id,project_id,description,source_type,source_url,keywords,created_by,owner_id,archived_at,archived_by,archive_reason,restored_at,restored_by,restore_reason,created_at,updated_at";
 
 const VERSION_COLUMNS =
-  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,link_review_note,link_reported_by,link_reported_at,link_resolved_by,link_resolved_at,archived_at,archived_by,archive_reason,restored_at,restored_by,restore_reason,status_before_archive,created_at,updated_at";
+  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,link_review_note,supersedes_version_id,superseded_by_version_id,link_reported_by,link_reported_at,link_resolved_by,link_resolved_at,archived_at,archived_by,archive_reason,restored_at,restored_by,restore_reason,status_before_archive,created_at,updated_at";
 
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
