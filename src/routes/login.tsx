@@ -10,6 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/integrations/supabase/client";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { getBootstrapStatus } from "@/lib/bootstrap.functions";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
