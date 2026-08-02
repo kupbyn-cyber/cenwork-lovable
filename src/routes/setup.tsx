@@ -243,13 +243,13 @@ function SetupPage() {
             {formError ? (
               <p
                 role="alert"
-                className="rounded-control border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-helper text-status-danger"
+                className="rounded-control border border-state-danger/50 bg-state-danger-surface px-3 py-2 text-helper text-state-danger"
               >
                 {formError}
               </p>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={submitting || succeeded}>
+            <Button type="submit" fullWidth loading={submitting && !succeeded} disabled={succeeded}>
               {succeeded ? (
                 <>
                   <Check className="size-4" aria-hidden />
