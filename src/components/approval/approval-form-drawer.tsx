@@ -65,24 +65,25 @@ export function ApprovalFormDrawer({ open, onOpenChange, resubmitOf }: Props) {
 
   const directory = useQuery({ ...approvalDirectoryQuery(), enabled: open && !isResubmit });
 
+  const initialForm = React.useMemo<FormState>(() => {
+    if (!resubmitOf) return EMPTY;
+    const due = utcToHanoiInputs(resubmitOf.due_at);
+    return {
+      title: resubmitOf.title,
+      content: resubmitOf.content,
+      dueDate: due.date,
+      dueTime: due.time || "17:00",
+      mode: resubmitOf.approval_mode,
+      approverIds: [],
+    };
+  }, [resubmitOf]);
+
   React.useEffect(() => {
     if (!open) return;
     setErrors({});
     setSearch("");
-    if (resubmitOf) {
-      const due = utcToHanoiInputs(resubmitOf.due_at);
-      setForm({
-        title: resubmitOf.title,
-        content: resubmitOf.content,
-        dueDate: due.date,
-        dueTime: due.time || "17:00",
-        mode: resubmitOf.approval_mode,
-        approverIds: [],
-      });
-    } else {
-      setForm(EMPTY);
-    }
-  }, [open, resubmitOf]);
+    setForm(initialForm);
+  }, [open, initialForm]);
 
   const candidates = React.useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -150,8 +151,11 @@ export function ApprovalFormDrawer({ open, onOpenChange, resubmitOf }: Props) {
   }
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
+      size="lg"
+      dirty={JSON.stringify(form) !== JSON.stringify(initialForm)}
+      busy={mutation.isPending}
       onOpenChange={(next) => {
         if (mutation.isPending) return;
         onOpenChange(next);
