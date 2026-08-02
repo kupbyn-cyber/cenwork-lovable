@@ -16,8 +16,8 @@ interface StatItem {
   key: string;
   label: string;
   value: number;
-  tone?: "danger" | "default";
-  onSelect?: () => void;
+  tone?: "danger" | "default" | undefined;
+  onSelect?: (() => void) | undefined;
 }
 
 interface NapStatsCardsProps {
@@ -31,81 +31,78 @@ function buildItems(
   onSelect?: (filter: string) => void,
 ): StatItem[] {
   const pick = (filter: string) => (onSelect ? () => onSelect(filter) : undefined);
+  const items: StatItem[] = [];
+
   if (scope === "announcement") {
-    return [
-      {
-        key: "unconfirmed",
-        label: "Tôi chưa xác nhận",
-        value: stats.announcement_unconfirmed,
-        onSelect: pick("unread"),
-      },
-      {
-        key: "overdue",
-        label: "Quá hạn xác nhận",
-        value: stats.announcement_overdue,
-        tone: "danger",
-        onSelect: pick("overdue"),
-      },
-      ...(stats.is_admin
-        ? [
-            {
-              key: "org_overdue",
-              label: "Toàn hệ thống quá hạn",
-              value: stats.org_announcement_overdue ?? 0,
-              tone: "danger" as const,
-            },
-          ]
-        : []),
-    ];
-  }
-  return [
-    {
-      key: "pending_me",
-      label: "Cần tôi phê duyệt",
-      value: stats.approval_pending_me,
-      onSelect: pick("pending"),
-    },
-    {
-      key: "overdue_me",
-      label: "Quá hạn xử lý",
-      value: stats.approval_overdue_me,
+    items.push({
+      key: "unconfirmed",
+      label: "Tôi chưa xác nhận",
+      value: stats.announcement_unconfirmed,
+      onSelect: pick("unread"),
+    });
+    items.push({
+      key: "overdue",
+      label: "Quá hạn xác nhận",
+      value: stats.announcement_overdue,
       tone: "danger",
       onSelect: pick("overdue"),
-    },
-    {
-      key: "sent_approved",
-      label: "Tôi gửi — đã phê duyệt",
-      value: stats.approval_sent_approved,
-      onSelect: pick("approved"),
-    },
-    {
-      key: "sent_rejected",
-      label: "Tôi gửi — đã từ chối",
-      value: stats.approval_sent_rejected,
-      onSelect: pick("rejected"),
-    },
-    ...(stats.is_admin
-      ? [
-          {
-            key: "org_pending",
-            label: "Toàn hệ thống chờ xử lý",
-            value: stats.org_approval_pending ?? 0,
-          },
-          {
-            key: "org_overdue",
-            label: "Toàn hệ thống quá hạn",
-            value: stats.org_approval_overdue ?? 0,
-            tone: "danger" as const,
-          },
-        ]
-      : []),
-  ];
+    });
+    if (stats.is_admin) {
+      items.push({
+        key: "org_overdue",
+        label: "Toàn hệ thống quá hạn",
+        value: stats.org_announcement_overdue ?? 0,
+        tone: "danger",
+      });
+    }
+    return items;
+  }
+
+  items.push({
+    key: "pending_me",
+    label: "Cần tôi phê duyệt",
+    value: stats.approval_pending_me,
+    onSelect: pick("pending"),
+  });
+  items.push({
+    key: "overdue_me",
+    label: "Quá hạn xử lý",
+    value: stats.approval_overdue_me,
+    tone: "danger",
+    onSelect: pick("overdue"),
+  });
+  items.push({
+    key: "sent_approved",
+    label: "Tôi gửi — đã phê duyệt",
+    value: stats.approval_sent_approved,
+    onSelect: pick("approved"),
+  });
+  items.push({
+    key: "sent_rejected",
+    label: "Tôi gửi — đã từ chối",
+    value: stats.approval_sent_rejected,
+    onSelect: pick("rejected"),
+  });
+  if (stats.is_admin) {
+    items.push({
+      key: "org_pending",
+      label: "Toàn hệ thống chờ xử lý",
+      value: stats.org_approval_pending ?? 0,
+    });
+    items.push({
+      key: "org_overdue",
+      label: "Toàn hệ thống quá hạn",
+      value: stats.org_approval_overdue ?? 0,
+      tone: "danger",
+    });
+  }
+  return items;
 }
 
 export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   const stats = useQuery(napStatsQuery());
 
-  if (stats.isLoading) {
+  if (stats.isLoading || (!stats.data && !stats.isError)) {
     return (
       <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
         {[0, 1, 2, 3].map((index) => (
@@ -115,7 +112,7 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
     );
   }
 
-  if (stats.isError) {
+  if (stats.isError || !stats.data) {
     return (
       <ErrorState
         title="Không tải được thống kê"
@@ -130,7 +127,7 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   return (
     <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
       {items.map((item) => {
-        const content = (
+        const body = (
           <CardContent className="flex min-w-0 flex-col gap-1 p-4">
             <span className="break-words text-helper text-text-muted">{item.label}</span>
             <span
@@ -146,12 +143,11 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
           </CardContent>
         );
         if (!item.onSelect) {
-          return <Card key={item.key}>{content}</Card>;
+          return <Card key={item.key}>{body}</Card>;
         }
         return (
           <Card
             key={item.key}
-            asChild={false}
             className="cursor-pointer transition-colors duration-fast hover:bg-surface-raised"
           >
             <button
@@ -160,7 +156,7 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
               className="w-full min-w-0 text-left"
               onClick={item.onSelect}
             >
-              {content}
+              {body}
             </button>
           </Card>
         );
