@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cake, Eye, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
+import { Cake, Eye, KeyRound, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
 import { MemberDetailModal } from "@/components/org/member-detail-modal";
+import { TempPasswordModal } from "@/components/org/temp-password-modal";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { setMemberStatus } from "@/lib/org.functions";
 import { testPersonalTelegram } from "@/lib/telegram.functions";
@@ -92,6 +93,7 @@ function MembersPage() {
   const [lockTarget, setLockTarget] = React.useState<MemberRow | null>(null);
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [detailTarget, setDetailTarget] = React.useState<MemberRow | null>(null);
+  const [tempPasswordTarget, setTempPasswordTarget] = React.useState<MemberRow | null>(null);
 
   const avatarPaths = React.useMemo(
     () =>
@@ -304,6 +306,26 @@ function MembersPage() {
               <TooltipContent>Sửa thành viên</TooltipContent>
             </Tooltip>
           ) : null}
+          {/* MEMBER-AUTH: chỉ Admin/CMO, chỉ cho Leader/Member đang hoạt động, không cho chính mình. */}
+          {access.canIssueTempPassword &&
+          row.id !== access.userId &&
+          row.status === "active" &&
+          (row.role === "leader" || row.role === "member") ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  aria-label={`Cấp mật khẩu tạm cho ${row.display_name}`}
+                  onClick={() => setTempPasswordTarget(row)}
+                >
+                  <KeyRound />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Cấp mật khẩu tạm</TooltipContent>
+            </Tooltip>
+          ) : null}
           {access.canLockMember && row.id !== access.userId ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -410,6 +432,14 @@ function MembersPage() {
         emptyTitle="Chưa có thành viên phù hợp"
         emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
         caption="Danh sách thành viên"
+      />
+
+      <TempPasswordModal
+        open={tempPasswordTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setTempPasswordTarget(null);
+        }}
+        member={tempPasswordTarget}
       />
 
       <MemberDetailModal

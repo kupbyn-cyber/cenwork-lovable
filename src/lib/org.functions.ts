@@ -165,3 +165,104 @@ export const setMemberStatus = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * MEMBER-AUTH — cấp mật khẩu tạm cho Leader/Member.
+ * Mật khẩu sinh ở server, trả về đúng một lần cho người gọi, không lưu plaintext,
+ * không ghi vào audit log và không ghi ra console.
+ */
+const TEMP_PASSWORD_LENGTH = 14;
+
+function generateTemporaryPassword(): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%^&*?-_";
+  const all = upper + lower + digits + symbols;
+  const bytes = new Uint32Array(TEMP_PASSWORD_LENGTH);
+  crypto.getRandomValues(bytes);
+  const pick = (set: string, i: number) => set[bytes[i]! % set.length] as string;
+  const chars = [pick(upper, 0), pick(lower, 1), pick(digits, 2), pick(symbols, 3)];
+  for (let i = 4; i < TEMP_PASSWORD_LENGTH; i += 1) chars.push(pick(all, i));
+  // Xáo trộn để ký tự bắt buộc không nằm cố định ở đầu.
+  const shuffle = new Uint32Array(chars.length);
+  crypto.getRandomValues(shuffle);
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const j = shuffle[i]! % (i + 1);
+    [chars[i], chars[j]] = [chars[j] as string, chars[i] as string];
+  }
+  return chars.join("");
+}
+
+export const issueTemporaryPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await requirePermission(
+      context.supabase,
+      context.userId,
+      PERMISSIONS.MEMBERS_RESET_PASSWORD,
+      "Chỉ Admin và CMO được cấp mật khẩu tạm.",
+    );
+    if (data.userId === context.userId) {
+      throw new Error("Không thể tự cấp mật khẩu tạm cho chính mình.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const logAudit = async (result: "success" | "failed", reason?: string) => {
+      await supabaseAdmin.from("audit_logs").insert({
+        user_id: context.userId,
+        action: "temporary_password_reset",
+        entity_type: "profiles",
+        entity_id: data.userId,
+        result,
+        metadata: reason ? { reason } : {},
+      });
+    };
+
+    const fail = async (message: string): Promise<never> => {
+      await logAudit("failed", message);
+      throw new Error(message);
+    };
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, status, display_name, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!profile) await fail("Không tìm thấy tài khoản này trong hệ thống.");
+    if (profile!.status !== "active") await fail("Tài khoản đã ngừng hoạt động.");
+
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (!authUser?.user) await fail("Tài khoản đăng nhập không tồn tại.");
+
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId);
+    const targetRole = roles?.[0]?.role ?? null;
+    if (targetRole !== "leader" && targetRole !== "member") {
+      await fail("Chỉ cấp mật khẩu tạm cho tài khoản Leader hoặc Member.");
+    }
+
+    const password = generateTemporaryPassword();
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password,
+    });
+    if (updateError) await fail("Không cấp được mật khẩu tạm. Vui lòng thử lại.");
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ must_change_password: true })
+      .eq("id", data.userId);
+    if (profileError) await fail("Đã đổi mật khẩu nhưng chưa đặt được yêu cầu đổi bắt buộc.");
+
+    await logAudit("success");
+
+    return {
+      password,
+      displayName: profile!.display_name,
+      email: profile!.email,
+    };
+  });

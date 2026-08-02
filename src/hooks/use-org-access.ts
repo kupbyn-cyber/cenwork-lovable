@@ -42,6 +42,8 @@ export function useOrgAccess() {
     canCreateMember: can(PERMISSIONS.MEMBERS_CREATE),
     /** Admin và CMO được khóa/mở khóa. */
     canLockMember: can(PERMISSIONS.MEMBERS_LOCK),
+    /** Admin và CMO được cấp mật khẩu tạm cho Leader/Member. */
+    canIssueTempPassword: can(PERMISSIONS.MEMBERS_RESET_PASSWORD),
     /** Admin và CMO được đổi vai trò và Team chính. */
     canChangeRoleOrTeam: can(PERMISSIONS.ROLES_ASSIGN),
     /** Admin và CMO quản lý Team và Cơ sở. */
