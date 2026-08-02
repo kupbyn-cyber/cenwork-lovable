@@ -100,8 +100,8 @@ function AnnouncementsPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
-        title="Thông báo nội bộ"
-        description="Thông báo do người dùng chủ động soạn và yêu cầu người nhận xác nhận."
+        title="Thông báo & Phê duyệt"
+        description="Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt."
         actions={
           can(PERMISSIONS.ANNOUNCEMENTS_CREATE) ? (
             <Button
@@ -116,7 +116,10 @@ function AnnouncementsPage() {
             </Button>
           ) : null
         }
-      />
+      >
+        <AnnouncementModuleTabs />
+      </PageHeader>
+
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">

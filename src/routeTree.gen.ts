@@ -27,6 +27,7 @@ import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authent
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as AuthenticatedAnnouncementsAnnouncementIdRouteImport } from './routes/_authenticated/announcements.$announcementId'
+import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals.index'
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedDocumentsDocumentIdRouteImport } from './routes/_authenticated/documents.$documentId'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
@@ -136,6 +137,12 @@ const AuthenticatedAnnouncementsAnnouncementIdRoute =
     path: '/announcements/$announcementId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedApprovalsIndexRoute =
+  AuthenticatedApprovalsIndexRouteImport.update({
+    id: '/approvals/',
+    path: '/approvals/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentsIndexRoute =
   AuthenticatedDocumentsIndexRouteImport.update({
     id: '/documents/',
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/mvp/': typeof AuthenticatedMvpIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -259,6 +267,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
+  '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/mvp': typeof AuthenticatedMvpIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
@@ -292,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/mvp/': typeof AuthenticatedMvpIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements/'
+    | '/approvals/'
     | '/documents/'
     | '/mvp/'
     | '/projects/'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements'
+    | '/approvals'
     | '/documents'
     | '/mvp'
     | '/projects'
@@ -388,6 +400,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
     | '/_authenticated/announcements/'
+    | '/_authenticated/approvals/'
     | '/_authenticated/documents/'
     | '/_authenticated/mvp/'
     | '/_authenticated/projects/'
@@ -532,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/approvals/': {
+      id: '/_authenticated/approvals/'
+      path: '/approvals'
+      fullPath: '/approvals/'
+      preLoaderRoute: typeof AuthenticatedApprovalsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documents/': {
       id: '/_authenticated/documents/'
       path: '/documents'
@@ -639,6 +659,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedTasksTaskIdRoute: typeof AuthenticatedTasksTaskIdRoute
   AuthenticatedAnnouncementsIndexRoute: typeof AuthenticatedAnnouncementsIndexRoute
+  AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
   AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMvpIndexRoute: typeof AuthenticatedMvpIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
@@ -670,6 +691,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedTasksTaskIdRoute: AuthenticatedTasksTaskIdRoute,
   AuthenticatedAnnouncementsIndexRoute: AuthenticatedAnnouncementsIndexRoute,
+  AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,
   AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMvpIndexRoute: AuthenticatedMvpIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
@@ -693,13 +715,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
