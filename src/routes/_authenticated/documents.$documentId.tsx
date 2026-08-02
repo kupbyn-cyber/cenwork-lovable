@@ -16,6 +16,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cenToast } from "@/components/ui/toast";
 import { DocumentFormDrawer } from "@/components/document/document-form-drawer";
 import { DocumentApprovalPanel } from "@/components/document/document-approval-panel";
+import {
+  DocumentLifecyclePanel,
+  type LifecyclePending,
+} from "@/components/document/document-lifecycle-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   DOCUMENT_SOURCE_LABEL,
