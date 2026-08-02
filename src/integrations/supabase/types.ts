@@ -1327,6 +1327,266 @@ export type Database = {
           },
         ]
       }
+      duty_areas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      duty_assignments: {
+        Row: {
+          area_id: string
+          assignee_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          due_time: string
+          duty_date: string
+          duty_team_id: string | null
+          end_time: string
+          external_provider_id: string | null
+          id: string
+          job_type_id: string
+          note: string | null
+          start_time: string
+          status: Database["public"]["Enums"]["duty_status"]
+          updated_at: string
+        }
+        Insert: {
+          area_id: string
+          assignee_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_time?: string
+          duty_date: string
+          duty_team_id?: string | null
+          end_time?: string
+          external_provider_id?: string | null
+          id?: string
+          job_type_id: string
+          note?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["duty_status"]
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string
+          assignee_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_time?: string
+          duty_date?: string
+          duty_team_id?: string | null
+          end_time?: string
+          external_provider_id?: string | null
+          id?: string
+          job_type_id?: string
+          note?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["duty_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duty_assignments_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "duty_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_duty_team_id_fkey"
+            columns: ["duty_team_id"]
+            isOneToOne: false
+            referencedRelation: "duty_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_external_provider_id_fkey"
+            columns: ["external_provider_id"]
+            isOneToOne: false
+            referencedRelation: "duty_external_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duty_assignments_job_type_id_fkey"
+            columns: ["job_type_id"]
+            isOneToOne: false
+            referencedRelation: "duty_job_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      duty_external_providers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      duty_job_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      duty_rules: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      duty_teams: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           address: string
@@ -4137,6 +4397,7 @@ export type Database = {
       can_edit_project_row: { Args: { _project: string }; Returns: boolean }
       can_edit_task_row: { Args: { _task: string }; Returns: boolean }
       can_manage_document: { Args: { _document: string }; Returns: boolean }
+      can_manage_duty: { Args: never; Returns: boolean }
       can_manage_mvp_cycle: { Args: never; Returns: boolean }
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
@@ -4226,6 +4487,11 @@ export type Database = {
       }
       document_submit: { Args: { _document: string }; Returns: string }
       document_withdraw: { Args: { _document: string }; Returns: undefined }
+      duty_mark_overdue: { Args: never; Returns: number }
+      duty_set_completed: {
+        Args: { _assignment: string; _completed: boolean }
+        Returns: undefined
+      }
       enqueue_telegram_user: {
         Args: {
           _dedupe: string
@@ -4478,6 +4744,7 @@ export type Database = {
         | "active"
         | "expired"
         | "archived"
+      duty_status: "pending" | "completed" | "overdue"
       mvp_award_status: "proposed" | "approved" | "not_awarded" | "published"
       mvp_award_type:
         | "mvp"
@@ -4708,6 +4975,7 @@ export const Constants = {
         "expired",
         "archived",
       ],
+      duty_status: ["pending", "completed", "overdue"],
       mvp_award_status: ["proposed", "approved", "not_awarded", "published"],
       mvp_award_type: [
         "mvp",
