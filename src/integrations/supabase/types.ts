@@ -2665,6 +2665,84 @@ export type Database = {
         }
         Relationships: []
       }
+      permission_catalog: {
+        Row: {
+          allowed_scopes: string[]
+          created_at: string
+          description: string | null
+          is_configurable: boolean
+          is_sensitive: boolean
+          label: string
+          module: string
+          permission_key: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          allowed_scopes?: string[]
+          created_at?: string
+          description?: string | null
+          is_configurable?: boolean
+          is_sensitive?: boolean
+          label: string
+          module: string
+          permission_key: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          allowed_scopes?: string[]
+          created_at?: string
+          description?: string | null
+          is_configurable?: boolean
+          is_sensitive?: boolean
+          label?: string
+          module?: string
+          permission_key?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      permission_change_sets: {
+        Row: {
+          after_snapshot: Json
+          before_snapshot: Json
+          changes_json: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          reason: string
+          reverted_at: string | null
+          reverted_by: string | null
+        }
+        Insert: {
+          after_snapshot?: Json
+          before_snapshot?: Json
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          reason: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+        }
+        Update: {
+          after_snapshot?: Json
+          before_snapshot?: Json
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          reason?: string
+          reverted_at?: string | null
+          reverted_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -4105,6 +4183,59 @@ export type Database = {
           },
         ]
       }
+      role_permission_config: {
+        Row: {
+          data_scope: string
+          enabled: boolean
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          data_scope?: string
+          enabled?: boolean
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          data_scope?: string
+          enabled?: boolean
+          permission_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permission_config_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "permission_catalog"
+            referencedColumns: ["permission_key"]
+          },
+        ]
+      }
+      system_owners: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_participants: {
         Row: {
           created_at: string
@@ -4726,6 +4857,47 @@ export type Database = {
           },
         ]
       }
+      user_permission_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_scope: string | null
+          override_type: string
+          permission_key: string
+          reason: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_scope?: string | null
+          override_type: string
+          permission_key: string
+          reason: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_scope?: string | null
+          override_type?: string
+          permission_key?: string
+          reason?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "permission_catalog"
+            referencedColumns: ["permission_key"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -5118,6 +5290,7 @@ export type Database = {
         Returns: undefined
       }
       has_overdue_announcement: { Args: { _user: string }; Returns: boolean }
+      has_perm: { Args: { _key: string; _user: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -5140,6 +5313,7 @@ export type Database = {
       is_project_person: { Args: { _person: string }; Returns: boolean }
       is_project_team: { Args: { _team: string }; Returns: boolean }
       is_system_admin: { Args: { _user_id?: string }; Returns: boolean }
+      is_system_owner: { Args: { _user: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
       mvp_cycle_status_of: {
         Args: { _cycle: string }
@@ -5166,6 +5340,51 @@ export type Database = {
         }
         Returns: undefined
       }
+      perm_apply_changes: {
+        Args: { _changes: Json; _kind?: string; _reason: string }
+        Returns: string
+      }
+      perm_assert_no_lockout: { Args: never; Returns: undefined }
+      perm_clear_user_overrides: {
+        Args: { _reason: string; _user: string }
+        Returns: string
+      }
+      perm_effective: {
+        Args: { _user: string }
+        Returns: {
+          data_scope: string
+          enabled: boolean
+          locked: boolean
+          permission_key: string
+          source: string
+        }[]
+      }
+      perm_effective_for: {
+        Args: { _user: string }
+        Returns: {
+          data_scope: string
+          enabled: boolean
+          locked: boolean
+          permission_key: string
+          source: string
+        }[]
+      }
+      perm_guard_caller: { Args: never; Returns: undefined }
+      perm_invariant_keys: { Args: never; Returns: string[] }
+      perm_restore_snapshot: {
+        Args: { _kind: string; _reason: string; _snapshot: Json }
+        Returns: string
+      }
+      perm_revert_change_set: {
+        Args: { _id: string; _reason: string }
+        Returns: string
+      }
+      perm_role_of: {
+        Args: { _user: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      perm_scope: { Args: { _key: string; _user: string }; Returns: string }
+      perm_snapshot: { Args: never; Returns: Json }
       project_decide: {
         Args: { _approve: boolean; _project: string; _reason?: string }
         Returns: Database["public"]["Enums"]["project_status"]
