@@ -27,6 +27,19 @@ export interface DocumentVersionRow {
   change_note: string | null;
   needs_link_review: boolean;
   ever_submitted: boolean;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  withdrawn_at: string | null;
+  approver_id: string | null;
+  alt_approver_id: string | null;
+  approver_assigned_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  reject_reason: string | null;
+  self_approved: boolean;
+  self_approval_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,13 +70,19 @@ export interface DocumentRow {
   creatorName: string | null;
   teamName: string | null;
   projectName: string | null;
+  /** Tên người liên quan tới luồng duyệt của phiên bản mới nhất. */
+  approverName: string | null;
+  submitterName: string | null;
+  approvedByName: string | null;
+  rejectedByName: string | null;
 }
 
 const DOCUMENT_COLUMNS =
   "id,code,name,display_name,doc_type,scope,team_id,project_id,description,source_type,source_url,keywords,created_by,owner_id,archived_at,created_at,updated_at";
 
 const VERSION_COLUMNS =
-  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,created_at,updated_at";
+  "id,document_id,version_no,version_label,status,source_type,source_url,effective_from,effective_to,change_note,needs_link_review,ever_submitted,submitted_by,submitted_at,withdrawn_at,approver_id,alt_approver_id,approver_assigned_at,approved_by,approved_at,rejected_by,rejected_at,reject_reason,self_approved,self_approval_reason,created_at,updated_at";
+
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
