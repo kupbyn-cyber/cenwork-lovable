@@ -151,6 +151,25 @@ function DocumentDetailPage() {
     }
   };
 
+  const [lifecyclePending, setLifecyclePending] = React.useState<LifecyclePending>(null);
+
+  const runLifecycle = async (
+    kind: Exclude<LifecyclePending, null>,
+    action: () => Promise<void>,
+    successMessage: string,
+  ) => {
+    if (lifecyclePending) return;
+    setLifecyclePending(kind);
+    try {
+      await action();
+      cenToast.success(successMessage);
+      refreshDocument();
+    } catch (error) {
+      cenToast.error((error as Error).message);
+    } finally {
+      setLifecyclePending(null);
+    }
+  };
 
 
   if (document.isLoading) {
