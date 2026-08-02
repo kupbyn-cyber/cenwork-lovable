@@ -102,7 +102,6 @@ export function RecipientPicker({
 }: PickerProps) {
   const { role } = useOrgAccess();
   const canBulk = role === "admin" || role === "cmo" || role === "leader";
-  const wide = role === "admin" || role === "cmo";
   const [search, setSearch] = React.useState("");
 
   const filteredUsers = scope.users.filter((user) =>
@@ -123,7 +122,7 @@ export function RecipientPicker({
               }
             />
             <span className="min-w-0 break-words">
-              {wide ? "Tất cả mọi người" : "Tất cả người tôi có quyền gửi"}
+              Tất cả người đang hoạt động
             </span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
@@ -135,7 +134,7 @@ export function RecipientPicker({
               }
             />
             <span className="min-w-0 break-words">
-              {wide ? "Tất cả các Team" : "Tất cả Team tôi có quyền gửi"}
+              Tất cả các Team
             </span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
@@ -166,7 +165,7 @@ export function RecipientPicker({
         {scope.loading ? (
           <p className="text-body-sm text-text-muted">Đang tải…</p>
         ) : scope.teams.length === 0 ? (
-          <p className="text-body-sm text-text-muted">Không có Team nào trong phạm vi của bạn.</p>
+          <p className="text-body-sm text-text-muted">Chưa có Team nào trong hệ thống.</p>
         ) : (
           <div className="flex max-h-40 min-w-0 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-2">
             {scope.teams.map((team) => (
