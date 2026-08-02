@@ -930,6 +930,300 @@ export type Database = {
           },
         ]
       }
+      document_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          archived_at: string | null
+          archived_by: string | null
+          change_note: string | null
+          created_at: string
+          created_by: string
+          document_id: string
+          effective_from: string
+          effective_to: string | null
+          ever_submitted: boolean
+          id: string
+          link_reported_at: string | null
+          link_reported_by: string | null
+          link_review_note: string | null
+          needs_link_review: boolean
+          reject_reason: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          restored_at: string | null
+          restored_by: string | null
+          self_approval_reason: string | null
+          self_approved: boolean
+          source_type: Database["public"]["Enums"]["document_source"]
+          source_url: string
+          status: Database["public"]["Enums"]["document_version_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          superseded_by_version_id: string | null
+          supersedes_version_id: string | null
+          updated_at: string
+          version_label: string | null
+          version_no: number
+          withdrawn_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          change_note?: string | null
+          created_at?: string
+          created_by: string
+          document_id: string
+          effective_from: string
+          effective_to?: string | null
+          ever_submitted?: boolean
+          id?: string
+          link_reported_at?: string | null
+          link_reported_by?: string | null
+          link_review_note?: string | null
+          needs_link_review?: boolean
+          reject_reason?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
+          self_approval_reason?: string | null
+          self_approved?: boolean
+          source_type: Database["public"]["Enums"]["document_source"]
+          source_url: string
+          status?: Database["public"]["Enums"]["document_version_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          superseded_by_version_id?: string | null
+          supersedes_version_id?: string | null
+          updated_at?: string
+          version_label?: string | null
+          version_no: number
+          withdrawn_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          change_note?: string | null
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          effective_from?: string
+          effective_to?: string | null
+          ever_submitted?: boolean
+          id?: string
+          link_reported_at?: string | null
+          link_reported_by?: string | null
+          link_review_note?: string | null
+          needs_link_review?: boolean
+          reject_reason?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          restored_at?: string | null
+          restored_by?: string | null
+          self_approval_reason?: string | null
+          self_approved?: boolean
+          source_type?: Database["public"]["Enums"]["document_source"]
+          source_url?: string
+          status?: Database["public"]["Enums"]["document_version_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          superseded_by_version_id?: string | null
+          supersedes_version_id?: string | null
+          updated_at?: string
+          version_label?: string | null
+          version_no?: number
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_link_reported_by_fkey"
+            columns: ["link_reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_restored_by_fkey"
+            columns: ["restored_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_superseded_by_version_id_fkey"
+            columns: ["superseded_by_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          active_version_id: string | null
+          archived_at: string | null
+          code: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string | null
+          display_name: string
+          doc_type: Database["public"]["Enums"]["document_type"]
+          id: string
+          latest_version_id: string | null
+          name: string
+          normalized_name: string
+          owner_id: string
+          project_id: string | null
+          scope: Database["public"]["Enums"]["document_scope"]
+          source_type: Database["public"]["Enums"]["document_source"]
+          source_url: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_version_id?: string | null
+          archived_at?: string | null
+          code: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string | null
+          display_name: string
+          doc_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          latest_version_id?: string | null
+          name: string
+          normalized_name: string
+          owner_id: string
+          project_id?: string | null
+          scope: Database["public"]["Enums"]["document_scope"]
+          source_type: Database["public"]["Enums"]["document_source"]
+          source_url: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_version_id?: string | null
+          archived_at?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string | null
+          display_name?: string
+          doc_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          latest_version_id?: string | null
+          name?: string
+          normalized_name?: string
+          owner_id?: string
+          project_id?: string | null
+          scope?: Database["public"]["Enums"]["document_scope"]
+          source_type?: Database["public"]["Enums"]["document_source"]
+          source_url?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_active_version_fk"
+            columns: ["active_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_latest_version_fk"
+            columns: ["latest_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilities: {
         Row: {
           address: string
@@ -3727,10 +4021,19 @@ export type Database = {
         Args: { _person: string; _project: string; _team: string }
         Returns: boolean
       }
+      can_create_document: {
+        Args: {
+          _project: string
+          _scope: Database["public"]["Enums"]["document_scope"]
+          _team: string
+        }
+        Returns: boolean
+      }
       can_create_task: { Args: { _project: string }; Returns: boolean }
       can_edit_announcement: { Args: { _a: string }; Returns: boolean }
       can_edit_project_row: { Args: { _project: string }; Returns: boolean }
       can_edit_task_row: { Args: { _task: string }; Returns: boolean }
+      can_manage_document: { Args: { _document: string }; Returns: boolean }
       can_manage_mvp_cycle: { Args: never; Returns: boolean }
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
@@ -3749,6 +4052,7 @@ export type Database = {
         Args: { _author: string; _team: string }
         Returns: boolean
       }
+      can_view_document: { Args: { _document: string }; Returns: boolean }
       can_view_mvp_scorecard: {
         Args: { _cycle: string; _subject: string }
         Returns: boolean
@@ -3773,6 +4077,12 @@ export type Database = {
         }
         Returns: string
       }
+      doc_normalize_name: { Args: { _name: string }; Returns: string }
+      doc_type_label: {
+        Args: { _t: Database["public"]["Enums"]["document_type"] }
+        Returns: string
+      }
+      document_is_published: { Args: { _document: string }; Returns: boolean }
       enqueue_telegram_user: {
         Args: {
           _dedupe: string
@@ -3790,6 +4100,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_account: { Args: { _user?: string }; Returns: boolean }
       is_announcement_recipient: {
         Args: { _announcement: string; _user: string }
         Returns: boolean
@@ -3997,6 +4308,33 @@ export type Database = {
       announcement_target_type: "user" | "team"
       app_role: "admin" | "cmo" | "leader" | "member"
       delivery_status: "pending" | "sent" | "failed"
+      document_scope: "system" | "team" | "project"
+      document_source:
+        | "google_docs"
+        | "google_sheets"
+        | "google_slides"
+        | "google_drive"
+        | "canva"
+        | "notion"
+        | "website"
+        | "other"
+      document_type:
+        | "regulation"
+        | "process"
+        | "guide"
+        | "form"
+        | "plan"
+        | "report"
+        | "training"
+        | "reference"
+        | "other"
+      document_version_status:
+        | "draft"
+        | "pending_approval"
+        | "scheduled"
+        | "active"
+        | "expired"
+        | "archived"
       mvp_award_status: "proposed" | "approved" | "not_awarded" | "published"
       mvp_award_type:
         | "mvp"
@@ -4197,6 +4535,36 @@ export const Constants = {
       announcement_target_type: ["user", "team"],
       app_role: ["admin", "cmo", "leader", "member"],
       delivery_status: ["pending", "sent", "failed"],
+      document_scope: ["system", "team", "project"],
+      document_source: [
+        "google_docs",
+        "google_sheets",
+        "google_slides",
+        "google_drive",
+        "canva",
+        "notion",
+        "website",
+        "other",
+      ],
+      document_type: [
+        "regulation",
+        "process",
+        "guide",
+        "form",
+        "plan",
+        "report",
+        "training",
+        "reference",
+        "other",
+      ],
+      document_version_status: [
+        "draft",
+        "pending_approval",
+        "scheduled",
+        "active",
+        "expired",
+        "archived",
+      ],
       mvp_award_status: ["proposed", "approved", "not_awarded", "published"],
       mvp_award_type: [
         "mvp",
