@@ -23,6 +23,7 @@ import {
   ROLE_LABEL,
   replaceCollaboratorTeams,
   updateMemberProfile,
+  validateContactFields,
   type AppRole,
   type MemberRow,
   type TeamRow,
@@ -107,8 +108,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             primaryTeamId,
             collaboratorTeamIds: collaborators,
             initialPassword: values.password,
-            phoneNumber: values.phoneNumber.trim() || null,
-            birthday: values.birthday || null,
+            phoneNumber: values.phoneNumber.trim(),
+            birthday: values.birthday,
           },
         });
         return;
@@ -119,8 +120,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
         display_name: values.displayName.trim(),
         job_title: values.jobTitle.trim() || null,
         primary_team_id: primaryTeamId,
-        phone_number: values.phoneNumber.trim() || null,
-        birthday: values.birthday || null,
+        phone_number: values.phoneNumber.trim(),
+        birthday: values.birthday,
         canChangePrimaryTeam: canEditRoleTeam,
         telegram_user_id: values.telegramUserId.trim() || null,
         telegram_enabled: values.telegramEnabled,
@@ -152,10 +153,12 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
     }
     if (form.jobTitle && !JOB_TITLES.includes(form.jobTitle as (typeof JOB_TITLES)[number]))
       next.jobTitle = "Chức danh cũ không hợp lệ, vui lòng chọn lại.";
-    if (form.phoneNumber.trim() && !/^[0-9+][0-9 .()-]{7,19}$/.test(form.phoneNumber.trim()))
-      next.phoneNumber = "Số điện thoại không hợp lệ (8–20 ký tự số).";
-    if (form.birthday && !/^\d{4}-\d{2}-\d{2}$/.test(form.birthday))
-      next.birthday = "Sinh nhật không hợp lệ.";
+    const contactErrors = validateContactFields({
+      phone_number: form.phoneNumber,
+      birthday: form.birthday,
+    });
+    if (contactErrors.phone_number) next.phoneNumber = contactErrors.phone_number;
+    if (contactErrors.birthday) next.birthday = contactErrors.birthday;
     if (canEditRoleTeam && teamRequired && form.primaryTeamId === NO_TEAM)
       next.primaryTeamId = "Vai trò Leader và Member bắt buộc thuộc một Team chính.";
 
@@ -293,7 +296,8 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
           <FormField
             id="member-phone"
             label="Số điện thoại"
-            helperText="Không bắt buộc. Dùng để liên hệ nội bộ."
+            required
+            helperText="Bắt buộc. Dùng để liên hệ nội bộ."
             {...(errors.phoneNumber ? { error: errors.phoneNumber } : {})}
           >
             {(controlProps) => (
@@ -310,14 +314,16 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
 
           <FormField
             id="member-birthday"
-            label="Sinh nhật"
-            helperText="Không bắt buộc. Dùng để nhắc sinh nhật trong tháng."
+            label="Ngày sinh"
+            required
+            helperText="Bắt buộc. Không được lớn hơn ngày hiện tại."
             {...(errors.birthday ? { error: errors.birthday } : {})}
           >
             {(controlProps) => (
               <Input
                 {...controlProps}
                 type="date"
+                max={new Date().toISOString().slice(0, 10)}
                 value={form.birthday}
                 onChange={(e) => setForm((s) => ({ ...s, birthday: e.target.value }))}
               />
