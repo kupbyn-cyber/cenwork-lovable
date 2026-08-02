@@ -166,6 +166,7 @@ export async function publishAnnouncementCore(
   return {
     announcementId,
     recipientCount: rows.length,
-    exemptCount: rows.filter((row) => "status" in row).length,
+    exemptCount: 0,
   };
+
 }
