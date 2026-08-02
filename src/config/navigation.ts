@@ -104,7 +104,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         key: "announcements",
-        label: "Thông báo nội bộ",
+        label: "Thông báo & Phê duyệt",
         to: "/announcements",
         icon: Megaphone,
         permissionKey: "announcements.view",

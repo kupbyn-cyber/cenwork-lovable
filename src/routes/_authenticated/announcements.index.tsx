@@ -19,6 +19,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnnouncementFormDrawer } from "@/components/announcement/announcement-form-drawer";
 import { AnnouncementAckCard } from "@/components/announcement/announcement-ack-card";
+import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
+
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonCard } from "@/components/ui/skeleton";
@@ -100,8 +102,8 @@ function AnnouncementsPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
-        title="Thông báo nội bộ"
-        description="Thông báo do người dùng chủ động soạn và yêu cầu người nhận xác nhận."
+        title="Thông báo & Phê duyệt"
+        description="Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt."
         actions={
           can(PERMISSIONS.ANNOUNCEMENTS_CREATE) ? (
             <Button
@@ -116,7 +118,10 @@ function AnnouncementsPage() {
             </Button>
           ) : null
         }
-      />
+      >
+        <AnnouncementModuleTabs />
+      </PageHeader>
+
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">
