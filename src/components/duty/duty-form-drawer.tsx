@@ -103,7 +103,11 @@ export function DutyFormDrawer({
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   const togglePerson = (id: string) => {
@@ -113,7 +117,11 @@ export function DutyFormDrawer({
         ? prev.assigneeIds.filter((x) => x !== id)
         : [...prev.assigneeIds, id],
     }));
-    setErrors((prev) => ({ ...prev, assigneeIds: undefined }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.assigneeIds;
+      return next;
+    });
   };
 
   const submit = () => {
