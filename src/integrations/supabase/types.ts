@@ -75,6 +75,56 @@ export type Database = {
           },
         ]
       }
+      announcement_attachments: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          removed_at: string | null
+          removed_by: string | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type: string
+          removed_at?: string | null
+          removed_by?: string | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_attachments_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_comment_edits: {
         Row: {
           comment_id: string
@@ -751,6 +801,177 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      approval_attachments: {
+        Row: {
+          approval_request_id: string
+          created_at: string
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          removed_at: string | null
+          removed_by: string | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+          version_no: number
+        }
+        Insert: {
+          approval_request_id: string
+          created_at?: string
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type: string
+          removed_at?: string | null
+          removed_by?: string | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+          version_no: number
+        }
+        Update: {
+          approval_request_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_attachments_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_comment_edits: {
+        Row: {
+          comment_id: string
+          created_at: string
+          edited_by: string | null
+          id: string
+          previous_body: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          previous_body: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          previous_body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_comment_edits_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "approval_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_comment_mentions: {
+        Row: {
+          approval_request_id: string
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          approval_request_id: string
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          approval_request_id?: string
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_comment_mentions_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "approval_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_comments: {
+        Row: {
+          approval_request_id: string
+          author_id: string
+          body: string
+          created_at: string
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          is_edited: boolean
+          updated_at: string
+        }
+        Insert: {
+          approval_request_id: string
+          author_id: string
+          body: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_edited?: boolean
+          updated_at?: string
+        }
+        Update: {
+          approval_request_id?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_edited?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_comments_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       approval_decisions: {
         Row: {
@@ -4570,6 +4791,20 @@ export type Database = {
         Args: { _ids: string[] }
         Returns: string[]
       }
+      announcement_attachment_add: {
+        Args: {
+          _announcement: string
+          _mime: string
+          _name: string
+          _path: string
+          _size: number
+        }
+        Returns: string
+      }
+      announcement_attachment_remove: {
+        Args: { _attachment: string }
+        Returns: undefined
+      }
       announcement_audience_teams: {
         Args: never
         Returns: {
@@ -4622,7 +4857,35 @@ export type Database = {
         Args: { _teams: string[] }
         Returns: string[]
       }
+      approval_attachment_add: {
+        Args: {
+          _mime: string
+          _name: string
+          _path: string
+          _request: string
+          _size: number
+        }
+        Returns: string
+      }
+      approval_attachment_remove: {
+        Args: { _attachment: string }
+        Returns: undefined
+      }
+      approval_can_comment: { Args: { _request: string }; Returns: boolean }
+      approval_can_mention: { Args: { _request: string }; Returns: boolean }
       approval_can_view: { Args: { _request: string }; Returns: boolean }
+      approval_comment_edit: {
+        Args: { _body: string; _comment: string }
+        Returns: undefined
+      }
+      approval_comment_post: {
+        Args: { _body: string; _mentions?: string[]; _request: string }
+        Returns: string
+      }
+      approval_comment_set_hidden: {
+        Args: { _comment: string; _hidden: boolean; _reason?: string }
+        Returns: undefined
+      }
       approval_create: {
         Args: {
           _approvers: string[]
@@ -4670,6 +4933,10 @@ export type Database = {
       }
       approval_withdraw: {
         Args: { _reason?: string; _request: string }
+        Returns: undefined
+      }
+      attachment_check_file: {
+        Args: { _mime: string; _name: string; _size: number }
         Returns: undefined
       }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
