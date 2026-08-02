@@ -1124,6 +1124,7 @@ export type Database = {
           display_name: string
           doc_type: Database["public"]["Enums"]["document_type"]
           id: string
+          keywords: string[]
           latest_version_id: string | null
           name: string
           normalized_name: string
@@ -1146,6 +1147,7 @@ export type Database = {
           display_name: string
           doc_type: Database["public"]["Enums"]["document_type"]
           id?: string
+          keywords?: string[]
           latest_version_id?: string | null
           name: string
           normalized_name: string
@@ -1168,6 +1170,7 @@ export type Database = {
           display_name?: string
           doc_type?: Database["public"]["Enums"]["document_type"]
           id?: string
+          keywords?: string[]
           latest_version_id?: string | null
           name?: string
           normalized_name?: string

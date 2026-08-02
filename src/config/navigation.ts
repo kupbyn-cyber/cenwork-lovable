@@ -8,6 +8,7 @@ import {
   Trophy,
   Gauge,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Bell,
   Megaphone,
@@ -80,6 +81,12 @@ export const navGroups: NavGroup[] = [
         to: "/reports",
         icon: ClipboardList,
         permissionKey: "reports.view",
+      },
+      {
+        key: "documents",
+        label: "Tài liệu",
+        to: "/documents",
+        icon: FileText,
       },
       {
         key: "performance",

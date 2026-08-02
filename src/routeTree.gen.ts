@@ -26,6 +26,8 @@ import { Route as AuthenticatedThemePreviewRouteImport } from './routes/_authent
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as AuthenticatedAnnouncementsAnnouncementIdRouteImport } from './routes/_authenticated/announcements.$announcementId'
+import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
+import { Route as AuthenticatedDocumentsDocumentIdRouteImport } from './routes/_authenticated/documents.$documentId'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
 import { Route as AuthenticatedMvpCycleIdRouteImport } from './routes/_authenticated/mvp.$cycleId'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
@@ -128,6 +130,18 @@ const AuthenticatedAnnouncementsAnnouncementIdRoute =
     path: '/announcements/$announcementId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDocumentsIndexRoute =
+  AuthenticatedDocumentsIndexRouteImport.update({
+    id: '/documents/',
+    path: '/documents/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDocumentsDocumentIdRoute =
+  AuthenticatedDocumentsDocumentIdRouteImport.update({
+    id: '/documents/$documentId',
+    path: '/documents/$documentId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMvpIndexRoute = AuthenticatedMvpIndexRouteImport.update({
   id: '/mvp/',
   path: '/mvp/',
@@ -202,10 +216,12 @@ export interface FileRoutesByFullPath {
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/today': typeof AuthenticatedTodayRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/mvp/': typeof AuthenticatedMvpIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
@@ -230,10 +246,12 @@ export interface FileRoutesByTo {
   '/today': typeof AuthenticatedTodayRoute
   '/': typeof AuthenticatedIndexRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
+  '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/mvp': typeof AuthenticatedMvpIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
@@ -260,10 +278,12 @@ export interface FileRoutesById {
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/_authenticated/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
   '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
+  '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/mvp/': typeof AuthenticatedMvpIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
@@ -290,10 +310,12 @@ export interface FileRouteTypes {
     | '/theme-preview'
     | '/today'
     | '/announcements/$announcementId'
+    | '/documents/$documentId'
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements/'
+    | '/documents/'
     | '/mvp/'
     | '/projects/'
     | '/reports/'
@@ -318,10 +340,12 @@ export interface FileRouteTypes {
     | '/today'
     | '/'
     | '/announcements/$announcementId'
+    | '/documents/$documentId'
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
     | '/announcements'
+    | '/documents'
     | '/mvp'
     | '/projects'
     | '/reports'
@@ -347,10 +371,12 @@ export interface FileRouteTypes {
     | '/_authenticated/today'
     | '/_authenticated/'
     | '/_authenticated/announcements/$announcementId'
+    | '/_authenticated/documents/$documentId'
     | '/_authenticated/mvp/$cycleId'
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
     | '/_authenticated/announcements/'
+    | '/_authenticated/documents/'
     | '/_authenticated/mvp/'
     | '/_authenticated/projects/'
     | '/_authenticated/reports/'
@@ -487,6 +513,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documents/': {
+      id: '/_authenticated/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof AuthenticatedDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents/$documentId': {
+      id: '/_authenticated/documents/$documentId'
+      path: '/documents/$documentId'
+      fullPath: '/documents/$documentId'
+      preLoaderRoute: typeof AuthenticatedDocumentsDocumentIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/mvp/': {
       id: '/_authenticated/mvp/'
       path: '/mvp'
@@ -574,10 +614,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAnnouncementsAnnouncementIdRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  AuthenticatedDocumentsDocumentIdRoute: typeof AuthenticatedDocumentsDocumentIdRoute
   AuthenticatedMvpCycleIdRoute: typeof AuthenticatedMvpCycleIdRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedTasksTaskIdRoute: typeof AuthenticatedTasksTaskIdRoute
   AuthenticatedAnnouncementsIndexRoute: typeof AuthenticatedAnnouncementsIndexRoute
+  AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMvpIndexRoute: typeof AuthenticatedMvpIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
@@ -602,10 +644,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAnnouncementsAnnouncementIdRoute:
     AuthenticatedAnnouncementsAnnouncementIdRoute,
+  AuthenticatedDocumentsDocumentIdRoute: AuthenticatedDocumentsDocumentIdRoute,
   AuthenticatedMvpCycleIdRoute: AuthenticatedMvpCycleIdRoute,
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedTasksTaskIdRoute: AuthenticatedTasksTaskIdRoute,
   AuthenticatedAnnouncementsIndexRoute: AuthenticatedAnnouncementsIndexRoute,
+  AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMvpIndexRoute: AuthenticatedMvpIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
   AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
