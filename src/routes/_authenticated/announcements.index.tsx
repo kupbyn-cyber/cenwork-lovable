@@ -1,7 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnnouncementFormDrawer } from "@/components/announcement/announcement-form-drawer";
 import { AnnouncementAckCard } from "@/components/announcement/announcement-ack-card";
 import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
+import { ModuleCreateActions } from "@/components/announcement/module-create-actions";
+import { ApprovalFormDrawer } from "@/components/approval/approval-form-drawer";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -66,6 +67,7 @@ function AnnouncementsPage() {
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [approvalOpen, setApprovalOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AnnouncementRow | null>(null);
   const [openCardId, setOpenCardId] = React.useState<string | null>(null);
 
@@ -105,23 +107,19 @@ function AnnouncementsPage() {
         title="Thông báo & Phê duyệt"
         description="Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt."
         actions={
-          can(PERMISSIONS.ANNOUNCEMENTS_CREATE) ? (
-            <Button
-              type="button"
-              onClick={() => {
-                setEditing(null);
-                setDrawerOpen(true);
-              }}
-            >
-              <Plus />
-              Soạn thông báo
-            </Button>
-          ) : null
+          <ModuleCreateActions
+            canCreateAnnouncement={can(PERMISSIONS.ANNOUNCEMENTS_CREATE)}
+            canCreateApproval={can(PERMISSIONS.APPROVALS_CREATE)}
+            onCreateAnnouncement={() => {
+              setEditing(null);
+              setDrawerOpen(true);
+            }}
+            onCreateApproval={() => setApprovalOpen(true)}
+          />
         }
       >
         <AnnouncementModuleTabs />
       </PageHeader>
-
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">
@@ -288,6 +286,8 @@ function AnnouncementsPage() {
         onOpenChange={setDrawerOpen}
         announcement={editing}
       />
+
+      <ApprovalFormDrawer open={approvalOpen} onOpenChange={setApprovalOpen} />
     </div>
   );
 }

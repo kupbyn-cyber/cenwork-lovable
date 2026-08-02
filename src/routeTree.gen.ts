@@ -28,6 +28,7 @@ import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as AuthenticatedAnnouncementsAnnouncementIdRouteImport } from './routes/_authenticated/announcements.$announcementId'
 import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals.index'
+import { Route as AuthenticatedApprovalsApprovalIdRouteImport } from './routes/_authenticated/approvals.$approvalId'
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedDocumentsDocumentIdRouteImport } from './routes/_authenticated/documents.$documentId'
 import { Route as AuthenticatedMvpIndexRouteImport } from './routes/_authenticated/mvp.index'
@@ -143,6 +144,12 @@ const AuthenticatedApprovalsIndexRoute =
     path: '/approvals/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedApprovalsApprovalIdRoute =
+  AuthenticatedApprovalsApprovalIdRouteImport.update({
+    id: '/approvals/$approvalId',
+    path: '/approvals/$approvalId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentsIndexRoute =
   AuthenticatedDocumentsIndexRouteImport.update({
     id: '/documents/',
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/theme-preview': typeof AuthenticatedThemePreviewRoute
   '/today': typeof AuthenticatedTodayRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/approvals/$approvalId': typeof AuthenticatedApprovalsApprovalIdRoute
   '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -262,6 +270,7 @@ export interface FileRoutesByTo {
   '/today': typeof AuthenticatedTodayRoute
   '/': typeof AuthenticatedIndexRoute
   '/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/approvals/$approvalId': typeof AuthenticatedApprovalsApprovalIdRoute
   '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -296,6 +305,7 @@ export interface FileRoutesById {
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/announcements/$announcementId': typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  '/_authenticated/approvals/$approvalId': typeof AuthenticatedApprovalsApprovalIdRoute
   '/_authenticated/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/theme-preview'
     | '/today'
     | '/announcements/$announcementId'
+    | '/approvals/$approvalId'
     | '/documents/$documentId'
     | '/mvp/$cycleId'
     | '/projects/$projectId'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/'
     | '/announcements/$announcementId'
+    | '/approvals/$approvalId'
     | '/documents/$documentId'
     | '/mvp/$cycleId'
     | '/projects/$projectId'
@@ -395,6 +407,7 @@ export interface FileRouteTypes {
     | '/_authenticated/today'
     | '/_authenticated/'
     | '/_authenticated/announcements/$announcementId'
+    | '/_authenticated/approvals/$approvalId'
     | '/_authenticated/documents/$documentId'
     | '/_authenticated/mvp/$cycleId'
     | '/_authenticated/projects/$projectId'
@@ -552,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApprovalsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/approvals/$approvalId': {
+      id: '/_authenticated/approvals/$approvalId'
+      path: '/approvals/$approvalId'
+      fullPath: '/approvals/$approvalId'
+      preLoaderRoute: typeof AuthenticatedApprovalsApprovalIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documents/': {
       id: '/_authenticated/documents/'
       path: '/documents'
@@ -654,6 +674,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAnnouncementsAnnouncementIdRoute: typeof AuthenticatedAnnouncementsAnnouncementIdRoute
+  AuthenticatedApprovalsApprovalIdRoute: typeof AuthenticatedApprovalsApprovalIdRoute
   AuthenticatedDocumentsDocumentIdRoute: typeof AuthenticatedDocumentsDocumentIdRoute
   AuthenticatedMvpCycleIdRoute: typeof AuthenticatedMvpCycleIdRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
@@ -686,6 +707,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAnnouncementsAnnouncementIdRoute:
     AuthenticatedAnnouncementsAnnouncementIdRoute,
+  AuthenticatedApprovalsApprovalIdRoute: AuthenticatedApprovalsApprovalIdRoute,
   AuthenticatedDocumentsDocumentIdRoute: AuthenticatedDocumentsDocumentIdRoute,
   AuthenticatedMvpCycleIdRoute: AuthenticatedMvpCycleIdRoute,
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,

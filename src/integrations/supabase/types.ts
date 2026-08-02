@@ -4646,6 +4646,15 @@ export type Database = {
         Returns: boolean
       }
       approval_mark_overdue: { Args: never; Returns: number }
+      approval_participants: {
+        Args: { _request: string }
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+          is_active: boolean
+        }[]
+      }
       approval_replace_approver: {
         Args: { _new: string; _old: string; _request: string }
         Returns: undefined
