@@ -42,6 +42,8 @@ export interface DocumentVersionRow {
   self_approval_reason: string | null;
   /** DOC-06 — kiểm soát sau phát hành. */
   link_review_note: string | null;
+  supersedes_version_id: string | null;
+  superseded_by_version_id: string | null;
   link_reported_by: string | null;
   link_reported_at: string | null;
   link_resolved_by: string | null;
