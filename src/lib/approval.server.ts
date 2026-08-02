@@ -65,19 +65,21 @@ export async function decideApproval(
   note: string | null,
 ): Promise<{ status: string }> {
   if (!approve && !note?.trim()) throw new Error("Từ chối bắt buộc phải có lý do");
+  const trimmed = note?.trim();
   const { data, error } = await supabase.rpc("approval_decide", {
     _request: requestId,
     _approve: approve,
-    _note: note?.trim() ? note.trim() : undefined,
+    ...(trimmed ? { _note: trimmed } : {}),
   });
   fail(error);
   return { status: data as string };
 }
 
 export async function withdrawApproval(supabase: Client, requestId: string, reason: string | null) {
+  const trimmed = reason?.trim();
   const { error } = await supabase.rpc("approval_withdraw", {
     _request: requestId,
-    _reason: reason?.trim() ? reason.trim() : undefined,
+    ...(trimmed ? { _reason: trimmed } : {}),
   });
   fail(error);
   return { ok: true as const };
