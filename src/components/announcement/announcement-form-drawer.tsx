@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { FormModal } from "@/components/ui/form-modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -237,9 +237,23 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
   const busy = save.isPending || publish.isPending;
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
       onOpenChange={onOpenChange}
+      size="xl"
+      busy={busy}
+      dirty={
+        !announcement?.id &&
+        Boolean(
+          state.title.trim() ||
+            state.body.trim() ||
+            state.userIds.length ||
+            state.teamIds.length ||
+            state.questions.length ||
+            state.allUsers ||
+            state.allTeams,
+        )
+      }
       title={announcement?.id ? "Sửa bản nháp" : "Soạn thông báo nội bộ"}
       description="Nội dung văn bản thuần. Đường dẫn sẽ tự nhận diện và mở tab mới."
       footer={
