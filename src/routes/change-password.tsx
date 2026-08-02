@@ -81,7 +81,7 @@ function ChangePasswordPage() {
 
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ must_change_password: false })
+      .update({ must_change_password: false, password_changed_at: new Date().toISOString() })
       .eq("id", userId);
     if (profileError) {
       setSaving(false);

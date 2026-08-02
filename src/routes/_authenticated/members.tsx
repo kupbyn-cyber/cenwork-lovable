@@ -93,6 +93,7 @@ function MembersPage() {
   const [lockTarget, setLockTarget] = React.useState<MemberRow | null>(null);
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [detailTarget, setDetailTarget] = React.useState<MemberRow | null>(null);
+  const [tempPasswordTarget, setTempPasswordTarget] = React.useState<MemberRow | null>(null);
 
   const avatarPaths = React.useMemo(
     () =>
@@ -431,6 +432,14 @@ function MembersPage() {
         emptyTitle="Chưa có thành viên phù hợp"
         emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
         caption="Danh sách thành viên"
+      />
+
+      <TempPasswordModal
+        open={tempPasswordTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setTempPasswordTarget(null);
+        }}
+        member={tempPasswordTarget}
       />
 
       <MemberDetailModal
