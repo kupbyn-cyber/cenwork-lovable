@@ -153,9 +153,12 @@ export function DutyFormDrawer({
   };
 
   return (
-    <DrawerPanel
+    <FormModal
       open={open}
       onOpenChange={onOpenChange}
+      size="lg"
+      dirty={dirty}
+      busy={submitting}
       title={assignment ? "Sửa lịch trực nhật" : "Tạo lịch trực nhật"}
       description={`Giờ trực ${DUTY_START_TIME}–${DUTY_END_TIME}, hạn hoàn thành ${DUTY_DUE_TIME} cùng ngày.`}
       footer={
@@ -305,6 +308,6 @@ export function DutyFormDrawer({
 
         {serverError ? <p className="text-caption text-state-danger">{serverError}</p> : null}
       </div>
-    </DrawerPanel>
+    </FormModal>
   );
 }
