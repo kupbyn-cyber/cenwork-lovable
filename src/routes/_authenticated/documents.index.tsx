@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ExternalLink, FileText, Plus, Search } from "lucide-react";
+import { AlertTriangle, Archive, ExternalLink, FileText, Flag, Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
@@ -32,14 +32,20 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { DOCUMENT_VERSION_STATUS_LABEL } from "@/lib/document-catalog";
 import {
+  canArchiveDocument,
   canDeleteDocument,
   canManageDocument,
+  canReportLink,
+  canResolveLink,
+  canRestoreDocument,
   createDocumentDraft,
   deleteDocumentDraft,
   documentStatus,
   documentsQuery,
+  isArchivedDocument,
   isDraftDocument,
   myScopeAccessQuery,
+  reportDocumentLink,
   updateDocumentDraft,
   type DocumentAccessContext,
   type DocumentDraftInput,
@@ -98,6 +104,7 @@ function DocumentsPage() {
   const [editing, setEditing] = React.useState<DocumentRow | null>(null);
   const [deleting, setDeleting] = React.useState<DocumentRow | null>(null);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [reporting, setReporting] = React.useState<DocumentRow | null>(null);
 
   const documents = useQuery(documentsQuery());
   const teams = useQuery(teamsQuery());
@@ -158,6 +165,19 @@ function DocumentsPage() {
       invalidate();
     },
     onError: (error: Error) => setFormError(error.message),
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: (doc: DocumentRow) => reportDocumentLink(doc.id, ""),
+    onSuccess: () => {
+      cenToast.success("Đã báo link lỗi, người phụ trách sẽ kiểm tra.");
+      setReporting(null);
+      invalidate();
+    },
+    onError: (error: Error) => {
+      cenToast.error(error.message);
+      setReporting(null);
+    },
   });
 
   const deleteMutation = useMutation({
