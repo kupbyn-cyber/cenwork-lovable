@@ -417,6 +417,6 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
           onBulkChange={(next) => setState((prev) => ({ ...prev, ...next }))}
         />
       </div>
-    </DrawerPanel>
+    </FormModal>
   );
 }
