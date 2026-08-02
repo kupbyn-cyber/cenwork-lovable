@@ -1,0 +1,14 @@
+REVOKE EXECUTE ON FUNCTION public.announcement_audience_users() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.announcement_audience_teams() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.announcement_active_user_ids(uuid[]) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.announcement_team_member_ids(uuid[]) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.can_announce_to_user(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.can_announce_to_team(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.is_active_account(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.announcement_audience_users() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.announcement_audience_teams() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.announcement_active_user_ids(uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.announcement_team_member_ids(uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_announce_to_user(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_announce_to_team(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_active_account(uuid) TO authenticated;

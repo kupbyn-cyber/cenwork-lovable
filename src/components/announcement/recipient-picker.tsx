@@ -1,58 +1,71 @@
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOrgAccess } from "@/hooks/use-org-access";
-import { membersQuery, teamsQuery, type MemberRow, type TeamRow } from "@/lib/org-data";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * CEN 1.0 — M6.1 bộ chọn người nhận.
- * UI chỉ hiển thị đối tượng hợp lệ theo vai trò; server và RLS kiểm tra lại khi lưu/phát hành.
+ * NAP-01: mọi tài khoản đang hoạt động đều gửi được cho bất kỳ người/Team đang hoạt động nào.
+ * Danh bạ lấy từ RPC (không lọc theo Team, dự án hay quan hệ công việc); server và RLS kiểm tra lại khi lưu/phát hành.
  */
+export interface AudienceUser {
+  id: string;
+  display_name: string;
+  email: string;
+}
+
+export interface AudienceTeam {
+  id: string;
+  name: string;
+}
+
 export interface RecipientScope {
-  users: MemberRow[];
-  teams: TeamRow[];
+  users: AudienceUser[];
+  teams: AudienceTeam[];
   loading: boolean;
   error: boolean;
 }
 
+const audienceUsersQuery = () =>
+  queryOptions({
+    queryKey: ["announcement-audience-users"],
+    queryFn: async (): Promise<AudienceUser[]> => {
+      const { data, error } = await supabase.rpc("announcement_audience_users");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AudienceUser[];
+    },
+  });
+
+const audienceTeamsQuery = () =>
+  queryOptions({
+    queryKey: ["announcement-audience-teams"],
+    queryFn: async (): Promise<AudienceTeam[]> => {
+      const { data, error } = await supabase.rpc("announcement_audience_teams");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AudienceTeam[];
+    },
+  });
+
 export function useRecipientScope(): RecipientScope {
-  const { role, leaderTeamId, userId } = useOrgAccess();
-  const members = useQuery(membersQuery());
-  const teams = useQuery(teamsQuery());
+  const members = useQuery(audienceUsersQuery());
+  const teams = useQuery(audienceTeamsQuery());
 
-  const allMembers = React.useMemo(() => members.data ?? [], [members.data]);
-  const allTeams = React.useMemo(() => teams.data ?? [], [teams.data]);
-
-  return React.useMemo(() => {
-    const loading = members.isLoading || teams.isLoading;
-    const error = members.isError || teams.isError;
-    if (role === "admin" || role === "cmo") {
-      return { users: allMembers, teams: allTeams, loading, error };
-    }
-
-    const me = allMembers.find((member) => member.id === userId);
-    const myTeamIds = new Set<string>(
-      [
-        me?.primary_team_id ?? null,
-        leaderTeamId,
-        ...(me?.collaboratorTeamIds ?? []),
-      ].filter((value): value is string => Boolean(value)),
-    );
-
-    const scopedTeams = allTeams.filter((team) => myTeamIds.has(team.id));
-    const scopedUsers = allMembers.filter(
-      (member) =>
-        member.id === userId ||
-        (member.primary_team_id && myTeamIds.has(member.primary_team_id)) ||
-        member.collaboratorTeamIds.some((id) => myTeamIds.has(id)),
-    );
-    return { users: scopedUsers, teams: scopedTeams, loading, error };
-  }, [allMembers, allTeams, leaderTeamId, members.isError, members.isLoading, role, teams.isError, teams.isLoading, userId]);
+  return React.useMemo(
+    () => ({
+      users: members.data ?? [],
+      teams: teams.data ?? [],
+      loading: members.isLoading || teams.isLoading,
+      error: members.isError || teams.isError,
+    }),
+    [members.data, members.isError, members.isLoading, teams.data, teams.isError, teams.isLoading],
+  );
 }
+
 
 interface BulkState {
   allUsers: boolean;
@@ -89,7 +102,6 @@ export function RecipientPicker({
 }: PickerProps) {
   const { role } = useOrgAccess();
   const canBulk = role === "admin" || role === "cmo" || role === "leader";
-  const wide = role === "admin" || role === "cmo";
   const [search, setSearch] = React.useState("");
 
   const filteredUsers = scope.users.filter((user) =>
@@ -110,7 +122,7 @@ export function RecipientPicker({
               }
             />
             <span className="min-w-0 break-words">
-              {wide ? "Tất cả mọi người" : "Tất cả người tôi có quyền gửi"}
+              Tất cả người đang hoạt động
             </span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
@@ -122,7 +134,7 @@ export function RecipientPicker({
               }
             />
             <span className="min-w-0 break-words">
-              {wide ? "Tất cả các Team" : "Tất cả Team tôi có quyền gửi"}
+              Tất cả các Team
             </span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
@@ -153,7 +165,7 @@ export function RecipientPicker({
         {scope.loading ? (
           <p className="text-body-sm text-text-muted">Đang tải…</p>
         ) : scope.teams.length === 0 ? (
-          <p className="text-body-sm text-text-muted">Không có Team nào trong phạm vi của bạn.</p>
+          <p className="text-body-sm text-text-muted">Chưa có Team nào trong hệ thống.</p>
         ) : (
           <div className="flex max-h-40 min-w-0 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-2">
             {scope.teams.map((team) => (

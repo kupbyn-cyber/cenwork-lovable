@@ -4371,6 +4371,26 @@ export type Database = {
         Args: { _a: string; _answers: Json }
         Returns: undefined
       }
+      announcement_active_user_ids: {
+        Args: { _ids: string[] }
+        Returns: string[]
+      }
+      announcement_audience_teams: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
+      announcement_audience_users: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+          primary_team_id: string
+        }[]
+      }
       announcement_author: { Args: { _announcement: string }; Returns: string }
       announcement_comments_open: { Args: { _a: string }; Returns: boolean }
       announcement_current_version: { Args: { _a: string }; Returns: number }
@@ -4402,6 +4422,10 @@ export type Database = {
       announcement_set_archived: {
         Args: { _a: string; _archived: boolean }
         Returns: undefined
+      }
+      announcement_team_member_ids: {
+        Args: { _teams: string[] }
+        Returns: string[]
       }
       can_announce_to_team: { Args: { _team: string }; Returns: boolean }
       can_announce_to_user: { Args: { _target: string }; Returns: boolean }
