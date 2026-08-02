@@ -288,6 +288,8 @@ function AnnouncementsPage() {
         onOpenChange={setDrawerOpen}
         announcement={editing}
       />
+
+      <ApprovalFormDrawer open={approvalOpen} onOpenChange={setApprovalOpen} />
     </div>
   );
 }
