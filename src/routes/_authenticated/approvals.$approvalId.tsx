@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { ApprovalActions } from "@/components/approval/approval-actions";
 import { ApprovalApproverList } from "@/components/approval/approval-approver-list";
+import { ApprovalCommentThread } from "@/components/approval/approval-comment-thread";
+import { ApprovalAttachments } from "@/components/attachment/module-attachments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,6 +15,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/use-auth";
+import { useOrgAccess } from "@/hooks/use-org-access";
 import {
   APPROVAL_MODE_LABEL,
   APPROVAL_STATUS_LABEL,
@@ -21,6 +24,7 @@ import {
   DECISION_STATUS_LABEL,
 } from "@/lib/approval-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
+
 
 const TITLE = "Chi tiết yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Xem tiến độ, quyết định và lịch sử phiên bản của yêu cầu phê duyệt.";
