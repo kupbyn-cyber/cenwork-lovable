@@ -143,7 +143,7 @@ export function AttachmentPanel({
           <Button
             size="sm"
             variant="secondary"
-            loading={uploading}
+            loading={Boolean(uploading)}
             onClick={() => inputRef.current?.click()}
           >
             <Paperclip />
