@@ -1357,6 +1357,35 @@ export type Database = {
         }
         Relationships: []
       }
+      duty_assignment_members: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duty_assignment_members_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "duty_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       duty_assignments: {
         Row: {
           area_id: string
@@ -4487,6 +4516,10 @@ export type Database = {
       }
       document_submit: { Args: { _document: string }; Returns: string }
       document_withdraw: { Args: { _document: string }; Returns: undefined }
+      duty_is_member: {
+        Args: { _assignment: string; _user: string }
+        Returns: boolean
+      }
       duty_mark_overdue: { Args: never; Returns: number }
       duty_set_completed: {
         Args: { _assignment: string; _completed: boolean }
