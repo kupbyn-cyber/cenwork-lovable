@@ -42,6 +42,9 @@ export const PERMISSIONS = {
   MVP_MANAGE: "mvp.manage",
   ANNOUNCEMENTS_VIEW: "announcements.view",
   ANNOUNCEMENTS_CREATE: "announcements.create",
+  APPROVALS_VIEW: "approvals.view",
+  APPROVALS_CREATE: "approvals.create",
+  APPROVALS_ADMIN_VIEW: "approvals.admin_view",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -78,6 +81,9 @@ export const PERMISSION_LABEL: Record<PermissionKey, string> = {
   "mvp.manage": "Quản lý kỳ MVP và dữ liệu chấm điểm",
   "announcements.view": "Xem thông báo nội bộ",
   "announcements.create": "Soạn và phát hành thông báo nội bộ",
+  "approvals.view": "Xem module Phê duyệt",
+  "approvals.create": "Tạo yêu cầu phê duyệt",
+  "approvals.admin_view": "Xem toàn bộ yêu cầu phê duyệt trong hệ thống",
 };
 
 export const PERMISSION_GROUP: Record<PermissionKey, string> = {
@@ -112,6 +118,9 @@ export const PERMISSION_GROUP: Record<PermissionKey, string> = {
   "mvp.manage": "MVP và danh hiệu",
   "announcements.view": "Thông báo nội bộ",
   "announcements.create": "Thông báo nội bộ",
+  "approvals.view": "Phê duyệt",
+  "approvals.create": "Phê duyệt",
+  "approvals.admin_view": "Phê duyệt",
 };
 
 /** Vai trò quản trị toàn hệ thống: không giới hạn theo Team, quyền ngang nhau. */
@@ -155,6 +164,9 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "mvp.vote",
     "announcements.view",
     "announcements.create",
+    "approvals.view",
+    "approvals.create",
+    "approvals.admin_view",
     "mvp.manage",
     "mvp.review",
     "mvp.approve",
@@ -180,6 +192,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "mvp.vote",
     "announcements.view",
     "announcements.create",
+    "approvals.view",
+    "approvals.create",
     "mvp.review",
   ],
   member: [
@@ -196,6 +210,8 @@ export const ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "mvp.vote",
     "announcements.view",
     "announcements.create",
+    "approvals.view",
+    "approvals.create",
   ],
 };
 
