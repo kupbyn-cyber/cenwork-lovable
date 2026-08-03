@@ -164,7 +164,6 @@ export async function updateMemberProfile(input: {
   primary_team_id: string | null;
   canChangePrimaryTeam: boolean;
   telegram_user_id?: string | null;
-  telegram_enabled?: boolean;
   phone_number: string | null;
   birthday: string | null;
 }) {
@@ -177,7 +176,8 @@ export async function updateMemberProfile(input: {
     job_title: input.job_title,
     ...(input.canChangePrimaryTeam ? { primary_team_id: input.primary_team_id } : {}),
     ...(input.telegram_user_id !== undefined ? { telegram_user_id: input.telegram_user_id } : {}),
-    ...(input.telegram_enabled !== undefined ? { telegram_enabled: input.telegram_enabled } : {}),
+    // Mọi tài khoản luôn bật nhận thông báo Telegram.
+    telegram_enabled: true,
     phone_number: (input.phone_number ?? "").trim(),
     birthday: input.birthday,
   };

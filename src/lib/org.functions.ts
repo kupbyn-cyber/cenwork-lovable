@@ -90,6 +90,9 @@ export const createMemberAccount = createServerFn({ method: "POST" })
           primary_team_id: data.primaryTeamId,
           phone_number: data.phoneNumber.trim(),
           birthday: data.birthday,
+          telegram_user_id: data.telegramUserId,
+          // Bắt buộc tại server: mọi tài khoản đều bật nhận thông báo Telegram.
+          telegram_enabled: true,
           status: "active",
         },
         { onConflict: "id" },
