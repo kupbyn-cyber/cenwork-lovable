@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { CalendarDays, Check, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
