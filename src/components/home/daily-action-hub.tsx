@@ -17,10 +17,16 @@ import { PRIORITY_LABEL } from "@/lib/today-hub";
  * Dữ liệu tổng hợp phía server theo đúng phạm vi quyền của người dùng.
  * TODAY-LAYOUT-RESET-01: chỉ hiển thị tóm tắt tối đa 5 dòng, "Xem thêm" mở trang /today.
  */
-export function DailyActionHub() {
+export function DailyActionHub({
+  limit = 6,
+  title = "Việc cần xử lý ngay",
+}: {
+  limit?: number;
+  title?: string;
+} = {}) {
   const { data, isLoading, isError, refetch, isFetching } = useTodayHub();
 
-  const preview = React.useMemo(() => (data?.items ?? []).slice(0, 5), [data?.items]);
+  const preview = React.useMemo(() => (data?.items ?? []).slice(0, limit), [data?.items, limit]);
 
   if (isLoading) {
     return (
@@ -50,7 +56,7 @@ export function DailyActionHub() {
     <DashboardCard
       size="wide"
       icon={ListChecks}
-      title={`Việc cần xử lý (${data.total})`}
+      title={`${title} (${data.total})`}
       to="/today"
       actionLabel={remaining > 0 ? `Xem thêm (${remaining})` : "Xem thêm"}
       headerExtra={
