@@ -44,7 +44,7 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
 
   if (isError || !data) {
     return (
-      <Card className={flow ? "md:col-span-2 xl:col-span-3" : undefined}>
+      <Card className={flow ? "basis-full" : undefined}>
         <CardContent className="pt-(--card-pad)">
           <ErrorState
             variant="compact"
@@ -60,7 +60,7 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
     return (
       <>
         {data.failedSources.length > 0 ? (
-          <div className="rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger md:col-span-2 xl:col-span-3">
+          <div className="basis-full rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger">
             Một số nguồn dữ liệu chưa tải được ({data.failedSources.join(", ")}). Số liệu bên dưới
             có thể thiếu.
           </div>
