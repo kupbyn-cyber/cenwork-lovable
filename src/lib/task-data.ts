@@ -18,6 +18,22 @@ import {
  */
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];
+export type TaskApprovalStatus = Database["public"]["Enums"]["task_approval_status"];
+
+/** Trạng thái duyệt tách riêng khỏi vòng đời thực hiện (task_status). */
+export const TASK_APPROVAL_LABEL: Record<TaskApprovalStatus, string> = {
+  pending: "Chờ duyệt",
+  changes_requested: "Yêu cầu chỉnh sửa",
+  approved: "Đã duyệt",
+  withdrawn: "Đã thu hồi",
+};
+
+export const TASK_APPROVAL_TONE: Record<TaskApprovalStatus, StatusTone> = {
+  pending: "warning",
+  changes_requested: "error",
+  approved: "success",
+  withdrawn: "neutral",
+};
 
 export const TASK_STATUS_ORDER: TaskStatus[] = ["not_started", "in_progress", "review", "done"];
 
@@ -58,6 +74,8 @@ export interface TaskRow {
   projectOwnerId: string | null;
   /** Dự án cha đang bị lưu trữ thủ công → Task cũng rời danh sách hoạt động. */
   projectManuallyArchivedAt: string | null;
+  /** Team phụ trách mặc định của dự án cha (nguồn xác định người duyệt). */
+  projectResponsibleTeamId: string | null;
   assignee_id: string;
   assigneeName: string | null;
   assigneeTeamId: string | null;
@@ -79,6 +97,13 @@ export interface TaskRow {
   creatorName: string | null;
   created_at: string;
   updated_at: string;
+  approval_status: TaskApprovalStatus;
+  approval_round: number;
+  submitted_at: string | null;
+  approval_decided_at: string | null;
+  approval_decided_by: string | null;
+  approvalDecidedByName: string | null;
+  approval_note: string | null;
   participantIds: string[];
   participantNames: string[];
 }
@@ -88,7 +113,8 @@ const SELECT = `
   is_archived,completed_at,manually_archived_at,manually_archived_by,
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
-  project:projects(id,name,owner_id,manually_archived_at),
+  approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
+  project:projects(id,name,owner_id,manually_archived_at,responsible_team_id),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
   resultAuthor:profiles!tasks_result_updated_by_fkey(id,display_name),
@@ -103,6 +129,7 @@ function mapTask(raw: RawTask): TaskRow {
     name: string;
     owner_id: string | null;
     manually_archived_at: string | null;
+    responsible_team_id: string | null;
   } | null;
   const assignee = raw["assignee"] as
     | { display_name: string; primary_team_id: string | null }
@@ -123,6 +150,7 @@ function mapTask(raw: RawTask): TaskRow {
     projectName: project?.name ?? null,
     projectOwnerId: project?.owner_id ?? null,
     projectManuallyArchivedAt: project?.manually_archived_at ?? null,
+    projectResponsibleTeamId: project?.responsible_team_id ?? null,
     assignee_id: raw["assignee_id"] as string,
     assigneeName: assignee?.display_name ?? null,
     assigneeTeamId: assignee?.primary_team_id ?? null,
@@ -144,6 +172,13 @@ function mapTask(raw: RawTask): TaskRow {
     creatorName: creator?.display_name ?? null,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
+    approval_status: (raw["approval_status"] as TaskApprovalStatus | null) ?? "approved",
+    approval_round: (raw["approval_round"] as number | null) ?? 0,
+    submitted_at: (raw["submitted_at"] as string | null) ?? null,
+    approval_decided_at: (raw["approval_decided_at"] as string | null) ?? null,
+    approval_decided_by: (raw["approval_decided_by"] as string | null) ?? null,
+    approvalDecidedByName: null,
+    approval_note: (raw["approval_note"] as string | null) ?? null,
     participantIds: participants.map((p) => p.user_id),
     participantNames: participants.map((p) => p.profiles?.display_name ?? "—"),
   };
@@ -154,10 +189,26 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
+    .eq("approval_status", "approved")
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapTask(row as RawTask));
 }
+
+/** Yêu cầu duyệt (chưa phải công việc chính thức). RLS quyết định ai thấy gì. */
+export async function fetchTaskApprovals(): Promise<TaskRow[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(SELECT)
+    .is("deleted_at", null)
+    .neq("approval_status", "approved")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapTask(row as RawTask));
+}
+
+export const taskApprovalsQuery = () =>
+  queryOptions({ queryKey: ["task-approvals"], queryFn: fetchTaskApprovals });
 
 export async function fetchTask(id: string): Promise<TaskRow | null> {
   const { data, error } = await supabase
