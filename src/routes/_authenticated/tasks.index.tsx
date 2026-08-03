@@ -61,7 +61,6 @@ import {
   type TaskRow,
 } from "@/lib/task-data";
 import {
-  ALL,
   COLUMN_LABEL,
   DEFAULT_COLUMNS,
   EMPTY_FILTERS,
