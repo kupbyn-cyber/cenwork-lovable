@@ -52,10 +52,12 @@ import {
 import {
   internalItem,
   matchesStatusFilter,
-  sortNewestFirst,
+  sortByPriority,
+  isTodo,
   systemItem,
   type InboxKindFilter,
 } from "@/lib/inbox-view";
+import { AnnouncementDetailModal } from "@/components/announcement/announcement-detail-modal";
 
 const TITLE = "Thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
@@ -94,6 +96,7 @@ function AnnouncementsPage() {
   const [approvalOpen, setApprovalOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AnnouncementRow | null>(null);
   const [openCardId, setOpenCardId] = React.useState<string | null>(null);
+  const [detailRow, setDetailRow] = React.useState<InboxRow | null>(null);
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
@@ -152,9 +155,12 @@ function AnnouncementsPage() {
         (item.title.toLowerCase().includes(term) || item.body.toLowerCase().includes(term)) &&
         matchesStatusFilter(item, kind, status),
     );
-    return sortNewestFirst(items);
+    return sortByPriority(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inbox.data, systemRows, kind, status, term, user?.id]);
+
+  const todoItems = inboxItems.filter((item) => isTodo(item));
+  const doneItems = inboxItems.filter((item) => !isTodo(item));
 
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
