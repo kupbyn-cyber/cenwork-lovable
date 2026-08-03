@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { ActionQueueCard } from "@/components/home/action-queue-card";
 import { QuickActions } from "@/components/home/quick-actions";
+import { RecognitionReceivedCard } from "@/components/recognition/recognition-received-card";
 import { TodayBanner } from "@/components/home/today-banner";
 import { buildKpis, TodayKpiRow } from "@/components/home/today-kpis";
 import {
@@ -164,6 +165,7 @@ function DashboardBody() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      <RecognitionReceivedCard userId={access.userId} />
       {/* Hàng 1 */}
       <TodayBanner name={me?.display_name ?? "bạn"} prompt={prompt} />
 
