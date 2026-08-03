@@ -128,8 +128,6 @@ function mapProject(raw: RawProject): ProjectRow {
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
     teamIds: teams.map((t) => t.team_id),
-    memberIds: members.map((m) => m.user_id),
-    memberNames: members.map((m) => m.profiles?.display_name ?? "—"),
     facilityIds: facilities.map((f) => f.facility_id),
   };
 }
