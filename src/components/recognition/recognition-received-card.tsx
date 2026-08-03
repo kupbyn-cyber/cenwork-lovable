@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Quote, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatHanoiDateTime } from "@/lib/datetime";
@@ -54,7 +54,7 @@ export function RecognitionReceivedCard({ userId }: { userId: string | null }) {
       aria-label="Ghi nhận đồng đội mới"
       className="motion-safe:animate-fade-in min-w-0 rounded-card border border-state-warning/40 bg-gradient-to-r from-brand-subtle via-surface-subtle to-surface-default p-4 shadow-md"
     >
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid min-w-0 grid-cols-1 items-center gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto]">
         <div className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-state-warning/40 bg-state-warning-surface">
             <Sparkles className="size-icon-sm text-state-warning" aria-hidden="true" />
@@ -75,22 +75,24 @@ export function RecognitionReceivedCard({ userId }: { userId: string | null }) {
                     </span>
                   ) : null}
                 </div>
-                <p className="line-clamp-2 min-w-0 break-words text-body-sm text-text-secondary">
-                  “{previewLine(single.message)}”
-                </p>
                 <span className="text-helper text-text-muted">
                   {formatHanoiDateTime(single.created_at)}
                 </span>
               </>
-            ) : (
-              <p className="min-w-0 break-words text-body-sm text-text-secondary">
-                Đồng đội vừa dành cho bạn những lời ghi nhận.
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <blockquote className="relative min-w-0 rounded-card border border-state-warning/25 bg-surface-subtle/60 px-4 py-3 text-center shadow-sm">
+          <Quote className="mx-auto mb-1 size-icon-sm text-state-warning/70" aria-hidden="true" />
+          <p className="line-clamp-2 min-w-0 break-words text-body font-medium italic leading-relaxed text-text-primary sm:text-heading-sm">
+            {single
+              ? `“${previewLine(single.message)}”`
+              : "Đồng đội vừa dành cho bạn những lời ghi nhận."}
+          </p>
+        </blockquote>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
           <Button variant="secondary" size="sm" asChild onClick={close}>
             <Link to="/recognitions">Xem ghi nhận</Link>
           </Button>
