@@ -3261,6 +3261,7 @@ export type Database = {
           receiver_team_id: string | null
           relation_type: string
           revoked_at: string | null
+          seen_at: string | null
           sender_id: string
           sender_team_id: string | null
           updated_at: string
@@ -3274,6 +3275,7 @@ export type Database = {
           receiver_team_id?: string | null
           relation_type?: string
           revoked_at?: string | null
+          seen_at?: string | null
           sender_id: string
           sender_team_id?: string | null
           updated_at?: string
@@ -3287,6 +3289,7 @@ export type Database = {
           receiver_team_id?: string | null
           relation_type?: string
           revoked_at?: string | null
+          seen_at?: string | null
           sender_id?: string
           sender_team_id?: string | null
           updated_at?: string
@@ -5629,6 +5632,7 @@ export type Database = {
           primary_team_id: string
         }[]
       }
+      recognition_mark_seen: { Args: never; Returns: number }
       recognition_quota_left: { Args: never; Returns: number }
       recognition_react: {
         Args: { _emoji: string; _recognition: string }
@@ -5670,6 +5674,17 @@ export type Database = {
           team_id: string
           team_name: string
           total_count: number
+        }[]
+      }
+      recognition_unseen: {
+        Args: never
+        Returns: {
+          category: Database["public"]["Enums"]["recognition_category"]
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+          sender_name: string
         }[]
       }
       report_add_working_days: {
