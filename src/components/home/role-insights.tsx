@@ -22,10 +22,18 @@ import {
  * CEN TODAY-03 — các khối cá nhân hóa Trang chủ theo vai trò.
  * Chỉ trình bày lại dữ liệu module gốc, không tạo Business Rule mới.
  */
-export function RoleInsights() {
+export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
   const { data, isLoading, isError, refetch } = useTodayInsights();
 
   if (isLoading) {
+    if (flow) {
+      return (
+        <>
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
+        </>
+      );
+    }
     return (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SkeletonCard lines={4} />
@@ -36,7 +44,7 @@ export function RoleInsights() {
 
   if (isError || !data) {
     return (
-      <Card>
+      <Card className={flow ? "md:col-span-2 xl:col-span-3" : undefined}>
         <CardContent className="pt-(--card-pad)">
           <ErrorState
             variant="compact"
@@ -45,6 +53,23 @@ export function RoleInsights() {
           />
         </CardContent>
       </Card>
+    );
+  }
+
+  if (flow) {
+    return (
+      <>
+        {data.failedSources.length > 0 ? (
+          <div className="rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger md:col-span-2 xl:col-span-3">
+            Một số nguồn dữ liệu chưa tải được ({data.failedSources.join(", ")}). Số liệu bên dưới
+            có thể thiếu.
+          </div>
+        ) : null}
+        <MyFocusCard focus={data.me} />
+        {data.team ? <TeamFocusCard focus={data.team} /> : null}
+        {data.marketing ? <MarketingFocusCard focus={data.marketing} /> : null}
+        {data.system ? <SystemFocusCard focus={data.system} /> : null}
+      </>
     );
   }
 
