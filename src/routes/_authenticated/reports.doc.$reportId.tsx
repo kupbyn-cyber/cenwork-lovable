@@ -342,7 +342,11 @@ function ReportDocPage() {
                     </span>
                   </p>
                   {row.body ? (
-                    <p className="whitespace-pre-wrap text-body-sm text-text-secondary">{row.body}</p>
+                    <LinkifiedText
+                      as="p"
+                      className="text-body-sm text-text-secondary"
+                      text={row.body}
+                    />
                   ) : null}
                 </li>
               ))}
