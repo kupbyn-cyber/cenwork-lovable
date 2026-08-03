@@ -1846,7 +1846,8 @@ export type Database = {
       }
       duty_assignments: {
         Row: {
-          area_id: string
+          area_custom: string | null
+          area_id: string | null
           assignee_id: string | null
           completed_at: string | null
           completed_by: string | null
@@ -1858,14 +1859,16 @@ export type Database = {
           end_time: string
           external_provider_id: string | null
           id: string
-          job_type_id: string
+          job_custom: string | null
+          job_type_id: string | null
           note: string | null
           start_time: string
           status: Database["public"]["Enums"]["duty_status"]
           updated_at: string
         }
         Insert: {
-          area_id: string
+          area_custom?: string | null
+          area_id?: string | null
           assignee_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
@@ -1877,14 +1880,16 @@ export type Database = {
           end_time?: string
           external_provider_id?: string | null
           id?: string
-          job_type_id: string
+          job_custom?: string | null
+          job_type_id?: string | null
           note?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["duty_status"]
           updated_at?: string
         }
         Update: {
-          area_id?: string
+          area_custom?: string | null
+          area_id?: string | null
           assignee_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
@@ -1896,7 +1901,8 @@ export type Database = {
           end_time?: string
           external_provider_id?: string | null
           id?: string
-          job_type_id?: string
+          job_custom?: string | null
+          job_type_id?: string | null
           note?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["duty_status"]

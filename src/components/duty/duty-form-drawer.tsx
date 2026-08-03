@@ -34,7 +34,9 @@ export interface DutyPerson {
 interface FormState {
   duty_date: string;
   area_id: string;
+  area_custom: string;
   job_type_id: string;
+  job_custom: string;
   duty_team_id: string;
   external_provider_id: string;
   note: string;
@@ -42,11 +44,14 @@ interface FormState {
 }
 
 const NONE = "__none__";
+const CUSTOM = "__custom__";
 
 const EMPTY: FormState = {
   duty_date: "",
   area_id: "",
+  area_custom: "",
   job_type_id: "",
+  job_custom: "",
   duty_team_id: "",
   external_provider_id: "",
   note: "",
@@ -62,6 +67,8 @@ export function DutyFormDrawer({
   onOpenChange,
   assignment,
   catalog,
+  catalogLoading = false,
+  catalogError = null,
   people,
   submitting,
   serverError,
@@ -71,6 +78,8 @@ export function DutyFormDrawer({
   onOpenChange: (open: boolean) => void;
   assignment?: DutyAssignmentRow | null;
   catalog: DutyCatalog;
+  catalogLoading?: boolean;
+  catalogError?: string | null;
   people: DutyPerson[];
   submitting: boolean;
   serverError?: string | null;
@@ -83,8 +92,10 @@ export function DutyFormDrawer({
     if (assignment) {
       return {
         duty_date: assignment.duty_date,
-        area_id: assignment.area_id,
-        job_type_id: assignment.job_type_id,
+        area_id: assignment.area_id ?? (assignment.area_custom ? CUSTOM : ""),
+        area_custom: assignment.area_custom ?? "",
+        job_type_id: assignment.job_type_id ?? (assignment.job_custom ? CUSTOM : ""),
+        job_custom: assignment.job_custom ?? "",
         duty_team_id: assignment.duty_team_id ?? "",
         external_provider_id: assignment.external_provider_id ?? "",
         note: assignment.note ?? "",
@@ -133,7 +144,9 @@ export function DutyFormDrawer({
     const next: Partial<Record<keyof FormState, string>> = {};
     if (!form.duty_date) next.duty_date = "Chọn ngày trực.";
     if (!form.area_id) next.area_id = "Chọn khu vực.";
+    if (form.area_id === CUSTOM && !form.area_custom.trim()) next.area_custom = "Nhập khu vực.";
     if (!form.job_type_id) next.job_type_id = "Chọn nhiệm vụ.";
+    if (form.job_type_id === CUSTOM && !form.job_custom.trim()) next.job_custom = "Nhập nhiệm vụ.";
     if (form.assigneeIds.length === 0 && !form.external_provider_id) {
       next.assigneeIds = "Chọn ít nhất một nhân sự hoặc một dịch vụ ngoài.";
     }
@@ -143,8 +156,10 @@ export function DutyFormDrawer({
     onSubmit({
       id: assignment?.id ?? null,
       duty_date: form.duty_date,
-      area_id: form.area_id,
-      job_type_id: form.job_type_id,
+      area_id: form.area_id === CUSTOM ? null : form.area_id,
+      area_custom: form.area_id === CUSTOM ? form.area_custom.trim() : null,
+      job_type_id: form.job_type_id === CUSTOM ? null : form.job_type_id,
+      job_custom: form.job_type_id === CUSTOM ? form.job_custom.trim() : null,
       duty_team_id: form.duty_team_id || null,
       assigneeIds: form.assigneeIds,
       external_provider_id: form.external_provider_id || null,
@@ -186,37 +201,97 @@ export function DutyFormDrawer({
 
         <FormField id="duty-area" label="Khu vực" required error={errors.area_id}>
           {(p) => (
-            <Select value={form.area_id} onValueChange={(v) => set("area_id", v)}>
+            <Select
+              value={form.area_id}
+              onValueChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  area_id: v,
+                  area_custom: v === CUSTOM ? prev.area_custom : "",
+                }))
+              }
+              disabled={catalogLoading || Boolean(catalogError)}
+            >
               <SelectTrigger id={p.id} aria-invalid={p["aria-invalid"]}>
-                <SelectValue placeholder="Chọn khu vực" />
+                <SelectValue placeholder={catalogLoading ? "Đang tải danh mục…" : "Chọn khu vực"} />
               </SelectTrigger>
               <SelectContent>
+                {catalog.areas.length === 0 && !catalogLoading ? (
+                  <p className="px-2 py-1.5 text-caption text-text-muted">Chưa có dữ liệu</p>
+                ) : null}
                 {catalog.areas.map((area) => (
                   <SelectItem key={area.id} value={area.id}>
                     {area.name}
                   </SelectItem>
                 ))}
+                <SelectItem value={CUSTOM}>Khu vực khác / Tùy chỉnh</SelectItem>
               </SelectContent>
             </Select>
           )}
         </FormField>
 
+        {form.area_id === CUSTOM ? (
+          <FormField id="duty-area-custom" label="Nhập khu vực" required error={errors.area_custom}>
+            {(p) => (
+              <Input
+                {...p}
+                value={form.area_custom}
+                onChange={(e) => set("area_custom", e.target.value)}
+                placeholder="Nhập khu vực"
+              />
+            )}
+          </FormField>
+        ) : null}
+
         <FormField id="duty-job" label="Nhiệm vụ" required error={errors.job_type_id}>
           {(p) => (
-            <Select value={form.job_type_id} onValueChange={(v) => set("job_type_id", v)}>
+            <Select
+              value={form.job_type_id}
+              onValueChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  job_type_id: v,
+                  job_custom: v === CUSTOM ? prev.job_custom : "",
+                }))
+              }
+              disabled={catalogLoading || Boolean(catalogError)}
+            >
               <SelectTrigger id={p.id} aria-invalid={p["aria-invalid"]}>
-                <SelectValue placeholder="Chọn nhiệm vụ" />
+                <SelectValue placeholder={catalogLoading ? "Đang tải danh mục…" : "Chọn nhiệm vụ"} />
               </SelectTrigger>
               <SelectContent>
+                {catalog.jobTypes.length === 0 && !catalogLoading ? (
+                  <p className="px-2 py-1.5 text-caption text-text-muted">Chưa có dữ liệu</p>
+                ) : null}
                 {catalog.jobTypes.map((job) => (
                   <SelectItem key={job.id} value={job.id}>
                     {job.name}
                   </SelectItem>
                 ))}
+                <SelectItem value={CUSTOM}>Nhiệm vụ khác / Tùy chỉnh</SelectItem>
               </SelectContent>
             </Select>
           )}
         </FormField>
+
+        {form.job_type_id === CUSTOM ? (
+          <FormField id="duty-job-custom" label="Nhập nhiệm vụ" required error={errors.job_custom}>
+            {(p) => (
+              <Input
+                {...p}
+                value={form.job_custom}
+                onChange={(e) => set("job_custom", e.target.value)}
+                placeholder="Nhập nhiệm vụ"
+              />
+            )}
+          </FormField>
+        ) : null}
+
+        {catalogError ? (
+          <p className="text-caption text-state-danger">
+            Không tải được danh mục trực nhật: {catalogError}
+          </p>
+        ) : null}
 
         <FormField id="duty-team" label="Team phụ trách">
           {(p) => (

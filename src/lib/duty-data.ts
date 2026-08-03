@@ -41,6 +41,8 @@ export interface DutyAssignmentRow {
   due_time: string;
   area_id: string;
   job_type_id: string;
+  area_custom: string | null;
+  job_custom: string | null;
   duty_team_id: string | null;
   assignee_id: string | null;
   external_provider_id: string | null;
@@ -60,7 +62,7 @@ export interface DutyAssignmentRow {
 
 const SELECT_COLUMNS =
   "id,duty_date,start_time,end_time,due_time,area_id,job_type_id,duty_team_id,assignee_id," +
-  "external_provider_id,note,status,completed_by,completed_at," +
+  "external_provider_id,note,status,completed_by,completed_at,area_custom,job_custom," +
   "area:duty_areas!duty_assignments_area_id_fkey(id,name)," +
   "job_type:duty_job_types!duty_assignments_job_type_id_fkey(id,name)," +
   "duty_team:duty_teams!duty_assignments_duty_team_id_fkey(id,name)," +
@@ -78,6 +80,22 @@ export function friendlyDutyError(message: string): string {
     return "Bạn không có quyền thực hiện thao tác này.";
   }
   return message;
+}
+
+/** Tên khu vực hiển thị: danh mục hoặc nội dung tùy chỉnh. */
+export function dutyAreaLabel(row: {
+  area?: { name: string } | null;
+  area_custom?: string | null;
+}): string {
+  return row.area?.name ?? (row.area_custom?.trim() || "—");
+}
+
+/** Tên nhiệm vụ hiển thị: danh mục hoặc nội dung tùy chỉnh. */
+export function dutyJobLabel(row: {
+  job_type?: { name: string } | null;
+  job_custom?: string | null;
+}): string {
+  return row.job_type?.name ?? (row.job_custom?.trim() || "—");
 }
 
 /** Sau 21:00 giờ Hà Nội của ngày trực mà chưa hoàn thành và có nhân sự nội bộ → Quá hạn (chỉ cảnh báo). */
@@ -204,8 +222,10 @@ async function attachMembers(rows: DutyAssignmentRow[]): Promise<DutyAssignmentR
 export interface DutyAssignmentInput {
   id?: string | null;
   duty_date: string;
-  area_id: string;
-  job_type_id: string;
+  area_id: string | null;
+  job_type_id: string | null;
+  area_custom: string | null;
+  job_custom: string | null;
   duty_team_id: string | null;
   assigneeIds: string[];
   external_provider_id: string | null;
@@ -220,6 +240,8 @@ export async function saveDutyAssignment(input: DutyAssignmentInput, createdBy: 
     due_time: `${DUTY_DUE_TIME}:00`,
     area_id: input.area_id,
     job_type_id: input.job_type_id,
+    area_custom: input.area_id ? null : input.area_custom,
+    job_custom: input.job_type_id ? null : input.job_custom,
     duty_team_id: input.duty_team_id,
     assignee_id: input.assigneeIds[0] ?? null,
     external_provider_id: input.external_provider_id,
