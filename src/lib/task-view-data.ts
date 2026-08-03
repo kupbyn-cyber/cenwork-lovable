@@ -297,14 +297,15 @@ export interface SavedViewConfig {
 function parseFilters(value: unknown): TaskFilterState {
   const raw = (value ?? {}) as Partial<TaskFilterState>;
   // Tương thích ngược: bộ lọc cũ lưu giá trị đơn (hoặc ALL/null) → chuyển thành mảng.
+  const record = (value ?? {}) as Record<string, unknown>;
   return {
     ...EMPTY_FILTERS,
     ...raw,
-    status: toValueList((raw as Record<string, unknown>).status),
-    assignee: toValueList((raw as Record<string, unknown>).assignee),
-    project: toValueList((raw as Record<string, unknown>).project),
-    team: toValueList((raw as Record<string, unknown>).team),
-    priority: toValueList((raw as Record<string, unknown>).priority),
+    status: toValueList(record["status"]),
+    assignee: toValueList(record["assignee"]),
+    project: toValueList(record["project"]),
+    team: toValueList(record["team"]),
+    priority: toValueList(record["priority"]),
   };
 }
 
