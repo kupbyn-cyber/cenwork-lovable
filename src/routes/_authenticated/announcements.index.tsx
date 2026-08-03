@@ -89,7 +89,7 @@ function AnnouncementsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { kind } = Route.useSearch();
-  const [tab, setTab] = React.useState("inbox");
+  const [tab, setTab] = React.useState("todo");
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -162,6 +162,60 @@ function AnnouncementsPage() {
   const todoItems = inboxItems.filter((item) => isTodo(item));
   const doneItems = inboxItems.filter((item) => !isTodo(item));
 
+  function renderInbox(items: typeof inboxItems, emptyText: string) {
+    const loading =
+      (inbox.isLoading && kind !== "system") || (notifications.isLoading && kind !== "internal");
+    return (
+      <>
+        {kind !== "system" && inbox.isError ? (
+          <ErrorState
+            title="Không tải được thông báo nội bộ"
+            description="Thử lại để tải thông báo nội bộ của bạn."
+            onRetry={() => void inbox.refetch()}
+          />
+        ) : null}
+        {kind !== "internal" && notifications.isError ? (
+          <ErrorState
+            title="Không tải được thông báo hệ thống"
+            description="Thử lại để tải thông báo hệ thống của bạn."
+            onRetry={() => void notifications.refetch()}
+          />
+        ) : null}
+
+        {loading ? (
+          <SkeletonCard lines={3} />
+        ) : items.length === 0 ? (
+          <EmptyState title="Chưa có thông báo" description={emptyText} />
+        ) : (
+          <div className="flex min-w-0 flex-col gap-3">
+            {items.map((item) =>
+              item.source === "internal" ? (
+                <AnnouncementAckCard
+                  key={item.key}
+                  row={item.original as InboxRow}
+                  showSourceBadge
+                  senderName={
+                    nameById.get((item.original as InboxRow).announcement.created_by) ?? "—"
+                  }
+                  open={openCardId === item.key}
+                  onOpenChange={(next) => setOpenCardId(next ? item.key : null)}
+                  onOpenDetail={() => setDetailRow(item.original as InboxRow)}
+                />
+              ) : (
+                <SystemNotificationCard
+                  key={item.key}
+                  row={item.original as NotificationRow}
+                  pending={markOne.isPending && markOne.variables === item.id}
+                  onRead={(id) => markOne.mutate(id)}
+                />
+              ),
+            )}
+          </div>
+        )}
+      </>
+    );
+  }
+
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
   );
@@ -189,7 +243,7 @@ function AnnouncementsPage() {
       <NapStatsCards
         scope="announcement"
         onSelect={(filter) => {
-          setTab("inbox");
+          setTab(filter === "completed" || filter === "done" ? "done" : "todo");
           setStatus(filter);
         }}
       />
@@ -388,6 +442,15 @@ function AnnouncementsPage() {
       />
 
       <ApprovalFormDrawer open={approvalOpen} onOpenChange={setApprovalOpen} />
+
+      <AnnouncementDetailModal
+        row={detailRow}
+        senderName={detailRow ? (nameById.get(detailRow.announcement.created_by) ?? "—") : "—"}
+        open={Boolean(detailRow)}
+        onOpenChange={(next) => {
+          if (!next) setDetailRow(null);
+        }}
+      />
     </div>
   );
 }
