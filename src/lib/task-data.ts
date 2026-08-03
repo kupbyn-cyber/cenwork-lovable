@@ -564,6 +564,51 @@ export function isTaskOverdue(task: TaskRow) {
   return isPastInstant(task.deadline);
 }
 
+/* ---- Bộ đếm deadline tương đối (chỉ trình bày, không đổi Business Rule) ---- */
+
+export type DeadlineTone = "muted" | "safe" | "warning" | "danger";
+
+export interface DeadlineCountdown {
+  label: string;
+  tone: DeadlineTone;
+}
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+function humanizeSpan(ms: number): string {
+  if (ms < HOUR) return `${Math.max(1, Math.round(ms / MINUTE))} phút`;
+  if (ms < DAY) return `${Math.max(1, Math.round(ms / HOUR))} giờ`;
+  return `${Math.max(1, Math.floor(ms / DAY))} ngày`;
+}
+
+/**
+ * Bộ đếm tương đối tới deadline theo múi giờ nghiệp vụ.
+ * Task đã hoàn thành/lưu trữ được "đóng băng" tại mốc hoàn thành, không đếm tiếp quá hạn.
+ */
+export function taskDeadlineCountdown(task: TaskRow, nowMs: number = Date.now()): DeadlineCountdown {
+  const deadlineMs = task.deadline ? new Date(task.deadline).getTime() : NaN;
+  if (!task.deadline || Number.isNaN(deadlineMs)) return { label: "Không có hạn", tone: "muted" };
+
+  const finished = task.status === "done" || task.is_archived;
+  if (finished) {
+    const doneMs = task.completed_at ? new Date(task.completed_at).getTime() : NaN;
+    if (Number.isNaN(doneMs)) return { label: "Đã kết thúc", tone: "muted" };
+    const late = doneMs - deadlineMs;
+    return late > 0
+      ? { label: `Trễ hạn ${humanizeSpan(late)}`, tone: "muted" }
+      : { label: "Đúng hạn", tone: "muted" };
+  }
+
+  const diff = deadlineMs - nowMs;
+  if (diff < 0) return { label: `Quá hạn ${humanizeSpan(-diff)}`, tone: "danger" };
+  if (formatHanoiDate(task.deadline) === formatHanoiDate(new Date(nowMs).toISOString()))
+    return { label: "Hạn hôm nay", tone: "warning" };
+  if (diff < DAY) return { label: `Còn ${humanizeSpan(diff)}`, tone: "warning" };
+  return { label: `Còn ${humanizeSpan(diff)}`, tone: "safe" };
+}
+
 /** Tiến độ thời gian theo mốc bắt đầu → deadline (0–100). */
 export function taskTimeProgress(task: TaskRow): number | null {
   if (!task.start_date) return null;
