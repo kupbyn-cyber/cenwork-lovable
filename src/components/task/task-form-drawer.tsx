@@ -27,6 +27,8 @@ import {
   canCreateProjectTask,
   canManageTask,
   createTask,
+  isMemberSubmissionFlow,
+  submitTaskForApproval,
   syncTaskParticipants,
   updateTask,
   type TaskAccessContext,
@@ -113,6 +115,8 @@ export function TaskFormDrawer({
   const canScope = isCreate ? true : canManageTask(task, ctx);
   const allowOthers = canAssignToOthers(ctx);
   const allowProject = canCreateProjectTask(ctx);
+  /** Member: tạo Task = gửi Leader của Team phụ trách dự án duyệt. */
+  const memberFlow = isCreate && isMemberSubmissionFlow(ctx);
 
   const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
@@ -128,11 +132,19 @@ export function TaskFormDrawer({
   }, [open, task, lockedProjectId]);
 
   /** Dự án chưa duyệt không được tạo Task (ràng buộc thật ở database). */
-  const selectableProjects = projects.filter(
-    (project) =>
-      (isProjectApproved(project) && project.status !== "archived") ||
-      project.id === form.projectId,
-  );
+  const selectableProjects = projects.filter((project) => {
+    const usable = isProjectApproved(project) && project.status !== "archived";
+    if (!memberFlow) return usable || project.id === form.projectId;
+    // Member chỉ thấy dự án mình đang tham gia và có Team phụ trách.
+    return usable && Boolean(ctx.userId && project.memberIds.includes(ctx.userId));
+  });
+
+  const selectedProject = projects.find((project) => project.id === form.projectId) ?? null;
+  const missingTeam = memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
+  const noLeaderHint =
+    memberFlow && selectedProject?.responsible_team_id
+      ? "Nếu Team phụ trách chưa có Leader, yêu cầu sẽ được Admin/CMO xử lý."
+      : undefined;
 
   const mutation = useMutation({
     mutationFn: async (state: FormState) => {
@@ -147,6 +159,18 @@ export function TaskFormDrawer({
         priority: state.priority,
         status: state.status,
       };
+
+      if (memberFlow) {
+        return submitTaskForApproval({
+          projectId: payload.projectId!,
+          name: payload.name,
+          description: payload.description,
+          startDate: payload.startDate,
+          deadline: payload.deadline,
+          priority: payload.priority,
+          participantIds: state.participantIds,
+        });
+      }
 
       if (isCreate) {
         const id = await createTask({ ...payload, createdBy: ctx.userId! });
@@ -176,10 +200,17 @@ export function TaskFormDrawer({
     },
     onSuccess: (taskId) => {
       void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      void queryClient.invalidateQueries({ queryKey: ["task-approvals"] });
       void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
       void queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
-      cenToast.success(isCreate ? "Đã tạo công việc." : "Đã cập nhật công việc.");
+      cenToast.success(
+        memberFlow
+          ? "Đã gửi công việc tới Leader phê duyệt."
+          : isCreate
+            ? "Đã tạo công việc."
+            : "Đã cập nhật công việc.",
+      );
       onOpenChange(false);
       if (isCreate) onCreated?.(taskId);
     },
@@ -191,6 +222,9 @@ export function TaskFormDrawer({
     if (!state.name.trim()) next.name = "Nhập tên công việc.";
     else if (state.name.trim().length > 160) next.name = "Tên công việc tối đa 160 ký tự.";
     if (state.description.length > 4000) next.description = "Mô tả tối đa 4000 ký tự.";
+    if (memberFlow && (state.projectId === NONE || !state.projectId)) {
+      next.projectId = "Chọn dự án bạn đang tham gia.";
+    }
     if (!state.assigneeId) next.assigneeId = "Chọn người phụ trách.";
     if (!state.deadlineDate || !state.deadlineTime) {
       next.deadlineDate = "Chọn đầy đủ ngày và giờ deadline.";
@@ -217,12 +251,21 @@ export function TaskFormDrawer({
     const nextErrors = validate(form);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    if (missingTeam) {
+      setFormError("Dự án chưa có Team phụ trách. Vui lòng liên hệ Admin/CMO để cập nhật.");
+      return;
+    }
     mutation.mutate(form);
   }
 
   const assigneeOptions = allowOthers
     ? people
     : people.filter((person) => person.id === ctx.userId);
+  const selfName =
+    people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
+  const participantPool = memberFlow
+    ? people.filter((person) => selectedProject?.memberIds.includes(person.id))
+    : people;
 
   return (
     <Modal
