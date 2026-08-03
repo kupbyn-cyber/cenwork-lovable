@@ -145,7 +145,8 @@ export function DailyReportPreviewModal({
       setThanksReportId(id);
     },
     onError: (error: Error) =>
-      cenToast.error("Không gửi được báo cáo", { description: error.message }),
+      cenToast.error("Không gửi được báo cáo", { description: friendlyReportError(error) }),
+
   });
 
   function closeThanks() {
