@@ -31,7 +31,7 @@ export async function fetchTaskComments(taskId: string): Promise<TaskCommentRow[
       id: row.id,
       task_id: row.task_id,
       author_id: row.author_id,
-      authorName: maskName(row.author_id, profile?.display_name ?? null) ?? "—",
+      authorName: maskName(profile?.display_name ?? null, row.author_id) ?? "—",
       body: row.body,
       created_at: row.created_at,
       updated_at: row.updated_at,
