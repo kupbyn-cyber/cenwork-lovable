@@ -49,6 +49,8 @@ export const createBootstrapAdmin = createServerFn({ method: "POST" })
 
     // Database mới sau Remix: bổ sung dữ liệu hệ thống bắt buộc trước khi tạo Admin.
     await adapter.ensureSystemDefaults();
+    // Chỉ tạo Admin khi danh mục quyền + cấu hình đủ 4 vai trò + app_settings đã sẵn sàng.
+    await adapter.verifySystemDefaults();
 
     const { userId } = await adapter.createBootstrapUser({
       email: data.email,
@@ -62,6 +64,8 @@ export const createBootstrapAdmin = createServerFn({ method: "POST" })
         email: data.email,
         displayName: data.displayName,
       });
+      // Nghiệm thu: quyền tối thiểu của Admin phải hiệu lực, nếu không thì rollback.
+      await adapter.verifyAdminBootstrap(userId);
     } catch (error) {
       // Bù trừ: không để lại Auth user mồ côi khi bước cấp quyền thất bại.
       await adapter.deleteUser(userId).catch(() => undefined);
