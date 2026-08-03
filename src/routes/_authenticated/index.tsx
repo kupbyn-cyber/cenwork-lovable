@@ -343,7 +343,7 @@ function Dashboard() {
       <PendingAnnouncementsPanel />
 
       {/* Hàng tổng quan: Việc của tôi + các card theo vai trò + Dự án/Tiến độ, tự dồn */}
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex min-w-0 flex-wrap items-start gap-4 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:basis-[min(100%,20rem)]">
         <RoleInsights flow />
 
         <Card>
