@@ -4357,6 +4357,11 @@ export type Database = {
       }
       tasks: {
         Row: {
+          approval_decided_at: string | null
+          approval_decided_by: string | null
+          approval_note: string | null
+          approval_round: number
+          approval_status: Database["public"]["Enums"]["task_approval_status"]
           assignee_id: string
           completed_at: string | null
           created_at: string
@@ -4377,10 +4382,16 @@ export type Database = {
           result_updated_by: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
+          submitted_at: string | null
           team_id: string | null
           updated_at: string
         }
         Insert: {
+          approval_decided_at?: string | null
+          approval_decided_by?: string | null
+          approval_note?: string | null
+          approval_round?: number
+          approval_status?: Database["public"]["Enums"]["task_approval_status"]
           assignee_id: string
           completed_at?: string | null
           created_at?: string
@@ -4401,10 +4412,16 @@ export type Database = {
           result_updated_by?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          submitted_at?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Update: {
+          approval_decided_at?: string | null
+          approval_decided_by?: string | null
+          approval_note?: string | null
+          approval_round?: number
+          approval_status?: Database["public"]["Enums"]["task_approval_status"]
           assignee_id?: string
           completed_at?: string | null
           created_at?: string
@@ -4425,6 +4442,7 @@ export type Database = {
           result_updated_by?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          submitted_at?: string | null
           team_id?: string | null
           updated_at?: string
         }
@@ -5168,6 +5186,7 @@ export type Database = {
         Args: { _entity_id: string; _entity_type: string }
         Returns: boolean
       }
+      can_approve_task_submission: { Args: { _task: string }; Returns: boolean }
       can_assign_task: {
         Args: { _person: string; _project: string; _team: string }
         Returns: boolean
@@ -5526,6 +5545,25 @@ export type Database = {
         Args: { _entity_id: string; _entity_type: string }
         Returns: undefined
       }
+      task_approval_decide: {
+        Args: { _approve: boolean; _note?: string; _task: string }
+        Returns: undefined
+      }
+      task_member_resubmit: { Args: { _task: string }; Returns: undefined }
+      task_member_submit: {
+        Args: {
+          _deadline: string
+          _description: string
+          _name: string
+          _participants?: string[]
+          _priority: Database["public"]["Enums"]["task_priority"]
+          _project: string
+          _start_date: string
+        }
+        Returns: string
+      }
+      task_member_withdraw: { Args: { _task: string }; Returns: undefined }
+      task_submission_notify: { Args: { _task: string }; Returns: undefined }
       team_summary_ensure: {
         Args: { _team: string; _week_start: string }
         Returns: string
@@ -5657,6 +5695,11 @@ export type Database = {
         | "summary_feedback"
       report_status: "draft" | "submitted" | "changes_requested" | "approved"
       report_submission_kind: "initial" | "resubmit" | "reopen"
+      task_approval_status:
+        | "pending"
+        | "changes_requested"
+        | "approved"
+        | "withdrawn"
       task_priority: "low" | "medium" | "high"
       task_status: "not_started" | "in_progress" | "review" | "done"
     }
@@ -5904,6 +5947,12 @@ export const Constants = {
       ],
       report_status: ["draft", "submitted", "changes_requested", "approved"],
       report_submission_kind: ["initial", "resubmit", "reopen"],
+      task_approval_status: [
+        "pending",
+        "changes_requested",
+        "approved",
+        "withdrawn",
+      ],
       task_priority: ["low", "medium", "high"],
       task_status: ["not_started", "in_progress", "review", "done"],
     },
