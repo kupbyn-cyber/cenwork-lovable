@@ -144,28 +144,38 @@ function trendBuckets(
   period: PerfPeriod,
 ): { granularity: "day" | "week" | "month"; buckets: Array<{ key: string; label: string; period: PerfPeriod }> } {
   const buckets: Array<{ key: string; label: string; period: PerfPeriod }> = [];
-  const isWeek = period.days === 7 && weekStart(period.from) === period.from;
-  const isMonth = period.from === monthStart(period.from) && period.days >= 28;
+  // Kỳ "Tuần"/"Tháng" thường là kỳ đang chạy (chưa đủ 7 ngày hoặc chưa hết tháng),
+  // nên nhận diện theo mốc bắt đầu thay vì theo số ngày.
+  const isWeek = weekStart(period.from) === period.from && period.days <= 7;
+  const isMonth =
+    !isWeek &&
+    period.from === monthStart(period.from) &&
+    period.to.slice(0, 7) === period.from.slice(0, 7);
 
   if (isWeek) {
-    let start = period.from;
     for (let i = 7; i >= 0; i -= 1) {
-      start = addDays(period.from, -7 * i);
-      const p = toPeriod({ from: start, to: addDays(start, 6) });
+      const start = addDays(period.from, -7 * i);
+      const end = addDays(start, 6);
+      // Mốc cuối là kỳ đang chạy: cắt theo ngày kết thúc thực tế của bộ lọc.
+      const p = toPeriod({ from: start, to: end > period.to ? period.to : end });
       buckets.push({ key: start, label: `T${start.slice(8, 10)}/${start.slice(5, 7)}`, period: p });
     }
     return { granularity: "week", buckets };
   }
 
   if (isMonth) {
+    const baseYear = Number(period.from.slice(0, 4));
+    const baseMonth = Number(period.from.slice(5, 7));
     for (let i = 5; i >= 0; i -= 1) {
-      const anchor = addDays(monthStart(period.from), 0);
-      const d = new Date(`${anchor}T00:00:00+07:00`);
-      d.setUTCMonth(d.getUTCMonth() - i);
-      const from = `${d.toISOString().slice(0, 7)}-01`;
-      const next = new Date(`${from}T00:00:00+07:00`);
-      next.setUTCMonth(next.getUTCMonth() + 1);
-      const to = addDays(next.toISOString().slice(0, 10), -1);
+      // Số học theo chuỗi ngày giờ Hà Nội để không lệch múi giờ ở ngày mùng 1.
+      const index = baseYear * 12 + (baseMonth - 1) - i;
+      const year = Math.floor(index / 12);
+      const month = (index % 12) + 1;
+      const from = `${year}-${String(month).padStart(2, "0")}-01`;
+      const nextIndex = index + 1;
+      const nextFrom = `${Math.floor(nextIndex / 12)}-${String((nextIndex % 12) + 1).padStart(2, "0")}-01`;
+      const monthEnd = addDays(nextFrom, -1);
+      const to = monthEnd > period.to ? period.to : monthEnd;
       buckets.push({ key: from, label: from.slice(0, 7), period: toPeriod({ from, to }) });
     }
     return { granularity: "month", buckets };
@@ -233,6 +243,9 @@ export async function buildDashboard(
   const { buckets, granularity } = trendBuckets(period);
   const trendStart = buckets[0]?.period.from ?? period.from;
   const windowStartISO = toPeriod({ from: trendStart, to: period.to }).startISO;
+  // Mốc sớm nhất cần nạp dữ liệu: bao gồm cả kỳ trước để so sánh không bị thiếu Task.
+  const metricsStartISO =
+    previous.startISO < windowStartISO ? previous.startISO : windowStartISO;
 
   /* --------------------------- Tải Task theo phạm vi --------------------------- */
   function scopedTaskQuery() {
@@ -283,8 +296,23 @@ export async function buildDashboard(
     [],
   );
 
+  // Task hoàn thành trong cửa sổ nhưng có deadline nằm ngoài cửa sổ: cần cho tỷ lệ đúng hạn.
+  const completedTasks = await source<TaskRow[]>(
+    "tasks_completed",
+    async () => {
+      const { data, error } = await scopedTaskQuery()
+        .eq("status", "done")
+        .gte("completed_at", metricsStartISO)
+        .lt("completed_at", period.endISO)
+        .limit(8000);
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as TaskRow[]).filter(isValidTask);
+    },
+    [],
+  );
+
   const taskById = new Map<string, TaskRow>();
-  for (const list of [windowTasks, openTasks, previousTasks]) {
+  for (const list of [windowTasks, openTasks, previousTasks, completedTasks]) {
     for (const task of list) taskById.set(task.id, task);
   }
   const allTasks = [...taskById.values()];
@@ -336,6 +364,7 @@ export async function buildDashboard(
         p_from: period.from,
         p_to: period.to,
         ...(scope === "member" ? { p_user: viewerId } : {}),
+        ...(scope === "org" && selectedTeamId ? { p_team: selectedTeamId } : {}),
       });
       if (error) throw new Error(error.message);
       const row = (Array.isArray(data) ? data[0] : data) as
@@ -398,6 +427,7 @@ export async function buildDashboard(
           submitted: 0,
           on_time: 0,
           late_or_missing: 0,
+          missing: 0,
           pending_review: 0,
         };
         for (const row of data ?? []) {
@@ -413,6 +443,7 @@ export async function buildDashboard(
             if (linked && linked.status === "submitted") result.pending_review += 1;
           } else if (row.due_at < nowISO) {
             result.late_or_missing += 1;
+            result.missing += 1;
             lateReportByUser.set(row.user_id, (lateReportByUser.get(row.user_id) ?? 0) + 1);
           }
         }
@@ -575,6 +606,7 @@ export async function buildDashboard(
       const reasons: string[] = [];
       if (attentionTeamIds.has(team.id)) reasons.push("Có cảnh báo điều hành");
       if (m.overdue_now > 0) reasons.push(`${m.overdue_now} Task đang quá hạn`);
+      const needsAttention = reasons.length > 0;
       return {
         team_id: team.id,
         team_name: team.name,
@@ -585,10 +617,12 @@ export async function buildDashboard(
         on_time_rate: m.on_time_rate,
         overdue_rate: ratio(m.overdue_now, m.open_tasks),
         changes_requested: changes,
-        needs_attention: attentionTeamIds.has(team.id),
+        needs_attention: needsAttention,
         attention_reasons: reasons,
       } satisfies DashTeamRow;
     });
+    // KPI "Team cần chú ý" phải đếm đúng số dòng được đánh dấu trong bảng so sánh.
+    attentionTeamIds = new Set(teamRows.filter((row) => row.needs_attention).map((r) => r.team_id));
     const totalOpen = teamRows.reduce((sum, row) => sum + row.open_tasks, 0);
     workload = teamRows.map((row) => ({
       team_id: row.team_id,
@@ -759,9 +793,11 @@ export async function buildDashboard(
         key: "reports",
         label: "Báo cáo chưa nộp",
         hint: DASH_HINT.reports_missing,
-        value: String(reports?.late_or_missing ?? 0),
-        sub: reports ? `${reports.submitted}/${reports.required} đã nộp` : "Không đọc được dữ liệu",
-        tone: (reports?.late_or_missing ?? 0) > 0 ? "warning" : "default",
+        value: String(reports?.missing ?? 0),
+        sub: reports
+          ? `${reports.submitted}/${reports.required} đã nộp · ${reports.late_or_missing - reports.missing} nộp muộn`
+          : "Không đọc được dữ liệu",
+        tone: (reports?.missing ?? 0) > 0 ? "warning" : "default",
         drill: { to: "/reports", search: { ...rangeSearch, ...teamSearch } },
       },
     );

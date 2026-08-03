@@ -197,6 +197,34 @@ export function StatPill({
   );
 }
 
+/** Một widget lỗi không được làm hỏng cả Dashboard. */
+export class PanelBoundary extends React.Component<
+  { children: React.ReactNode },
+  { message: string | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { message: null };
+  }
+
+  static getDerivedStateFromError(error: unknown) {
+    return { message: error instanceof Error ? error.message : "Lỗi không xác định" };
+  }
+
+  override render() {
+    if (this.state.message !== null) {
+      return (
+        <Card className="min-w-0">
+          <CardContent className="pt-(--card-pad)">
+            <ErrorState title="Không hiển thị được khối này" description={this.state.message} />
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function RateBar({ value }: { value: number | null }) {
   const pct = value === null ? 0 : Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
