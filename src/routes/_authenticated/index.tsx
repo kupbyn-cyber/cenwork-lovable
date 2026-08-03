@@ -127,7 +127,7 @@ function Dashboard() {
   const access = useOrgAccess();
   const navigate = useNavigate();
   const [dailyOpen, setDailyOpen] = React.useState(false);
-  const [range, setRange] = React.useState<RangeKey>("week");
+  const [range, setRange] = React.useState<RangeKey>("today");
 
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
