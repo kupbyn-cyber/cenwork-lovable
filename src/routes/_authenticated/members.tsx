@@ -227,7 +227,10 @@ function MembersPage() {
         </TableRowActions>
       ),
     },
-  ];
+  ].filter(
+    // ORG-VIEW-01: cột Telegram chỉ dành cho Admin/CMO; người dùng thường chỉ xem danh bạ.
+    (column) => access.isSystemAdmin || column.id !== "telegram",
+  );
 
   const columns = [
     {
@@ -494,6 +497,7 @@ function MembersPage() {
             ))}
           </SelectContent>
         </Select>
+        {access.isSystemAdmin ? (
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger aria-label="Lọc theo vai trò">
             <SelectValue />
@@ -507,6 +511,7 @@ function MembersPage() {
             ))}
           </SelectContent>
         </Select>
+        ) : null}
       </div>
 
       <DataTable

@@ -64,26 +64,33 @@ export function MemberDetailModal({
         </div>
 
         <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-          <Row label="Email" value={member.email} />
-          <Row label="Số điện thoại" value={member.phone_number || "—"} />
-          <Row
-            label="Sinh nhật"
-            value={member.birthday ? formatHanoiDate(`${member.birthday}T00:00:00+07:00`) : "—"}
-          />
+          {/* ORG-VIEW-01: thông tin liên hệ chỉ hiện với người có quyền (dữ liệu rỗng thì ẩn hàng). */}
+          {member.email ? <Row label="Email" value={member.email} /> : null}
+          {member.phone_number ? (
+            <Row label="Số điện thoại" value={member.phone_number} />
+          ) : null}
+          {member.birthday ? (
+            <Row
+              label="Sinh nhật"
+              value={formatHanoiDate(`${member.birthday}T00:00:00+07:00`)}
+            />
+          ) : null}
           <Row label="Chức danh" value={member.job_title || "—"} />
           <Row label="Team chính" value={teamName(member.primary_team_id)} />
           <Row
             label="Team phối hợp"
             value={collaborators.length > 0 ? collaborators.join(", ") : "—"}
           />
-          <Row
-            label="Telegram"
-            value={
-              member.telegram_user_id
-                ? `${member.telegram_user_id}${member.telegram_enabled ? "" : " (đã tắt)"}`
-                : "Chưa có Telegram ID"
-            }
-          />
+          {access.isSystemAdmin ? (
+            <Row
+              label="Telegram"
+              value={
+                member.telegram_user_id
+                  ? `${member.telegram_user_id}${member.telegram_enabled ? "" : " (đã tắt)"}`
+                  : "Chưa có Telegram ID"
+              }
+            />
+          ) : null}
           <Row
             label="Trạng thái"
             value={

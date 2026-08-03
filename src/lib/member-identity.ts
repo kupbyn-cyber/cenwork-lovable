@@ -24,14 +24,15 @@ let loadedAt = 0;
 const TTL_MS = 60_000;
 
 async function load(): Promise<LockedIdentity> {
+  // ORG-VIEW-01: mọi người dùng đều đọc được danh sách id đã khóa (không kèm tên) để che tên.
   const [lockedResult, adminResult] = await Promise.all([
-    supabase.from("profiles").select("id,display_name").eq("status", "locked"),
+    supabase.rpc("locked_member_ids"),
     supabase.rpc("current_app_role"),
   ]);
-  const rows = (lockedResult.data ?? []) as { id: string; display_name: string }[];
+  const ids = (lockedResult.data ?? []) as string[];
   snapshot = {
-    ids: new Set(rows.map((row) => row.id)),
-    names: new Set(rows.map((row) => row.display_name)),
+    ids: new Set(ids),
+    names: new Set<string>(),
     viewerIsAdmin: adminResult.data === "admin",
   };
   loadedAt = Date.now();

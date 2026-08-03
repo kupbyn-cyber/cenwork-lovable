@@ -209,6 +209,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRoleKey, PermissionKey[]> = {
     "mvp.review",
   ],
   member: [
+    // ORG-VIEW-01: mọi người dùng đã đăng nhập đều được xem danh bạ thành viên.
+    "members.view",
     "organization.view",
     "projects.view",
     "projects.create",

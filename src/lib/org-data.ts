@@ -86,34 +86,21 @@ export async function fetchFacilities(): Promise<FacilityRow[]> {
 
 export async function fetchMembers(): Promise<MemberRow[]> {
   await primeLockedIdentity();
-  const profiles = unwrap(
-    await supabase
-      .from("profiles")
-      .select(
-        "id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled,telegram_test_status,telegram_tested_at,telegram_test_error,phone_number,birthday,avatar_path,locked_at,lock_reason",
-      )
-      .order("display_name"),
-  ) as Omit<MemberRow, "role" | "collaboratorTeamIds">[];
+  // ORG-VIEW-01: danh bạ nội bộ — RPC tự lọc cột nhạy cảm theo quyền của người gọi.
+  const rows = unwrap(await supabase.rpc("member_directory")) as (Omit<
+    MemberRow,
+    "collaboratorTeamIds" | "telegram_enabled"
+  > & {
+    telegram_enabled: boolean | null;
+    collaborator_team_ids: string[] | null;
+  })[];
 
-  const roles = unwrap(await supabase.from("user_roles").select("user_id,role")) as {
-    user_id: string;
-    role: AppRole;
-  }[];
-  const collaborators = unwrap(
-    await supabase.from("team_collaborators").select("team_id,user_id"),
-  ) as { team_id: string; user_id: string }[];
-
-  const roleByUser = new Map(roles.map((r) => [r.user_id, r.role]));
-  const teamsByUser = new Map<string, string[]>();
-  for (const row of collaborators) {
-    teamsByUser.set(row.user_id, [...(teamsByUser.get(row.user_id) ?? []), row.team_id]);
-  }
-
-  return profiles.map((profile) => ({
+  return rows.map(({ collaborator_team_ids, ...profile }) => ({
     ...profile,
+    email: profile.email ?? "",
+    telegram_enabled: profile.telegram_enabled ?? false,
     display_name: maskName(profile.display_name, profile.id) as string,
-    role: roleByUser.get(profile.id) ?? null,
-    collaboratorTeamIds: teamsByUser.get(profile.id) ?? [],
+    collaboratorTeamIds: collaborator_team_ids ?? [],
   }));
 }
 
