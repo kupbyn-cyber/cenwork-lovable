@@ -14,10 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cenToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { RecognitionBurst } from "@/components/recognition/recognition-burst";
 import {
-  RECOGNITION_CATEGORY_LABEL,
+  RECOGNITION_CATEGORY_META,
   RECOGNITION_CATEGORY_ORDER,
   RECOGNITION_DAILY_LIMIT,
   RECOGNITION_MAX_LENGTH,
@@ -29,7 +30,8 @@ import {
 } from "@/lib/recognition-data";
 
 /**
- * CEN TODAY-02 — Form gửi ghi nhận đồng đội.
+ * CEN TODAY-02 / RECOGNITION-01 — Form gửi ghi nhận.
+ * Cho phép chọn đồng đội hoặc chính mình (tự ghi nhận).
  * Danh sách người nhận và hạn mức đều lấy từ database; UI chỉ phản ánh kết quả đó.
  */
 export interface RecognitionFormModalProps {
@@ -50,24 +52,34 @@ export function RecognitionFormModal({
   const quotaResult = useQuery(recognitionQuotaQuery(user?.id));
 
   const [receiverId, setReceiverId] = React.useState<string>("");
-  const [category, setCategory] = React.useState<RecognitionCategory>("support");
+  const [category, setCategory] = React.useState<RecognitionCategory>("teamwork");
   const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+  const [burstName, setBurstName] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!open) return;
     setReceiverId(defaultReceiverId ?? "");
-    setCategory("support");
+    setCategory("teamwork");
     setMessage("");
     setError(null);
   }, [open, defaultReceiverId]);
 
-  const members = membersResult.data ?? [];
+  /** Chính mình luôn đứng đầu danh sách với nhãn "Bạn". */
+  const members = React.useMemo(() => {
+    const all = membersResult.data ?? [];
+    const me = all.filter((person) => person.id === user?.id);
+    const others = all.filter((person) => person.id !== user?.id);
+    return [...me, ...others];
+  }, [membersResult.data, user?.id]);
+
   const quota = quotaResult.data ?? 0;
   const outOfQuota = !quotaResult.isLoading && quota <= 0;
   const trimmed = message.trim();
   const lengthValid =
     trimmed.length >= RECOGNITION_MIN_LENGTH && trimmed.length <= RECOGNITION_MAX_LENGTH;
+  const receiver = members.find((person) => person.id === receiverId) ?? null;
+  const isSelf = Boolean(receiverId) && receiverId === user?.id;
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -80,121 +92,144 @@ export function RecognitionFormModal({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["recognitions"] });
       void queryClient.invalidateQueries({ queryKey: ["recognition-quota"] });
+      void queryClient.invalidateQueries({ queryKey: ["recognition-team-pulse"] });
       void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
-      cenToast.success("Đã gửi lời ghi nhận. Bạn có 10 phút để thu hồi nếu cần.");
+      setBurstName(isSelf ? "chính bạn" : (receiver?.display_name ?? "đồng đội"));
       onOpenChange(false);
     },
     onError: (err: Error) => setError(err.message),
   });
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      size="md"
-      title="Ghi nhận đồng đội"
-      description={`Gửi lời ghi nhận tích cực đến đồng đội có quan hệ làm việc với bạn. Còn ${quota}/${RECOGNITION_DAILY_LIMIT} lượt hôm nay.`}
-      footer={
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Hủy
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            disabled={!receiverId || !lengthValid || outOfQuota}
-            onClick={() => {
-              setError(null);
-              mutation.mutate();
-            }}
-          >
-            <Sparkles />
-            Gửi ghi nhận
-          </Button>
-        </div>
-      }
-    >
-      <div className="flex min-w-0 flex-col gap-4">
-        {error ? <FormErrorSummary messages={[error]} /> : null}
-        {outOfQuota ? (
-          <FormErrorSummary
-            title="Hết lượt hôm nay"
-            messages={[
-              `Mỗi người chỉ gửi tối đa ${RECOGNITION_DAILY_LIMIT} lời ghi nhận mỗi ngày.`,
-            ]}
-          />
-        ) : null}
-
-        <FormField
-          id="recognition-receiver"
-          label="Đồng đội"
-          required
-          helperText={
-            membersResult.isLoading
-              ? "Đang tải danh sách đồng đội…"
-              : members.length === 0
-                ? "Chưa có đồng đội nào đủ điều kiện (cùng Team, Team phối hợp hoặc cùng dự án)."
-                : undefined
-          }
-        >
-          {(control) => (
-            <Select value={receiverId} onValueChange={setReceiverId}>
-              <SelectTrigger id={control.id} aria-invalid={control["aria-invalid"]}>
-                <SelectValue placeholder="Chọn đồng đội" />
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </FormField>
-
-        <FormField id="recognition-category" label="Nhóm ghi nhận" required>
-          {(control) => (
-            <Select
-              value={category}
-              onValueChange={(value) => setCategory(value as RecognitionCategory)}
+    <>
+      {burstName ? (
+        <RecognitionBurst receiverName={burstName} onDone={() => setBurstName(null)} />
+      ) : null}
+      <Modal
+        open={open}
+        onOpenChange={onOpenChange}
+        size="md"
+        title="Gửi lời ghi nhận"
+        description={`Ghi nhận đồng đội hoặc chính mình. Còn ${quota}/${RECOGNITION_DAILY_LIMIT} lượt hôm nay.`}
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+              Hủy
+            </Button>
+            <Button
+              loading={mutation.isPending}
+              disabled={!receiverId || !lengthValid || outOfQuota}
+              onClick={() => {
+                setError(null);
+                mutation.mutate();
+              }}
             >
-              <SelectTrigger id={control.id}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RECOGNITION_CATEGORY_ORDER.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {RECOGNITION_CATEGORY_LABEL[key]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </FormField>
-
-        <FormField
-          id="recognition-message"
-          label="Lời ghi nhận"
-          required
-          helperText={`${trimmed.length}/${RECOGNITION_MAX_LENGTH} ký tự · tối thiểu ${RECOGNITION_MIN_LENGTH} ký tự`}
-          error={
-            trimmed.length > 0 && !lengthValid
-              ? `Nội dung cần từ ${RECOGNITION_MIN_LENGTH} đến ${RECOGNITION_MAX_LENGTH} ký tự.`
-              : undefined
-          }
-        >
-          {(control) => (
-            <Textarea
-              {...control}
-              rows={4}
-              maxLength={RECOGNITION_MAX_LENGTH}
-              placeholder="Ví dụ: Cảm ơn bạn đã hỗ trợ chốt nội dung chiến dịch trước hạn."
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
+              <Sparkles />
+              Gửi ghi nhận
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex min-w-0 flex-col gap-4">
+          {error ? <FormErrorSummary messages={[error]} /> : null}
+          {outOfQuota ? (
+            <FormErrorSummary
+              title="Hết lượt hôm nay"
+              messages={[`Mỗi người chỉ gửi tối đa ${RECOGNITION_DAILY_LIMIT} lời ghi nhận mỗi ngày.`]}
             />
-          )}
-        </FormField>
-      </div>
-    </Modal>
+          ) : null}
+
+          <FormField
+            id="recognition-receiver"
+            label="Người nhận"
+            required
+            helperText={
+              membersResult.isLoading
+                ? "Đang tải danh sách…"
+                : isSelf
+                  ? "Bạn đang tự ghi nhận — bản ghi sẽ được gắn nhãn “Tự ghi nhận”."
+                  : undefined
+            }
+          >
+            {(control) => (
+              <Select value={receiverId} onValueChange={setReceiverId}>
+                <SelectTrigger id={control.id} aria-invalid={control["aria-invalid"]}>
+                  <SelectValue placeholder="Chọn người nhận" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.id === user?.id
+                        ? `Bạn — ${member.display_name}`
+                        : member.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FormField>
+
+          <FormField
+            id="recognition-category"
+            label="Loại ghi nhận"
+            required
+            helperText={RECOGNITION_CATEGORY_META[category].hint}
+          >
+            {() => (
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3">
+                {RECOGNITION_CATEGORY_ORDER.map((key) => {
+                  const meta = RECOGNITION_CATEGORY_META[key];
+                  const active = category === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setCategory(key)}
+                      className={cn(
+                        "cen-transition flex min-w-0 items-center gap-2 rounded-card border px-3 py-2 text-left text-body",
+                        "motion-safe:active:scale-[0.98]",
+                        active
+                          ? meta.tone
+                          : "border-border-default bg-state-neutral-surface text-text-secondary hover:border-border-strong",
+                        active ? "ring-2 ring-brand-primary/40" : "",
+                      )}
+                    >
+                      <span aria-hidden>{meta.emoji}</span>
+                      <span className="min-w-0 truncate">{meta.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </FormField>
+
+          <FormField
+            id="recognition-message"
+            label="Lời ghi nhận"
+            required
+            helperText={`${trimmed.length}/${RECOGNITION_MAX_LENGTH} ký tự · tối thiểu ${RECOGNITION_MIN_LENGTH} ký tự`}
+            error={
+              trimmed.length > 0 && !lengthValid
+                ? `Nội dung cần từ ${RECOGNITION_MIN_LENGTH} đến ${RECOGNITION_MAX_LENGTH} ký tự.`
+                : undefined
+            }
+          >
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={4}
+                maxLength={RECOGNITION_MAX_LENGTH}
+                placeholder={`Ghi nhận ${
+                  isSelf ? "bản thân" : (receiver?.display_name ?? "[Tên]")
+                } vì [hành động cụ thể], điều này đã giúp [kết quả].`}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+              />
+            )}
+          </FormField>
+        </div>
+      </Modal>
+    </>
   );
 }
