@@ -196,9 +196,11 @@ export function ApprovalCommentThread({ detail, canMention, canModerate }: Props
                   </div>
                 ) : (
                   <>
-                    <p className="whitespace-pre-wrap break-words text-body-sm text-text-secondary">
-                      {row.body}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      className="text-body-sm text-text-secondary"
+                      text={row.body}
+                    />
                     {mentioned.length > 0 ? (
                       <p className="text-body-xs text-text-muted">
                         Nhắc tên:{" "}
