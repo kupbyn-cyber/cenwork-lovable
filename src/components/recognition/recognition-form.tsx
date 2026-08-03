@@ -51,6 +51,7 @@ export function RecognitionFormModal({
   const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [burstName, setBurstName] = React.useState<string | null>(null);
+  const [search, setSearch] = React.useState("");
 
   React.useEffect(() => {
     if (!open) return;
@@ -58,6 +59,7 @@ export function RecognitionFormModal({
     setCategory("teamwork");
     setMessage("");
     setError(null);
+    setSearch("");
   }, [open, defaultReceiverId]);
 
   /** Chính mình luôn đứng đầu danh sách với nhãn "Bạn". */
@@ -75,6 +77,13 @@ export function RecognitionFormModal({
     trimmed.length >= RECOGNITION_MIN_LENGTH && trimmed.length <= RECOGNITION_MAX_LENGTH;
   const receiver = members.find((person) => person.id === receiverId) ?? null;
   const isSelf = Boolean(receiverId) && receiverId === user?.id;
+
+  /** Tìm kiếm không phân biệt hoa thường và dấu tiếng Việt. */
+  const filtered = React.useMemo(() => {
+    const needle = normalizeVi(search);
+    if (!needle) return members;
+    return members.filter((person) => normalizeVi(person.display_name).includes(needle));
+  }, [members, search]);
 
   const mutation = useMutation({
     mutationFn: () =>
