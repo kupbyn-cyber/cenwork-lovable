@@ -22,7 +22,7 @@ import { DutyRulesPanel } from "@/components/duty/duty-rules-panel";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useOrgAccess } from "@/hooks/use-org-access";
-import { membersQuery } from "@/lib/org-data";
+import { activeMembersQuery } from "@/lib/org-data";
 import {
   DUTY_DUE_TIME,
   DUTY_END_TIME,
@@ -119,7 +119,7 @@ function DutyPage() {
   const catalog = useQuery(dutyCatalogQuery());
   const assignments = useQuery(dutyAssignmentsQuery(range));
   const mine = useQuery(myDutyAssignmentsQuery(user?.id));
-  const members = useQuery(membersQuery());
+  const members = useQuery(activeMembersQuery());
 
   const people = React.useMemo(
     () =>

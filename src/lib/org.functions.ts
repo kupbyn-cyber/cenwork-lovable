@@ -186,6 +186,54 @@ export const setMemberStatus = createServerFn({ method: "POST" })
   });
 
 /**
+ * MEMBER-LOCK-01 — khóa tài khoản.
+ * Mọi kiểm tra nghiệp vụ (chỉ Admin, không tự khóa, không khóa System Owner cuối cùng,
+ * còn trách nhiệm chưa chuyển giao) nằm trong RPC `member_lock` và chạy với phiên của
+ * người gọi, nên không thể vượt qua bằng cách gọi thẳng API.
+ */
+export const lockMemberAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ userId: z.string().uuid(), reason: z.string().trim().min(3).max(500) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("member_lock", {
+      _user: data.userId,
+      _reason: data.reason,
+    });
+    if (error) throw new Error(error.message.replace(/^.*?:\s*/, ""));
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Ban ở tầng Auth: chặn đăng nhập và vô hiệu hóa phiên hiện tại.
+    const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: "876000h",
+    });
+    if (banError) throw new Error("Đã khóa hồ sơ nhưng chưa chặn được đăng nhập.");
+    // Ban vô hiệu hóa refresh token nên phiên đang mở cũng hết hiệu lực khi làm mới.
+
+    return { ok: true };
+  });
+
+/** MEMBER-LOCK-01 — khôi phục tài khoản đã lưu trữ (chỉ Admin, kiểm tra trong RPC). */
+export const unlockMemberAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("member_unlock", { _user: data.userId });
+    if (error) throw new Error(error.message.replace(/^.*?:\s*/, ""));
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: "none",
+    });
+    if (banError) throw new Error("Đã khôi phục hồ sơ nhưng chưa mở được đăng nhập.");
+
+    return { ok: true };
+  });
+
+/**
  * MEMBER-AUTH — cấp mật khẩu tạm cho Leader/Member.
  * Mật khẩu sinh ở server, trả về đúng một lần cho người gọi, không lưu plaintext,
  * không ghi vào audit log và không ghi ra console.

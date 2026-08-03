@@ -1,11 +1,12 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cake, Eye, KeyRound, Lock, Pencil, Plus, Send, Unlock } from "lucide-react";
+import { Cake, Eye, KeyRound, Lock, Pencil, Plus, RotateCcw, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, TableCellStack, TableRowActions } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EntityAvatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -24,8 +25,14 @@ import { cenToast } from "@/components/ui/toast";
 import { MemberFormDrawer } from "@/components/org/member-form-drawer";
 import { MemberDetailModal } from "@/components/org/member-detail-modal";
 import { TempPasswordModal } from "@/components/org/temp-password-modal";
+import { MemberLockDialog } from "@/components/org/member-lock-dialog";
 import { useOrgAccess } from "@/hooks/use-org-access";
-import { setMemberStatus } from "@/lib/org.functions";
+import { unlockMemberAccount } from "@/lib/org.functions";
+import {
+  archivedMembersQuery,
+  resetLockedIdentity,
+  type ArchivedMemberRow,
+} from "@/lib/member-identity";
 import { testPersonalTelegram } from "@/lib/telegram.functions";
 import { avatarUrlMapQuery } from "@/lib/avatar-data";
 import { CEN_TIMEZONE } from "@/lib/datetime";
@@ -82,6 +89,9 @@ function MembersPage() {
 
   const membersResult = useQuery(membersQuery());
   const teamsResult = useQuery(teamsQuery());
+  const archivedResult = useQuery(archivedMembersQuery(access.isAdmin));
+  const [tab, setTab] = React.useState<"active" | "archived">("active");
+  const [restoreTarget, setRestoreTarget] = React.useState<ArchivedMemberRow | null>(null);
 
   const [search, setSearch] = React.useState("");
   const [teamFilter, setTeamFilter] = React.useState(ALL);
@@ -127,6 +137,8 @@ function MembersPage() {
   const rows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return (membersResult.data ?? []).filter((member) => {
+      // Tài khoản đã khóa nằm ở tab "Tài khoản lưu trữ".
+      if (member.status !== "active") return false;
       if (keyword) {
         const haystack =
           `${member.display_name} ${member.email} ${member.job_title ?? ""}`.toLowerCase();
@@ -139,18 +151,83 @@ function MembersPage() {
     });
   }, [membersResult.data, search, teamFilter, roleFilter, statusFilter]);
 
-  const statusMutation = useMutation({
-    mutationFn: (input: { userId: string; status: "active" | "locked" }) =>
-      setMemberStatus({ data: input }),
-    onSuccess: (_data, variables) => {
+  const unlockMutation = useMutation({
+    mutationFn: (userId: string) => unlockMemberAccount({ data: { userId } }),
+    onSuccess: () => {
+      resetLockedIdentity();
       void queryClient.invalidateQueries({ queryKey: ["members"] });
-      cenToast.success(
-        variables.status === "locked" ? "Đã khóa tài khoản." : "Đã mở khóa tài khoản.",
-      );
-      setLockTarget(null);
+      cenToast.success("Đã khôi phục tài khoản.");
+      setRestoreTarget(null);
     },
     onError: (error: Error) => cenToast.error(error.message),
   });
+
+  const archivedColumns = [
+    {
+      id: "member",
+      header: "Thành viên",
+      className: "min-w-[220px]",
+      cell: (row: ArchivedMemberRow) => (
+        <TableCellStack primary={row.display_name} secondary={row.email} />
+      ),
+    },
+    {
+      id: "role",
+      header: "Vai trò cũ / Team cũ",
+      className: "min-w-[180px]",
+      cell: (row: ArchivedMemberRow) => (
+        <TableCellStack
+          primary={row.role ? (ROLE_LABEL[row.role as AppRole] ?? row.role) : "—"}
+          secondary={row.team_name ?? "Không có Team"}
+        />
+      ),
+    },
+    {
+      id: "locked",
+      header: "Thời điểm khóa / Người khóa",
+      className: "min-w-[200px]",
+      cell: (row: ArchivedMemberRow) => (
+        <TableCellStack
+          primary={
+            row.locked_at ? new Date(row.locked_at).toLocaleString("vi-VN", { timeZone: CEN_TIMEZONE }) : "—"
+          }
+          secondary={row.locked_by_name ?? "—"}
+        />
+      ),
+    },
+    {
+      id: "reason",
+      header: "Lý do khóa",
+      className: "min-w-[220px]",
+      cell: (row: ArchivedMemberRow) => (
+        <span className="text-text-secondary">{row.lock_reason ?? "—"}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      align: "right" as const,
+      className: "min-w-[120px] w-[120px]",
+      cell: (row: ArchivedMemberRow) => (
+        <TableRowActions>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                aria-label={`Khôi phục tài khoản ${row.display_name}`}
+                onClick={() => setRestoreTarget(row)}
+              >
+                <RotateCcw />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Khôi phục tài khoản</TooltipContent>
+          </Tooltip>
+        </TableRowActions>
+      ),
+    },
+  ];
 
   const columns = [
     {
@@ -326,22 +403,21 @@ function MembersPage() {
               <TooltipContent>Cấp mật khẩu tạm</TooltipContent>
             </Tooltip>
           ) : null}
-          {access.canLockMember && row.id !== access.userId ? (
+          {/* Chỉ Admin được khóa; không tự khóa chính mình. */}
+          {access.isAdmin && access.canLockMember && row.id !== access.userId ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   type="button"
-                  aria-label={row.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                  aria-label={`Khóa tài khoản ${row.display_name}`}
                   onClick={() => setLockTarget(row)}
                 >
-                  {row.status === "active" ? <Lock /> : <Unlock />}
+                  <Lock />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                {row.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
-              </TooltipContent>
+              <TooltipContent>Khóa tài khoản</TooltipContent>
             </Tooltip>
           ) : null}
         </TableRowActions>
@@ -369,6 +445,34 @@ function MembersPage() {
         }
       />
 
+      {access.isAdmin ? (
+        <Tabs value={tab} onValueChange={(value) => setTab(value as "active" | "archived")}>
+          <TabsList>
+            <TabsTrigger value="active">Đang hoạt động</TabsTrigger>
+            <TabsTrigger value="archived">
+              Tài khoản lưu trữ{" "}
+              {archivedResult.data?.length ? `(${archivedResult.data.length})` : ""}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
+
+      {tab === "archived" && access.isAdmin ? (
+        <DataTable
+          columns={archivedColumns}
+          data={archivedResult.data ?? []}
+          getRowId={(row) => row.id}
+          density="compact"
+          loading={archivedResult.isLoading}
+          error={archivedResult.isError}
+          onRetry={() => void archivedResult.refetch()}
+          errorTitle="Không tải được tài khoản lưu trữ"
+          emptyTitle="Chưa có tài khoản nào bị khóa"
+          emptyDescription="Tài khoản sau khi khóa sẽ xuất hiện tại đây."
+          caption="Tài khoản lưu trữ"
+        />
+      ) : (
+        <>
       <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Input
           type="search"
@@ -403,16 +507,6 @@ function MembersPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger aria-label="Lọc theo trạng thái">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            <SelectItem value="active">{STATUS_LABEL.active}</SelectItem>
-            <SelectItem value="locked">{STATUS_LABEL.locked}</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <DataTable
@@ -433,6 +527,8 @@ function MembersPage() {
         emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
         caption="Danh sách thành viên"
       />
+        </>
+      )}
 
       <TempPasswordModal
         open={tempPasswordTarget !== null}
@@ -463,26 +559,25 @@ function MembersPage() {
         teams={teams}
       />
 
-      <ConfirmDialog
-        open={lockTarget !== null}
+      <MemberLockDialog
+        member={lockTarget}
         onOpenChange={(open) => {
           if (!open) setLockTarget(null);
         }}
-        tone={lockTarget?.status === "active" ? "destructive" : "normal"}
-        title={lockTarget?.status === "active" ? "Khóa tài khoản?" : "Mở khóa tài khoản?"}
-        description={
-          lockTarget?.status === "active"
-            ? `${lockTarget?.display_name} sẽ không thể đăng nhập cho tới khi được mở khóa.`
-            : `${lockTarget?.display_name} sẽ đăng nhập lại được sau khi mở khóa.`
-        }
-        confirmLabel={lockTarget?.status === "active" ? "Khóa tài khoản" : "Mở khóa"}
-        loading={statusMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRestoreTarget(null);
+        }}
+        title="Khôi phục tài khoản?"
+        description={`${restoreTarget?.display_name ?? ""} sẽ đăng nhập lại được và xuất hiện trong danh sách hoạt động. Các trách nhiệm cũ đã chuyển giao không được trả lại tự động.`}
+        confirmLabel="Khôi phục"
+        loading={unlockMutation.isPending}
         onConfirm={() => {
-          if (!lockTarget) return;
-          statusMutation.mutate({
-            userId: lockTarget.id,
-            status: lockTarget.status === "active" ? "locked" : "active",
-          });
+          if (!restoreTarget) return;
+          unlockMutation.mutate(restoreTarget.id);
         }}
       />
     </div>

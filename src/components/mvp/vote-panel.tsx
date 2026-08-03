@@ -16,7 +16,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
 import { formatHanoiDateTime } from "@/lib/datetime";
-import { membersQuery } from "@/lib/org-data";
+import { activeMembersQuery } from "@/lib/org-data";
 import { castVote, myVoteQuery, type MvpCycleRow } from "@/lib/mvp-data";
 import { MVP_VOTE_MIN_REASON } from "@/lib/mvp-scoring";
 
@@ -33,7 +33,7 @@ export interface VotePanelProps {
 
 export function VotePanel({ cycle, userId, canVote }: VotePanelProps) {
   const queryClient = useQueryClient();
-  const members = useQuery(membersQuery());
+  const members = useQuery(activeMembersQuery());
   const myVote = useQuery(myVoteQuery(cycle.id, userId));
 
   const [voteeId, setVoteeId] = React.useState("");

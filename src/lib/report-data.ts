@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
 import { CEN_TIMEZONE, formatHanoiDate, hanoiStartOfDayMs } from "@/lib/datetime";
+import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 
 /**
  * CEN 1.0 — M4 Reports data layer.
@@ -109,7 +110,7 @@ function mapDaily(row: Record<string, unknown>): DailyReportRow {
     id: row["id"] as string,
     report_date: row["report_date"] as string,
     author_id: row["author_id"] as string,
-    authorName: author?.display_name ?? null,
+    authorName: maskName(author?.display_name) ?? null,
     team_id: (row["team_id"] as string | null) ?? null,
     teamName: team?.name ?? null,
     results: (row["results"] as string | null) ?? null,
@@ -117,7 +118,7 @@ function mapDaily(row: Record<string, unknown>): DailyReportRow {
     next_plan: (row["next_plan"] as string | null) ?? null,
     status: row["status"] as ReportStatus,
     reviewer_id: (row["reviewer_id"] as string | null) ?? null,
-    reviewerName: reviewer?.display_name ?? null,
+    reviewerName: maskName(reviewer?.display_name) ?? null,
     review_note: (row["review_note"] as string | null) ?? null,
     submitted_at: (row["submitted_at"] as string | null) ?? null,
     reviewed_at: (row["reviewed_at"] as string | null) ?? null,
@@ -193,14 +194,14 @@ function mapWeekly(row: Record<string, unknown>): WeeklyReportRow {
     teamName: team?.name ?? null,
     week_start: row["week_start"] as string,
     leader_id: row["leader_id"] as string,
-    leaderName: leader?.display_name ?? null,
+    leaderName: maskName(leader?.display_name) ?? null,
     highlights: (row["highlights"] as string | null) ?? null,
     unfinished: (row["unfinished"] as string | null) ?? null,
     blockers: (row["blockers"] as string | null) ?? null,
     next_week_plan: (row["next_week_plan"] as string | null) ?? null,
     status: row["status"] as ReportStatus,
     reviewer_id: (row["reviewer_id"] as string | null) ?? null,
-    reviewerName: reviewer?.display_name ?? null,
+    reviewerName: maskName(reviewer?.display_name) ?? null,
     review_note: (row["review_note"] as string | null) ?? null,
     submitted_at: (row["submitted_at"] as string | null) ?? null,
     reviewed_at: (row["reviewed_at"] as string | null) ?? null,
@@ -270,6 +271,7 @@ export async function fetchDailyTaskRefs(
   authorId: string,
   reportDate: string,
 ): Promise<ReportTaskRef[]> {
+  await primeLockedIdentity();
   const dayStart = hanoiStartOfDayMs(reportDate);
   if (dayStart === null) return [];
   const dayEnd = dayStart + 24 * 60 * 60 * 1000;
@@ -327,6 +329,7 @@ export async function fetchDailyResultLines(
   authorId: string,
   reportDate: string,
 ): Promise<string[]> {
+  await primeLockedIdentity();
   const dayStart = hanoiStartOfDayMs(reportDate);
   if (dayStart === null) return [];
   const dayEnd = dayStart + 24 * 60 * 60 * 1000;
@@ -558,6 +561,7 @@ export async function fetchReportHistory(
   entityType: "daily_report" | "weekly_report",
   id: string,
 ): Promise<ReportHistoryEntry[]> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("audit_logs")
     .select("id,action,actor_email,created_at,before_data,after_data")
@@ -585,6 +589,7 @@ export async function fetchMyDailyReport(
   authorId: string,
   reportDate: string,
 ): Promise<DailyReportRow | null> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("daily_reports")
     .select(DAILY_SELECT)

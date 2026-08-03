@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { cenToast } from "@/components/ui/toast";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
-import { membersQuery, teamsQuery } from "@/lib/org-data";
+import { activeMembersQuery, teamsQuery } from "@/lib/org-data";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
   REPORT_KIND_LABEL,
@@ -55,7 +55,7 @@ export function ReportConfigPanel() {
   const assignments = useQuery(reviewerAssignmentsQuery());
   const nonWorking = useQuery(nonWorkingDaysQuery());
   const teams = useQuery(teamsQuery());
-  const members = useQuery(membersQuery());
+  const members = useQuery(activeMembersQuery());
 
   const [requirementOpen, setRequirementOpen] = React.useState(false);
   const [delegateOpen, setDelegateOpen] = React.useState(false);
