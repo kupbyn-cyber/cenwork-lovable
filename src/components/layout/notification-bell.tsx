@@ -130,7 +130,7 @@ export function NotificationBell() {
         <DropdownMenuItem
           onSelect={() => {
             setOpen(false);
-            void navigate({ to: "/notifications" });
+            void navigate({ to: "/announcements", search: { kind: "system" } });
           }}
         >
           Xem tất cả thông báo
