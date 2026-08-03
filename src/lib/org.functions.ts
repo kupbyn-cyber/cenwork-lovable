@@ -20,7 +20,6 @@ const createMemberSchema = z.object({
   jobTitle: z.enum(["Giám đốc", "Leader", "Nhân viên"]).optional().nullable(),
   role: roleEnum,
   primaryTeamId: z.string().uuid().nullable(),
-  collaboratorTeamIds: z.array(z.string().uuid()).max(20).default([]),
   initialPassword: z.string().min(8).max(72),
   // Telegram User ID không bắt buộc; telegram_enabled do server quyết định.
   telegramUserId: z
@@ -105,13 +104,6 @@ export const createMemberAccount = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: userId, role: data.role });
     if (roleError) throw new Error("Không gán được vai trò hệ thống.");
-
-    const collaborators = data.collaboratorTeamIds.filter((id) => id !== data.primaryTeamId);
-    if (collaborators.length > 0) {
-      await supabaseAdmin
-        .from("team_collaborators")
-        .insert(collaborators.map((teamId) => ({ team_id: teamId, user_id: userId })));
-    }
 
     return { userId };
   });

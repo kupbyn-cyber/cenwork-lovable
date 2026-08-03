@@ -53,7 +53,6 @@ export interface MemberRow {
   birthday: string | null;
   avatar_path: string | null;
   role: AppRole | null;
-  collaboratorTeamIds: string[];
   locked_at?: string | null;
   lock_reason?: string | null;
 }
@@ -89,18 +88,18 @@ export async function fetchMembers(): Promise<MemberRow[]> {
   // ORG-VIEW-01: danh bạ nội bộ — RPC tự lọc cột nhạy cảm theo quyền của người gọi.
   const rows = unwrap(await supabase.rpc("member_directory")) as (Omit<
     MemberRow,
-    "collaboratorTeamIds" | "telegram_enabled"
+    "telegram_enabled"
   > & {
     telegram_enabled: boolean | null;
     collaborator_team_ids: string[] | null;
   })[];
 
-  return rows.map(({ collaborator_team_ids, ...profile }) => ({
+  // MEMBER-FIX-04: bỏ khái niệm Team phối hợp, chỉ dùng Team chính.
+  return rows.map(({ collaborator_team_ids: _ignored, ...profile }) => ({
     ...profile,
     email: profile.email ?? "",
     telegram_enabled: profile.telegram_enabled ?? false,
     display_name: maskName(profile.display_name, profile.id) as string,
-    collaboratorTeamIds: collaborator_team_ids ?? [],
   }));
 }
 
@@ -183,19 +182,6 @@ export async function updateMemberProfile(input: {
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", input.id);
 
-  if (error) throw new Error(error.message);
-}
-
-export async function replaceCollaboratorTeams(userId: string, teamIds: string[]) {
-  const { error: deleteError } = await supabase
-    .from("team_collaborators")
-    .delete()
-    .eq("user_id", userId);
-  if (deleteError) throw new Error(deleteError.message);
-  if (teamIds.length === 0) return;
-  const { error } = await supabase
-    .from("team_collaborators")
-    .insert(teamIds.map((team_id) => ({ team_id, user_id: userId })));
   if (error) throw new Error(error.message);
 }
 
