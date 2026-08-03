@@ -313,7 +313,9 @@ function DocumentDetailPage() {
           <CardTitle>Thông tin tài liệu</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Field label="Mô tả">{doc.description || "—"}</Field>
+          <Field label="Mô tả">
+            {doc.description ? <LinkifiedText text={doc.description} /> : "—"}
+          </Field>
           <Field label="Loại tài liệu">{typeText(doc.doc_type)}</Field>
           <Field label="Phạm vi">{scopeText(doc)}</Field>
           <Field label="Người phụ trách">{doc.ownerName ?? "—"}</Field>
@@ -321,7 +323,9 @@ function DocumentDetailPage() {
           <Field label="Nguồn">{DOCUMENT_SOURCE_LABEL[doc.source_type]}</Field>
           <Field label="Ngày hiệu lực">{formatDate(version?.effective_from)}</Field>
           <Field label="Ngày hết hiệu lực">{formatDate(version?.effective_to)}</Field>
-          <Field label="Ghi chú phiên bản">{version?.change_note || "—"}</Field>
+          <Field label="Ghi chú phiên bản">
+            {version?.change_note ? <LinkifiedText text={version.change_note} /> : "—"}
+          </Field>
           <Field label="Từ khóa">
             {doc.keywords.length === 0 ? (
               "—"
