@@ -298,7 +298,7 @@ function TasksPage() {
       className: "px-3",
       headerClassName: "px-3",
       cell: (row: TaskRow) => (
-        <span className="block truncate font-medium text-text-primary">{row.name}</span>
+        <span className="line-clamp-2 font-medium text-text-primary">{row.name}</span>
       ),
     },
     ...(show("project")
@@ -347,17 +347,8 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            ...col("w-[136px]"),
-            cell: (row: TaskRow) => (
-              <span
-                className={cn(
-                  "block truncate",
-                  isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary",
-                )}
-              >
-                {formatDateTime(row.deadline)}
-              </span>
-            ),
+            ...col("w-[128px]"),
+            cell: (row: TaskRow) => <DeadlineCountdown task={row} />,
           },
         ]
       : []),
@@ -366,13 +357,8 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            ...col("w-[100px]"),
-            cell: (row: TaskRow) => (
-              <StatusBadge
-                label={TASK_PRIORITY_LABEL[row.priority]}
-                tone={TASK_PRIORITY_TONE[row.priority]}
-              />
-            ),
+            ...col("w-[96px]"),
+            cell: (row: TaskRow) => <PriorityLabel priority={row.priority} />,
           },
         ]
       : []),
@@ -381,7 +367,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            ...col("w-[128px]"),
+            ...col("w-[148px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
