@@ -46,6 +46,10 @@ import {
 } from "@/lib/org-data";
 
 export const Route = createFileRoute("/_authenticated/members")({
+  // SEARCH-01: cho phép mở thẳng hồ sơ thành viên từ kết quả tìm kiếm.
+  validateSearch: (search: Record<string, unknown>) => ({
+    member: typeof search["member"] === "string" ? (search["member"] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Thành viên — CEN WORK" },
@@ -104,6 +108,14 @@ function MembersPage() {
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [detailTarget, setDetailTarget] = React.useState<MemberRow | null>(null);
   const [tempPasswordTarget, setTempPasswordTarget] = React.useState<MemberRow | null>(null);
+
+  // SEARCH-01: mở hồ sơ khi điều hướng kèm ?member=<id> (quyền xem vẫn do modal/RPC quyết định).
+  const { member: memberParam } = Route.useSearch();
+  React.useEffect(() => {
+    if (!memberParam) return;
+    const found = (membersResult.data ?? []).find((row) => row.id === memberParam);
+    if (found) setDetailTarget(found);
+  }, [memberParam, membersResult.data]);
 
   const avatarPaths = React.useMemo(
     () =>

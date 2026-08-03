@@ -1,10 +1,11 @@
 import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, Menu, Search, ShieldOff, User } from "lucide-react";
+import { LogOut, Menu, ShieldOff, User } from "lucide-react";
 
 import { Button, IconButton } from "@/components/ui/button";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { GlobalSearch } from "@/components/layout/global-search";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,21 +69,8 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <Menu />
       </IconButton>
 
-      <div className="min-w-0 flex-1">
-        <label className="relative block max-w-md">
-          <span className="sr-only">Tìm kiếm trong hệ thống</span>
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-2.5 size-icon-md -translate-y-1/2 text-text-muted"
-          />
-          <input
-            type="search"
-            readOnly
-            placeholder="Tìm kiếm (chưa khả dụng)"
-            className="h-control-md w-full rounded-control border border-border-default bg-surface pr-3 pl-9 text-label text-text-primary placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-          />
-        </label>
-      </div>
+      <GlobalSearch />
+      <div className="flex-1 sm:hidden" />
 
       <NotificationBell />
 
