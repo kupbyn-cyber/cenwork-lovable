@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import {
   DUTY_STATUS_LABEL,
+  dutyAreaLabel,
+  dutyJobLabel,
   dutyStatusTone,
   effectiveDutyStatus,
   type DutyAssignmentRow,
@@ -129,9 +131,9 @@ function DutyCard({ row, actions }: { row: DutyAssignmentRow; actions: DutyListA
       </div>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-caption">
         <dt className="text-text-muted">Khu vực</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{row.area?.name ?? "—"}</dd>
+        <dd className="min-w-0 break-words text-text-secondary">{dutyAreaLabel(row)}</dd>
         <dt className="text-text-muted">Nhiệm vụ</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{row.job_type?.name ?? "—"}</dd>
+        <dd className="min-w-0 break-words text-text-secondary">{dutyJobLabel(row)}</dd>
         <dt className="text-text-muted">Team</dt>
         <dd className="min-w-0 break-words text-text-secondary">{row.duty_team?.name ?? "—"}</dd>
         <dt className="text-text-muted">Phụ trách</dt>
@@ -219,8 +221,8 @@ export function DutyAssignmentList({
                       {hhmm(row.start_time)}–{hhmm(row.end_time)} · Hạn {hhmm(row.due_time)}
                     </span>
                   </TableCell>
-                  <TableCell>{row.area?.name ?? "—"}</TableCell>
-                  <TableCell>{row.job_type?.name ?? "—"}</TableCell>
+                  <TableCell>{dutyAreaLabel(row)}</TableCell>
+                  <TableCell>{dutyJobLabel(row)}</TableCell>
                   <TableCell>{row.duty_team?.name ?? "—"}</TableCell>
                   <TableCell>{peopleLabel(row)}</TableCell>
                   <TableCell>{row.provider?.name ?? "—"}</TableCell>
