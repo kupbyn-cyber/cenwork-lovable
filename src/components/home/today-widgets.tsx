@@ -16,7 +16,8 @@ import type { RecognitionRow } from "@/lib/recognition-data";
 import { RECOGNITION_CATEGORY_META } from "@/lib/recognition-data";
 import type { MarketingFocus } from "@/lib/today-insights";
 import { formatPercent } from "@/lib/today-insights";
-import type { SystemFocus, TeamFocus } from "@/lib/today-insights";
+import type { TeamFocus } from "@/lib/today-insights";
+import { OPS_ALERT_VISIBLE, type OpsAlert } from "@/lib/ops-alerts";
 import type { TodayMetrics } from "@/lib/today-metrics";
 import { RANGE_PHRASE, type TodayRange } from "@/lib/today-range";
 
@@ -175,13 +176,6 @@ export function ReportStatusWidget({
       </div>
     </DashboardCard>
   );
-}
-
-interface Alert {
-  label: string;
-  value: number;
-  to: LinkProps["to"];
-  severity: number;
 }
 
 /** Sức khỏe Team ở góc nhìn toàn hệ thống (Admin/CMO). */
