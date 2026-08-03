@@ -133,6 +133,7 @@ export async function buildOpsAlerts(
     alerts.push(
       mk("person_overdue", {
         id: `overdue-${personId}`,
+        team_id: teamOfUser.get(personId) ?? null,
         subject: nameById.get(personId) ?? "Không rõ",
         detail: `có ${overdue.length} công việc quá hạn.`,
         magnitude: overdue.length,
@@ -162,6 +163,7 @@ export async function buildOpsAlerts(
       alerts.push(
         mk("person_overload", {
           id: `overload-${personId}`,
+          team_id: teamId,
           subject: nameById.get(personId) ?? "Không rõ",
           detail: useAverage
             ? `có ${open} công việc đang mở, cao hơn ${percent}% mức trung bình của Team ${teamNames.get(teamId) ?? ""}`.trim() +
@@ -183,6 +185,7 @@ export async function buildOpsAlerts(
         alerts.push(
           mk("team_imbalance", {
             id: `imbalance-${teamId}`,
+            team_id: teamId,
             subject: `Team ${teamNames.get(teamId) ?? "không rõ"}`,
             detail: `đang phân bổ công việc chưa cân đối: cao nhất ${max} việc, thấp nhất ${min} việc.`,
             magnitude: max - min,
@@ -253,7 +256,7 @@ export async function buildOpsAlerts(
   await source("project_stale", async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select("id,name,status,updated_at")
+      .select("id,name,status,updated_at,responsible_team_id")
       .is("deleted_at", null)
       .not("status", "in", "(completed,archived,rejected)")
       .limit(300);
@@ -287,6 +290,7 @@ export async function buildOpsAlerts(
       alerts.push(
         mk("project_stale", {
           id: `stale-${project.id}`,
+          team_id: project.responsible_team_id ?? null,
           subject: `Dự án ${project.name}`,
           detail: `chưa có cập nhật trong ${days} ngày.`,
           magnitude: days,
@@ -305,6 +309,7 @@ export async function buildOpsAlerts(
     alerts.push(
       mk("person_idle", {
         id: `idle-${personId}`,
+        team_id: teamOfUser.get(personId) ?? null,
         subject: name,
         detail: "hiện không có công việc đang mở.",
         magnitude: 0,

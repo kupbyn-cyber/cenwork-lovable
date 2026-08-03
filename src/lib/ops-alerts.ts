@@ -41,6 +41,8 @@ export interface OpsAlert {
   subject: string;
   /** Mô tả ngắn nguyên nhân. */
   detail: string;
+  /** Team liên quan (nếu xác định được) — dùng cho KPI "Team cần chú ý". */
+  team_id?: string | null;
   /** Số lượng hoặc mức chênh lệch liên quan. */
   magnitude: number;
   /** true = cảnh báo trạng thái hiện tại (không đổi theo bộ lọc). */
