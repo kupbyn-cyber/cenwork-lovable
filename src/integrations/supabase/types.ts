@@ -4316,6 +4316,47 @@ export type Database = {
         }
         Relationships: []
       }
+      task_approval_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          is_backfilled: boolean
+          reason: string | null
+          round: number
+          task_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          is_backfilled?: boolean
+          reason?: string | null
+          round?: number
+          task_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_backfilled?: boolean
+          reason?: string | null
+          round?: number
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_approval_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comment_reads: {
         Row: {
           last_read_at: string
@@ -5389,10 +5430,34 @@ export type Database = {
       }
       can_view_project: { Args: { _project: string }; Returns: boolean }
       can_view_task: { Args: { _task: string }; Returns: boolean }
+      can_view_task_approval_events: {
+        Args: { _task: string }
+        Returns: boolean
+      }
       can_view_weekly_report: { Args: { _team: string }; Returns: boolean }
       current_app_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      dashboard_member_team_average: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          completed_tasks: number
+          completion_rate: number
+          ontime_rate: number
+          open_tasks: number
+          status: string
+          team_size: number
+        }[]
+      }
+      dashboard_task_review_stats: {
+        Args: { p_from: string; p_to: string; p_user?: string }
+        Returns: {
+          changes_requested_count: number
+          evaluated_tasks: number
+          first_pass_tasks: number
+          status: string
+        }[]
       }
       deadline_change_decide: {
         Args: { _approve: boolean; _note?: string; _request: string }
@@ -5797,7 +5862,17 @@ export type Database = {
         Args: { _approve: boolean; _note?: string; _task: string }
         Returns: undefined
       }
+      task_approval_events_since: { Args: never; Returns: string }
       task_comments_mark_read: { Args: { _task: string }; Returns: undefined }
+      task_log_approval_event: {
+        Args: {
+          _event_type: string
+          _reason?: string
+          _round: number
+          _task: string
+        }
+        Returns: undefined
+      }
       task_member_resubmit: { Args: { _task: string }; Returns: undefined }
       task_member_submit: {
         Args: {
