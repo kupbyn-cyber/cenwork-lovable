@@ -133,6 +133,17 @@ export async function buildTodayInsights(
   });
 
   const dailyAuthorsToday = new Set<string>();
+  // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày, không tính vào "chưa gửi".
+  const dailyExempt = new Set<string>();
+  await source("daily_exempt_roles", async () => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("user_id,role")
+      .in("role", ["admin", "cmo"])
+      .limit(1000);
+    check(error);
+    for (const row of data ?? []) dailyExempt.add(row.user_id);
+  });
   await source("daily_reports", async () => {
     const { data, error } = await supabase
       .from("daily_reports")
@@ -189,7 +200,7 @@ export async function buildTodayInsights(
         open_tasks: openTasks.length,
         overdue_tasks: overdue.length,
         missing_daily: members
-          .filter((id) => !dailyAuthorsToday.has(id))
+          .filter((id) => !dailyAuthorsToday.has(id) && !dailyExempt.has(id))
           .slice(0, 8)
           .map((id) => ({ id, name: nameById.get(id) ?? "Không rõ" })),
         pending_reviews: teamTasks.filter((task) => task.status === "review").length,
@@ -219,7 +230,7 @@ export async function buildTodayInsights(
         const byRatio = ratio >= TEAM_ATTENTION_OVERDUE_RATIO && overdue.length > 0;
         if (!byCount && !byRatio) continue;
         const missing = [...teamOfUser.entries()].filter(
-          ([id, teamId]) => teamId === row.id && !dailyAuthorsToday.has(id),
+          ([id, teamId]) => teamId === row.id && !dailyAuthorsToday.has(id) && !dailyExempt.has(id),
         ).length;
         attention.push({
           team_id: row.id,
@@ -244,7 +255,9 @@ export async function buildTodayInsights(
       check(projectError);
       const projects = projectRows ?? [];
 
-      const activeMembers = [...teamOfUser.values()].filter(Boolean).length;
+      const activeMembers = [...teamOfUser.entries()].filter(
+        ([id, teamId]) => Boolean(teamId) && !dailyExempt.has(id),
+      ).length;
 
       marketing = {
         teams_attention: attention.slice(0, TEAM_ATTENTION_LIMIT),

@@ -324,6 +324,15 @@ export async function buildTodayHub(
 
   // 2 + 5 + 3. Báo cáo ngày: bị yêu cầu sửa, đến hạn hôm nay, chờ duyệt.
   await source("daily_reports", async () => {
+    // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày.
+    const exemptAuthors = new Set<string>();
+    const { data: exemptRows } = await supabase
+      .from("user_roles")
+      .select("user_id,role")
+      .in("role", ["admin", "cmo"])
+      .limit(1000);
+    for (const row of exemptRows ?? []) exemptAuthors.add(row.user_id);
+
     const { data, error } = await supabase
       .from("daily_reports")
       .select("id,report_date,author_id,team_id,status,created_at,updated_at")
@@ -334,6 +343,7 @@ export async function buildTodayHub(
     const list = data ?? [];
 
     for (const report of list) {
+      if (exemptAuthors.has(report.author_id)) continue;
       if (report.author_id === userId && report.status === "changes_requested") {
         rows.push(
           item({
@@ -369,7 +379,7 @@ export async function buildTodayHub(
       }
     }
 
-    if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY)) {
+    if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY) && !privileged) {
       const mineToday = list.find(
         (row) => row.author_id === userId && row.report_date === today,
       );
