@@ -53,9 +53,11 @@ function Block({ title, value }: { title: string; value: string | null }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="text-label font-semibold text-text-primary">{title}</p>
-      <p className="whitespace-pre-wrap break-words text-body text-text-secondary">
-        {value?.trim() ? value : "—"}
-      </p>
+      {value?.trim() ? (
+        <LinkifiedText as="p" className="text-body text-text-secondary" text={value} />
+      ) : (
+        <p className="text-body text-text-secondary">—</p>
+      )}
     </div>
   );
 }
