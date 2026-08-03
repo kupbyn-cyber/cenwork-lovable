@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import { ApprovalActions } from "@/components/approval/approval-actions";
 import { ApprovalApproverList } from "@/components/approval/approval-approver-list";
 import { ApprovalCommentThread } from "@/components/approval/approval-comment-thread";
-import { ApprovalAttachments } from "@/components/attachment/module-attachments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -169,20 +168,6 @@ function ApprovalDetailPage() {
             description="Kết quả xử lý của phiên bản hiện tại."
           />
           <ApprovalApproverList detail={detail.data} userId={user?.id ?? null} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex min-w-0 flex-col gap-3">
-          <SectionHeader
-            title="Tệp đính kèm"
-            description="Chỉ người gửi thêm hoặc gỡ tệp; tệp của phiên bản cũ vẫn được giữ lại."
-          />
-          <ApprovalAttachments
-            requestId={request.id}
-            currentVersion={request.current_version}
-            canManage={isSender}
-          />
         </CardContent>
       </Card>
 
