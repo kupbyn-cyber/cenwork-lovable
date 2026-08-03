@@ -67,11 +67,12 @@ export const TASK_KIND_LABEL: Record<TaskKindFilter, string> = {
 
 export interface TaskFilterState {
   search: string;
-  status: string;
-  assignee: string;
-  project: string;
-  team: string;
-  priority: string;
+  /** Đa chọn: rỗng nghĩa là không lọc theo trường này. OR trong cùng trường, AND giữa các trường. */
+  status: string[];
+  assignee: string[];
+  project: string[];
+  team: string[];
+  priority: string[];
   kind: TaskKindFilter;
   deadlineFrom: string;
   deadlineTo: string;
@@ -85,11 +86,11 @@ export interface TaskFilterState {
 
 export const EMPTY_FILTERS: TaskFilterState = {
   search: "",
-  status: ALL,
-  assignee: ALL,
-  project: ALL,
-  team: ALL,
-  priority: ALL,
+  status: [],
+  assignee: [],
+  project: [],
+  team: [],
+  priority: [],
   kind: "all",
   deadlineFrom: "",
   deadlineTo: "",
@@ -125,11 +126,11 @@ export const DEFAULT_COLUMNS: OptionalColumnId[] = [...OPTIONAL_COLUMNS];
 export function hasActiveFilters(filters: TaskFilterState) {
   return (
     filters.search.trim() !== "" ||
-    filters.status !== ALL ||
-    filters.assignee !== ALL ||
-    filters.project !== ALL ||
-    filters.team !== ALL ||
-    filters.priority !== ALL ||
+    filters.status.length > 0 ||
+    filters.assignee.length > 0 ||
+    filters.project.length > 0 ||
+    filters.team.length > 0 ||
+    filters.priority.length > 0 ||
     filters.kind !== "all" ||
     filters.deadlineFrom !== "" ||
     filters.deadlineTo !== "" ||
@@ -144,7 +145,7 @@ export function hasActiveFilters(filters: TaskFilterState) {
 
 export function countAdvancedFilters(filters: TaskFilterState) {
   let n = 0;
-  if (filters.priority !== ALL) n += 1;
+  if (filters.priority.length > 0) n += 1;
   if (filters.kind !== "all") n += 1;
   if (filters.deadlineFrom || filters.deadlineTo) n += 1;
   if (filters.createdFrom || filters.createdTo) n += 1;
