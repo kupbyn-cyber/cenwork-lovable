@@ -5293,6 +5293,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      ensure_system_defaults: { Args: never; Returns: Json }
       has_overdue_announcement: { Args: { _user: string }; Returns: boolean }
       has_perm: { Args: { _key: string; _user: string }; Returns: boolean }
       has_role: {
