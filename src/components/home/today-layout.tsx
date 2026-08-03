@@ -26,7 +26,7 @@ export function TodayDashboardLayout({
   className,
 }: {
   children: React.ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return <div className={cn("flex min-w-0 flex-col gap-4", className)}>{children}</div>;
 }
@@ -53,8 +53,8 @@ export function TodaySlot({
   className,
   children,
 }: {
-  size?: TodaySize;
-  className?: string;
+  size?: TodaySize | undefined;
+  className?: string | undefined;
   children: React.ReactNode;
 }) {
   return <div className={cn("min-w-0", SPAN[size], className)}>{children}</div>;
@@ -66,19 +66,19 @@ export function todaySpan(size: TodaySize): string {
 
 export interface DashboardCardProps {
   title: string;
-  icon?: LucideIcon;
-  size?: TodaySize;
+  icon?: LucideIcon | undefined;
+  size?: TodaySize | undefined;
   /** Hành động "Xem thêm" ở góc phải header. */
-  to?: LinkProps["to"];
-  params?: LinkProps["params"];
-  actionLabel?: string;
+  to?: LinkProps["to"] | undefined;
+  params?: LinkProps["params"] | undefined;
+  actionLabel?: string | undefined;
   /** Hành động phụ (nút Làm mới, badge…) đặt cạnh "Xem thêm". */
-  headerExtra?: React.ReactNode;
+  headerExtra?: React.ReactNode | undefined;
   /** Giới hạn chiều cao vùng nội dung cho khối nhiều dữ liệu. */
-  scroll?: boolean;
-  footer?: React.ReactNode;
-  className?: string;
-  contentClassName?: string;
+  scroll?: boolean | undefined;
+  footer?: React.ReactNode | undefined;
+  className?: string | undefined;
+  contentClassName?: string | undefined;
   children: React.ReactNode;
 }
 
