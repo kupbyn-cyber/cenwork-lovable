@@ -25,9 +25,7 @@ export function OverdueAnnouncementBanner() {
         </p>
       </div>
       <Button asChild size="sm" variant="secondary" className="shrink-0">
-        <Link to="/announcements">
-          Xem thông báo quá hạn
-        </Link>
+        <Link to="/announcements">Xem thông báo quá hạn</Link>
       </Button>
     </div>
   );

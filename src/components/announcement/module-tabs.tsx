@@ -26,11 +26,7 @@ export function AnnouncementModuleTabs({ className }: { className?: string }) {
       >
         Thông báo
       </Link>
-      <Link
-        to="/approvals"
-        className={TAB_CLASS}
-        activeProps={{ "aria-current": "page" }}
-      >
+      <Link to="/approvals" className={TAB_CLASS} activeProps={{ "aria-current": "page" }}>
         Phê duyệt
       </Link>
     </nav>

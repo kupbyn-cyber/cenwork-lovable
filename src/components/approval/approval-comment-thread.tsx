@@ -241,9 +241,7 @@ export function ApprovalCommentThread({ detail, canMention, canModerate }: Props
             value={body}
             maxLength={4000}
             aria-label="Nội dung bình luận"
-            placeholder={
-              canMention ? "Nhập bình luận… gõ @ để nhắc tên" : "Nhập bình luận…"
-            }
+            placeholder={canMention ? "Nhập bình luận… gõ @ để nhắc tên" : "Nhập bình luận…"}
             onChange={(event) => handleBodyChange(event.target.value)}
             onBlur={() => window.setTimeout(() => setMentionQuery(null), 150)}
           />

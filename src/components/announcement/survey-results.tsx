@@ -24,12 +24,7 @@ interface Props {
   canSeeFullResult: boolean;
 }
 
-export function SurveyResults({
-  announcementId,
-  version,
-  visibility,
-  canSeeFullResult,
-}: Props) {
+export function SurveyResults({ announcementId, version, visibility, canSeeFullResult }: Props) {
   const survey = useQuery(surveyQuery(announcementId, version));
   const answers = useQuery(answersQuery(announcementId, version));
 

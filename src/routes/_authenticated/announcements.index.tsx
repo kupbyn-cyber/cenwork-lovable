@@ -52,10 +52,12 @@ import {
 import {
   internalItem,
   matchesStatusFilter,
-  sortNewestFirst,
+  sortByPriority,
+  isTodo,
   systemItem,
   type InboxKindFilter,
 } from "@/lib/inbox-view";
+import { AnnouncementDetailModal } from "@/components/announcement/announcement-detail-modal";
 
 const TITLE = "Thông báo nội bộ — CEN WORK";
 const DESCRIPTION =
@@ -87,13 +89,14 @@ function AnnouncementsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { kind } = Route.useSearch();
-  const [tab, setTab] = React.useState("inbox");
+  const [tab, setTab] = React.useState("todo");
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [approvalOpen, setApprovalOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AnnouncementRow | null>(null);
   const [openCardId, setOpenCardId] = React.useState<string | null>(null);
+  const [detailRow, setDetailRow] = React.useState<InboxRow | null>(null);
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
@@ -152,9 +155,66 @@ function AnnouncementsPage() {
         (item.title.toLowerCase().includes(term) || item.body.toLowerCase().includes(term)) &&
         matchesStatusFilter(item, kind, status),
     );
-    return sortNewestFirst(items);
+    return sortByPriority(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inbox.data, systemRows, kind, status, term, user?.id]);
+
+  const todoItems = inboxItems.filter((item) => isTodo(item));
+  const doneItems = inboxItems.filter((item) => !isTodo(item));
+
+  function renderInbox(items: typeof inboxItems, emptyText: string) {
+    const loading =
+      (inbox.isLoading && kind !== "system") || (notifications.isLoading && kind !== "internal");
+    return (
+      <>
+        {kind !== "system" && inbox.isError ? (
+          <ErrorState
+            title="Không tải được thông báo nội bộ"
+            description="Thử lại để tải thông báo nội bộ của bạn."
+            onRetry={() => void inbox.refetch()}
+          />
+        ) : null}
+        {kind !== "internal" && notifications.isError ? (
+          <ErrorState
+            title="Không tải được thông báo hệ thống"
+            description="Thử lại để tải thông báo hệ thống của bạn."
+            onRetry={() => void notifications.refetch()}
+          />
+        ) : null}
+
+        {loading ? (
+          <SkeletonCard lines={3} />
+        ) : items.length === 0 ? (
+          <EmptyState title="Chưa có thông báo" description={emptyText} />
+        ) : (
+          <div className="flex min-w-0 flex-col gap-3">
+            {items.map((item) =>
+              item.source === "internal" ? (
+                <AnnouncementAckCard
+                  key={item.key}
+                  row={item.original as InboxRow}
+                  showSourceBadge
+                  senderName={
+                    nameById.get((item.original as InboxRow).announcement.created_by) ?? "—"
+                  }
+                  open={openCardId === item.key}
+                  onOpenChange={(next) => setOpenCardId(next ? item.key : null)}
+                  onOpenDetail={() => setDetailRow(item.original as InboxRow)}
+                />
+              ) : (
+                <SystemNotificationCard
+                  key={item.key}
+                  row={item.original as NotificationRow}
+                  pending={markOne.isPending && markOne.variables === item.id}
+                  onRead={(id) => markOne.mutate(id)}
+                />
+              ),
+            )}
+          </div>
+        )}
+      </>
+    );
+  }
 
   const createdRows = (created.data ?? []).filter(
     (row) => matches(row.title) && (status === "all" || row.status === status),
@@ -183,14 +243,14 @@ function AnnouncementsPage() {
       <NapStatsCards
         scope="announcement"
         onSelect={(filter) => {
-          setTab("inbox");
+          setTab(filter === "completed" || filter === "done" ? "done" : "todo");
           setStatus(filter);
         }}
       />
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">
-          {tab === "inbox" ? (
+          {tab !== "created" ? (
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               {(
                 [
@@ -239,7 +299,7 @@ function AnnouncementsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                {tab === "inbox" && kind === "internal" ? (
+                {tab !== "created" && kind === "internal" ? (
                   <>
                     <SelectItem value="unread">Chưa đọc</SelectItem>
                     <SelectItem value="reading">Đang đọc</SelectItem>
@@ -247,12 +307,12 @@ function AnnouncementsPage() {
                     <SelectItem value="overdue">Quá hạn</SelectItem>
                     <SelectItem value="exempt">Miễn hoàn thành</SelectItem>
                   </>
-                ) : tab === "inbox" && kind === "system" ? (
+                ) : tab !== "created" && kind === "system" ? (
                   <>
                     <SelectItem value="unread">Chưa đọc</SelectItem>
                     <SelectItem value="read">Đã đọc</SelectItem>
                   </>
-                ) : tab === "inbox" ? (
+                ) : tab !== "created" ? (
                   <>
                     <SelectItem value="todo">Cần xử lý</SelectItem>
                     <SelectItem value="done">Đã xử lý</SelectItem>
@@ -276,59 +336,19 @@ function AnnouncementsPage() {
             }}
           >
             <TabsList>
-              <TabsTrigger value="inbox">Thông báo của tôi</TabsTrigger>
-              <TabsTrigger value="created">Thông báo đã gửi</TabsTrigger>
+              <TabsTrigger value="todo">
+                Cần tôi xử lý{todoItems.length ? ` (${todoItems.length})` : ""}
+              </TabsTrigger>
+              <TabsTrigger value="done">Đã xử lý / Lịch sử</TabsTrigger>
+              <TabsTrigger value="created">Đã gửi</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="inbox" className="mt-4">
-              {kind !== "system" && inbox.isError ? (
-                <ErrorState
-                  title="Không tải được thông báo nội bộ"
-                  description="Thử lại để tải thông báo nội bộ của bạn."
-                  onRetry={() => void inbox.refetch()}
-                />
-              ) : null}
-              {kind !== "internal" && notifications.isError ? (
-                <ErrorState
-                  title="Không tải được thông báo hệ thống"
-                  description="Thử lại để tải thông báo hệ thống của bạn."
-                  onRetry={() => void notifications.refetch()}
-                />
-              ) : null}
+            <TabsContent value="todo" className="mt-4">
+              {renderInbox(todoItems, "Bạn không còn thông báo nào cần xử lý.")}
+            </TabsContent>
 
-              {(inbox.isLoading && kind !== "system") ||
-              (notifications.isLoading && kind !== "internal") ? (
-                <SkeletonCard lines={3} />
-              ) : inboxItems.length === 0 ? (
-                <EmptyState
-                  title="Chưa có thông báo"
-                  description="Thông báo gửi tới bạn sẽ xuất hiện tại đây."
-                />
-              ) : (
-                <div className="flex min-w-0 flex-col gap-3">
-                  {inboxItems.map((item) =>
-                    item.source === "internal" ? (
-                      <AnnouncementAckCard
-                        key={item.key}
-                        row={item.original as InboxRow}
-                        showSourceBadge
-                        senderName={
-                          nameById.get((item.original as InboxRow).announcement.created_by) ?? "—"
-                        }
-                        open={openCardId === item.key}
-                        onOpenChange={(next) => setOpenCardId(next ? item.key : null)}
-                      />
-                    ) : (
-                      <SystemNotificationCard
-                        key={item.key}
-                        row={item.original as NotificationRow}
-                        pending={markOne.isPending && markOne.variables === item.id}
-                        onRead={(id) => markOne.mutate(id)}
-                      />
-                    ),
-                  )}
-                </div>
-              )}
+            <TabsContent value="done" className="mt-4">
+              {renderInbox(doneItems, "Thông báo bạn đã xử lý sẽ xuất hiện tại đây.")}
             </TabsContent>
 
             <TabsContent value="created" className="mt-4">
@@ -424,6 +444,15 @@ function AnnouncementsPage() {
       />
 
       <ApprovalFormDrawer open={approvalOpen} onOpenChange={setApprovalOpen} />
+
+      <AnnouncementDetailModal
+        row={detailRow}
+        senderName={detailRow ? (nameById.get(detailRow.announcement.created_by) ?? "—") : "—"}
+        open={Boolean(detailRow)}
+        onOpenChange={(next) => {
+          if (!next) setDetailRow(null);
+        }}
+      />
     </div>
   );
 }

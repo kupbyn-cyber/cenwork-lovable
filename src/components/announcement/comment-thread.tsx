@@ -58,7 +58,6 @@ export function CommentThread({
   const [hiding, setHiding] = React.useState<CommentRow | null>(null);
   const [hideReason, setHideReason] = React.useState("");
 
-
   const nameById = React.useMemo(
     () => new Map((members.data ?? []).map((member) => [member.id, member.display_name])),
     [members.data],
@@ -157,7 +156,6 @@ export function CommentThread({
     setMentionQuery(null);
   }
 
-
   function renderComment(row: CommentRow, isReply: boolean) {
     const mine = row.author_id === user?.id;
     const mentioned = mentionsByComment.get(row.id) ?? [];
@@ -245,11 +243,7 @@ export function CommentThread({
   }
 
   if (!commentsEnabled) {
-    return (
-      <p className="text-body-sm text-text-muted">
-        Thông báo này không bật bình luận.
-      </p>
-    );
+    return <p className="text-body-sm text-text-muted">Thông báo này không bật bình luận.</p>;
   }
 
   return (
@@ -272,11 +266,7 @@ export function CommentThread({
           {replyTo ? (
             <p className="text-body-xs text-text-muted">
               Đang trả lời một bình luận.{" "}
-              <button
-                type="button"
-                className="underline"
-                onClick={() => setReplyTo(null)}
-              >
+              <button type="button" className="underline" onClick={() => setReplyTo(null)}>
                 Hủy trả lời
               </button>
             </p>
@@ -310,8 +300,7 @@ export function CommentThread({
           </div>
           {mentionIds.length > 0 ? (
             <p className="text-body-xs text-text-muted">
-              Sẽ nhắc tên:{" "}
-              {mentionIds.map((id) => nameById.get(id) ?? id).join(", ")}{" "}
+              Sẽ nhắc tên: {mentionIds.map((id) => nameById.get(id) ?? id).join(", ")}{" "}
               <button type="button" className="underline" onClick={() => setMentionIds([])}>
                 Xóa nhắc tên
               </button>
@@ -329,7 +318,6 @@ export function CommentThread({
           </div>
         </div>
       ) : (
-
         <p className="text-body-sm text-text-muted">
           {readOnly
             ? "Bạn đã hoàn thành thông báo được lưu trữ nên chỉ xem lại nội dung."

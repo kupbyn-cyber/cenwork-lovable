@@ -46,9 +46,7 @@ export function VersionHistory({ announcementId }: { announcementId: string }) {
             </p>
           ) : null}
           {row.reason ? (
-            <p className="min-w-0 break-words text-body-xs text-text-muted">
-              Lý do: {row.reason}
-            </p>
+            <p className="min-w-0 break-words text-body-xs text-text-muted">Lý do: {row.reason}</p>
           ) : null}
         </div>
       ))}

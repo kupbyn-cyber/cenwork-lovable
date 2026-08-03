@@ -66,7 +66,6 @@ export function useRecipientScope(): RecipientScope {
   );
 }
 
-
 interface BulkState {
   allUsers: boolean;
   allTeams: boolean;
@@ -117,25 +116,17 @@ export function RecipientPicker({
             <Checkbox
               checked={bulk.allUsers}
               disabled={disabled}
-              onCheckedChange={(checked) =>
-                onBulkChange({ ...bulk, allUsers: checked === true })
-              }
+              onCheckedChange={(checked) => onBulkChange({ ...bulk, allUsers: checked === true })}
             />
-            <span className="min-w-0 break-words">
-              Tất cả người đang hoạt động
-            </span>
+            <span className="min-w-0 break-words">Tất cả người đang hoạt động</span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
             <Checkbox
               checked={bulk.allTeams}
               disabled={disabled}
-              onCheckedChange={(checked) =>
-                onBulkChange({ ...bulk, allTeams: checked === true })
-              }
+              onCheckedChange={(checked) => onBulkChange({ ...bulk, allTeams: checked === true })}
             />
-            <span className="min-w-0 break-words">
-              Tất cả các Team
-            </span>
+            <span className="min-w-0 break-words">Tất cả các Team</span>
           </label>
           <label className="flex min-w-0 items-center gap-2 text-body-sm">
             <Checkbox
@@ -153,12 +144,11 @@ export function RecipientPicker({
               : estimatedCount === null
                 ? "Chưa xác định số người nhận dự kiến."
                 : `Dự kiến ${estimatedCount} người nhận.`}{" "}
-            Với lịch phát hành hoặc chuỗi lặp, số người nhận có thể thay đổi đến thời điểm phát
-            hành thực tế.
+            Với lịch phát hành hoặc chuỗi lặp, số người nhận có thể thay đổi đến thời điểm phát hành
+            thực tế.
           </p>
         </div>
       ) : null}
-
 
       <div className="flex min-w-0 flex-col gap-2">
         <Label className="text-label font-medium text-text-secondary">Team nhận thông báo</Label>

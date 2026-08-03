@@ -35,6 +35,8 @@ interface Props {
   compact?: boolean;
   /** Hiện nhãn "Nội bộ" khi đứng chung danh sách với thông báo hệ thống. */
   showSourceBadge?: boolean;
+  /** ANN-UI-10 — mở modal chi tiết thay vì điều hướng sang trang chi tiết. */
+  onOpenDetail?: () => void;
 }
 
 function preview(body: string) {
@@ -49,6 +51,7 @@ export function AnnouncementAckCard({
   onOpenChange,
   compact,
   showSourceBadge,
+  onOpenDetail,
 }: Props) {
   const status = effectiveRecipientStatus(row);
   const done = row.status === "completed" || row.status === "exempt";
@@ -116,6 +119,11 @@ export function AnnouncementAckCard({
               tone={RECIPIENT_STATUS_TONE[status]}
               label={RECIPIENT_STATUS_LABEL[status]}
             />
+            {onOpenDetail ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onOpenDetail}>
+                Xem chi tiết
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -125,7 +133,7 @@ export function AnnouncementAckCard({
               onClick={() => onOpenChange(!open)}
             >
               <ChevronDown className={cn("cen-transition", open ? "rotate-180" : null)} />
-              {open ? "Thu gọn" : "Xem nội dung"}
+              {open ? "Thu gọn" : "Xem nhanh"}
             </Button>
           </div>
         </div>
@@ -155,15 +163,22 @@ export function AnnouncementAckCard({
             ) : null}
 
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Button asChild variant="secondary" size="sm">
-                <Link
-                  to="/announcements/$announcementId"
-                  params={{ announcementId: row.announcement_id }}
-                >
+              {onOpenDetail ? (
+                <Button type="button" variant="secondary" size="sm" onClick={onOpenDetail}>
                   <MessageSquare />
                   Xem chi tiết &amp; thảo luận
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button asChild variant="secondary" size="sm">
+                  <Link
+                    to="/announcements/$announcementId"
+                    params={{ announcementId: row.announcement_id }}
+                  >
+                    <MessageSquare />
+                    Xem chi tiết &amp; thảo luận
+                  </Link>
+                </Button>
+              )}
 
               {canAcknowledge ? (
                 hasQuestions ? (
