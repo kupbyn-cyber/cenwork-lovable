@@ -122,28 +122,6 @@ export function createSupabaseAuthAdapter(): AuthAdapter {
       if (error) throw new Error("Không khởi tạo được dữ liệu hệ thống mặc định.");
     },
 
-    async _unusedCreateBootstrapUser({ email, password, displayName }: {
-      email: string;
-      password: string;
-      displayName: string;
-    }) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { display_name: displayName },
-      });
-      if (error || !data.user) {
-        throw new Error(
-          error?.message.includes("already")
-            ? "Email này đã tồn tại trong hệ thống."
-            : "Không tạo được tài khoản quản trị.",
-        );
-      }
-      return { userId: data.user.id };
-    },
-
     async createProfileAndAssignSystemOwner({ userId, email, displayName }) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.rpc("bootstrap_create_admin", {
