@@ -133,6 +133,7 @@ export async function buildOpsAlerts(
     alerts.push(
       mk("person_overdue", {
         id: `overdue-${personId}`,
+        team_id: teamOfUser.get(personId) ?? null,
         subject: nameById.get(personId) ?? "Không rõ",
         detail: `có ${overdue.length} công việc quá hạn.`,
         magnitude: overdue.length,
@@ -162,6 +163,7 @@ export async function buildOpsAlerts(
       alerts.push(
         mk("person_overload", {
           id: `overload-${personId}`,
+          team_id: teamId,
           subject: nameById.get(personId) ?? "Không rõ",
           detail: useAverage
             ? `có ${open} công việc đang mở, cao hơn ${percent}% mức trung bình của Team ${teamNames.get(teamId) ?? ""}`.trim() +
@@ -183,6 +185,7 @@ export async function buildOpsAlerts(
         alerts.push(
           mk("team_imbalance", {
             id: `imbalance-${teamId}`,
+            team_id: teamId,
             subject: `Team ${teamNames.get(teamId) ?? "không rõ"}`,
             detail: `đang phân bổ công việc chưa cân đối: cao nhất ${max} việc, thấp nhất ${min} việc.`,
             magnitude: max - min,

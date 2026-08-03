@@ -734,16 +734,7 @@ export async function buildDashboard(
         hint: DASH_HINT.due_in_range,
         value: String(dueInRange),
         sub: `Đang quá hạn: ${current.overdue_now}`,
-        compare: deltaLabel(
-          dueInRange,
-          previousTasks.filter(
-            (t) => t.deadline >= previous.startISO && t.deadline < previous.endISO,
-          ).length +
-            allTasks.filter(
-              (t) => t.deadline >= previous.startISO && t.deadline < previous.endISO,
-            ).length,
-          "count",
-        ),
+        compare: deltaLabel(dueInRange, prior.due_total, "count"),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch } },
       },
       {
@@ -845,7 +836,7 @@ export async function buildDashboard(
     projects,
     workload,
     reports,
-    quality: scope === "org" ? quality : quality,
+    quality,
     personal,
     team_average: teamAverage,
     ops_alerts: opsAlerts,
