@@ -3151,6 +3151,48 @@ export type Database = {
           },
         ]
       }
+      recognition_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          recognition_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          recognition_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          recognition_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_reactions_recognition_id_fkey"
+            columns: ["recognition_id"]
+            isOneToOne: false
+            referencedRelation: "recognitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recognition_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recognition_reports: {
         Row: {
           created_at: string
@@ -5576,7 +5618,12 @@ export type Database = {
         Args: { _project: string }
         Returns: Database["public"]["Enums"]["project_status"]
       }
+      recognition_actor_active: { Args: { _user: string }; Returns: boolean }
       recognition_quota_left: { Args: never; Returns: number }
+      recognition_react: {
+        Args: { _emoji: string; _recognition: string }
+        Returns: undefined
+      }
       recognition_stats: {
         Args: {
           _category?: Database["public"]["Enums"]["recognition_category"]
@@ -5595,6 +5642,18 @@ export type Database = {
           team_id: string
           team_name: string
           teamwork_count: number
+          total_count: number
+        }[]
+      }
+      recognition_team_pulse: {
+        Args: { _team?: string }
+        Returns: {
+          active_members: number
+          missing_members: number
+          peer_recognized_members: number
+          self_count: number
+          team_id: string
+          team_name: string
           total_count: number
         }[]
       }
@@ -5839,6 +5898,10 @@ export type Database = {
         | "speed"
         | "initiative"
         | "teamwork"
+        | "creativity"
+        | "effectiveness"
+        | "progress"
+        | "dedication"
       recognition_report_status: "open" | "dismissed" | "actioned"
       report_doc_status:
         | "draft"
@@ -6088,6 +6151,10 @@ export const Constants = {
         "speed",
         "initiative",
         "teamwork",
+        "creativity",
+        "effectiveness",
+        "progress",
+        "dedication",
       ],
       recognition_report_status: ["open", "dismissed", "actioned"],
       report_doc_status: [
