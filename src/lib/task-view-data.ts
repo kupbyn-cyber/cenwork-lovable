@@ -296,7 +296,24 @@ export interface SavedViewConfig {
 
 function parseFilters(value: unknown): TaskFilterState {
   const raw = (value ?? {}) as Partial<TaskFilterState>;
-  return { ...EMPTY_FILTERS, ...raw };
+  // Tương thích ngược: bộ lọc cũ lưu giá trị đơn (hoặc ALL/null) → chuyển thành mảng.
+  return {
+    ...EMPTY_FILTERS,
+    ...raw,
+    status: toValueList((raw as Record<string, unknown>).status),
+    assignee: toValueList((raw as Record<string, unknown>).assignee),
+    project: toValueList((raw as Record<string, unknown>).project),
+    team: toValueList((raw as Record<string, unknown>).team),
+    priority: toValueList((raw as Record<string, unknown>).priority),
+  };
+}
+
+function toValueList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item !== "" && item !== ALL);
+  }
+  if (typeof value === "string" && value !== "" && value !== ALL) return [value];
+  return [];
 }
 
 function parseColumns(value: unknown): OptionalColumnId[] {
