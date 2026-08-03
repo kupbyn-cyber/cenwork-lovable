@@ -7,7 +7,6 @@ import { AnnouncementActions } from "@/components/announcement/announcement-acti
 import { AnnouncementBody } from "@/components/announcement/announcement-body";
 import { AnnouncementProgress } from "@/components/announcement/announcement-progress";
 import { CommentThread } from "@/components/announcement/comment-thread";
-import { AnnouncementAttachments } from "@/components/attachment/module-attachments";
 import { SurveyForm } from "@/components/announcement/survey-form";
 import { SurveyResults } from "@/components/announcement/survey-results";
 import { VersionHistory } from "@/components/announcement/version-history";
@@ -95,7 +94,9 @@ function AnnouncementDetailPage() {
 
   React.useEffect(() => {
     if (!myRecipient) return;
-    void markOpened(myRecipient).then(refresh).catch(() => undefined);
+    void markOpened(myRecipient)
+      .then(refresh)
+      .catch(() => undefined);
     // chỉ ghi nhận mở lần đầu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myRecipient?.id]);
@@ -110,7 +111,10 @@ function AnnouncementDetailPage() {
     const reachedEnd = node.scrollTop + node.clientHeight >= node.scrollHeight - 8;
     if (!reachedEnd) return;
     setReadToEnd(true);
-    if (myRecipient) void markReadCompleted(myRecipient).then(refresh).catch(() => undefined);
+    if (myRecipient)
+      void markReadCompleted(myRecipient)
+        .then(refresh)
+        .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myRecipient, readToEnd]);
 
@@ -120,7 +124,10 @@ function AnnouncementDetailPage() {
     if (!node || readToEnd) return;
     if (node.scrollHeight <= node.clientHeight + 8) {
       setReadToEnd(true);
-      if (myRecipient) void markReadCompleted(myRecipient).then(refresh).catch(() => undefined);
+      if (myRecipient)
+        void markReadCompleted(myRecipient)
+          .then(refresh)
+          .catch(() => undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [announcement.data?.body, myRecipient?.id, readToEnd]);
@@ -133,8 +140,7 @@ function AnnouncementDetailPage() {
       acknowledgeWithAnswers(
         announcementId,
         questions.map(
-          (question) =>
-            drafts[question.id] ?? { questionId: question.id, optionIds: [], text: "" },
+          (question) => drafts[question.id] ?? { questionId: question.id, optionIds: [], text: "" },
         ),
       ),
     onSuccess: () => {
@@ -160,9 +166,7 @@ function AnnouncementDetailPage() {
 
   const row = announcement.data;
   if (!row) {
-    return (
-      <ErrorState title="Không tìm thấy thông báo" description="Thông báo không tồn tại." />
-    );
+    return <ErrorState title="Không tìm thấy thông báo" description="Thông báo không tồn tại." />;
   }
 
   const myStatus = myRecipient ? effectiveRecipientStatus(myRecipient) : null;
@@ -223,16 +227,6 @@ function AnnouncementDetailPage() {
         </p>
       ) : null}
 
-      <Card>
-        <CardContent className="flex min-w-0 flex-col gap-4">
-          <SectionHeader
-            title="Tệp đính kèm"
-            description="Tài liệu tham khảo kèm theo thông báo; chỉ người soạn được thêm hoặc gỡ."
-          />
-          <AnnouncementAttachments announcementId={announcementId} canManage={isAuthor} />
-        </CardContent>
-      </Card>
-
       <Tabs defaultValue="content" className="min-w-0">
         <TabsList>
           <TabsTrigger value="content">Nội dung</TabsTrigger>
@@ -241,7 +235,6 @@ function AnnouncementDetailPage() {
           {canModerate ? <TabsTrigger value="progress">Tiến độ</TabsTrigger> : null}
           <TabsTrigger value="history">Phiên bản</TabsTrigger>
         </TabsList>
-
 
         <TabsContent value="content">
           <Card>

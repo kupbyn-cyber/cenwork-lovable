@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import { ApprovalActions } from "@/components/approval/approval-actions";
 import { ApprovalApproverList } from "@/components/approval/approval-approver-list";
 import { ApprovalCommentThread } from "@/components/approval/approval-comment-thread";
-import { ApprovalAttachments } from "@/components/attachment/module-attachments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,7 +24,6 @@ import {
   DECISION_STATUS_LABEL,
 } from "@/lib/approval-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
-
 
 const TITLE = "Chi tiết yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Xem tiến độ, quyết định và lịch sử phiên bản của yêu cầu phê duyệt.";
@@ -49,7 +47,6 @@ function ApprovalDetailPage() {
   const { user } = useAuth();
   const { isAdmin, isCmo } = useOrgAccess();
   const detail = useQuery(approvalDetailQuery(approvalId));
-
 
   const back = (
     <Button asChild variant="secondary" size="sm">
@@ -114,7 +111,6 @@ function ApprovalDetailPage() {
   const isApprover = decisions.some((item) => item.approver_id === user?.id);
   const canMention = isSender || isApprover;
 
-
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader title={request.title} description={`Người gửi: ${senderName}`} actions={back}>
@@ -154,9 +150,7 @@ function ApprovalDetailPage() {
             as="div"
             className="text-body text-text-secondary"
             text={request.content}
-            fallback={
-              <div className="text-body text-text-secondary">(Không có nội dung)</div>
-            }
+            fallback={<div className="text-body text-text-secondary">(Không có nội dung)</div>}
           />
           <ApprovalActions detail={detail.data} userId={user?.id ?? null} sticky />
         </CardContent>
@@ -175,20 +169,6 @@ function ApprovalDetailPage() {
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
           <SectionHeader
-            title="Tệp đính kèm"
-            description="Chỉ người gửi thêm hoặc gỡ tệp; tệp của phiên bản cũ vẫn được giữ lại."
-          />
-          <ApprovalAttachments
-            requestId={request.id}
-            currentVersion={request.current_version}
-            canManage={isSender}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex min-w-0 flex-col gap-3">
-          <SectionHeader
             title="Trao đổi"
             description="Chỉ người liên quan tới yêu cầu này xem được. Nhắc tên chỉ mở quyền xem và bình luận."
           />
@@ -199,8 +179,6 @@ function ApprovalDetailPage() {
           />
         </CardContent>
       </Card>
-
-
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
