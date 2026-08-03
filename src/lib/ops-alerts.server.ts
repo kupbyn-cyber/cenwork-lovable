@@ -256,7 +256,7 @@ export async function buildOpsAlerts(
   await source("project_stale", async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select("id,name,status,updated_at")
+      .select("id,name,status,updated_at,responsible_team_id")
       .is("deleted_at", null)
       .not("status", "in", "(completed,archived,rejected)")
       .limit(300);
@@ -290,6 +290,7 @@ export async function buildOpsAlerts(
       alerts.push(
         mk("project_stale", {
           id: `stale-${project.id}`,
+          team_id: project.responsible_team_id ?? null,
           subject: `Dự án ${project.name}`,
           detail: `chưa có cập nhật trong ${days} ngày.`,
           magnitude: days,
@@ -308,6 +309,7 @@ export async function buildOpsAlerts(
     alerts.push(
       mk("person_idle", {
         id: `idle-${personId}`,
+        team_id: teamOfUser.get(personId) ?? null,
         subject: name,
         detail: "hiện không có công việc đang mở.",
         magnitude: 0,
