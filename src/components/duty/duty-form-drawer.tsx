@@ -67,6 +67,8 @@ export function DutyFormDrawer({
   onOpenChange,
   assignment,
   catalog,
+  catalogLoading = false,
+  catalogError = null,
   people,
   submitting,
   serverError,
@@ -82,9 +84,7 @@ export function DutyFormDrawer({
   submitting: boolean;
   serverError?: string | null;
   onSubmit: (input: DutyAssignmentInput) => void;
-} & { catalogLoading?: boolean; catalogError?: string | null }) {
-  const catalogLoading = (arguments[0] as { catalogLoading?: boolean }).catalogLoading ?? false;
-  const catalogError = (arguments[0] as { catalogError?: string | null }).catalogError ?? null;
+}) {
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
 
@@ -201,37 +201,97 @@ export function DutyFormDrawer({
 
         <FormField id="duty-area" label="Khu vực" required error={errors.area_id}>
           {(p) => (
-            <Select value={form.area_id} onValueChange={(v) => set("area_id", v)}>
+            <Select
+              value={form.area_id}
+              onValueChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  area_id: v,
+                  area_custom: v === CUSTOM ? prev.area_custom : "",
+                }))
+              }
+              disabled={catalogLoading || Boolean(catalogError)}
+            >
               <SelectTrigger id={p.id} aria-invalid={p["aria-invalid"]}>
-                <SelectValue placeholder="Chọn khu vực" />
+                <SelectValue placeholder={catalogLoading ? "Đang tải danh mục…" : "Chọn khu vực"} />
               </SelectTrigger>
               <SelectContent>
+                {catalog.areas.length === 0 && !catalogLoading ? (
+                  <p className="px-2 py-1.5 text-caption text-text-muted">Chưa có dữ liệu</p>
+                ) : null}
                 {catalog.areas.map((area) => (
                   <SelectItem key={area.id} value={area.id}>
                     {area.name}
                   </SelectItem>
                 ))}
+                <SelectItem value={CUSTOM}>Khu vực khác / Tùy chỉnh</SelectItem>
               </SelectContent>
             </Select>
           )}
         </FormField>
 
+        {form.area_id === CUSTOM ? (
+          <FormField id="duty-area-custom" label="Nhập khu vực" required error={errors.area_custom}>
+            {(p) => (
+              <Input
+                {...p}
+                value={form.area_custom}
+                onChange={(e) => set("area_custom", e.target.value)}
+                placeholder="Nhập khu vực"
+              />
+            )}
+          </FormField>
+        ) : null}
+
         <FormField id="duty-job" label="Nhiệm vụ" required error={errors.job_type_id}>
           {(p) => (
-            <Select value={form.job_type_id} onValueChange={(v) => set("job_type_id", v)}>
+            <Select
+              value={form.job_type_id}
+              onValueChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  job_type_id: v,
+                  job_custom: v === CUSTOM ? prev.job_custom : "",
+                }))
+              }
+              disabled={catalogLoading || Boolean(catalogError)}
+            >
               <SelectTrigger id={p.id} aria-invalid={p["aria-invalid"]}>
-                <SelectValue placeholder="Chọn nhiệm vụ" />
+                <SelectValue placeholder={catalogLoading ? "Đang tải danh mục…" : "Chọn nhiệm vụ"} />
               </SelectTrigger>
               <SelectContent>
+                {catalog.jobTypes.length === 0 && !catalogLoading ? (
+                  <p className="px-2 py-1.5 text-caption text-text-muted">Chưa có dữ liệu</p>
+                ) : null}
                 {catalog.jobTypes.map((job) => (
                   <SelectItem key={job.id} value={job.id}>
                     {job.name}
                   </SelectItem>
                 ))}
+                <SelectItem value={CUSTOM}>Nhiệm vụ khác / Tùy chỉnh</SelectItem>
               </SelectContent>
             </Select>
           )}
         </FormField>
+
+        {form.job_type_id === CUSTOM ? (
+          <FormField id="duty-job-custom" label="Nhập nhiệm vụ" required error={errors.job_custom}>
+            {(p) => (
+              <Input
+                {...p}
+                value={form.job_custom}
+                onChange={(e) => set("job_custom", e.target.value)}
+                placeholder="Nhập nhiệm vụ"
+              />
+            )}
+          </FormField>
+        ) : null}
+
+        {catalogError ? (
+          <p className="text-caption text-state-danger">
+            Không tải được danh mục trực nhật: {catalogError}
+          </p>
+        ) : null}
 
         <FormField id="duty-team" label="Team phụ trách">
           {(p) => (
