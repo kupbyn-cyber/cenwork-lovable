@@ -47,6 +47,9 @@ export const createBootstrapAdmin = createServerFn({ method: "POST" })
       throw new Error("Mã thiết lập không đúng.");
     }
 
+    // Database mới sau Remix: bổ sung dữ liệu hệ thống bắt buộc trước khi tạo Admin.
+    await adapter.ensureSystemDefaults();
+
     const { userId } = await adapter.createBootstrapUser({
       email: data.email,
       password: data.password,

@@ -15,6 +15,8 @@ export interface BootstrapState {
 export interface AuthAdapter {
   /** Trạng thái để quyết định setup_required. */
   readBootstrapState(): Promise<BootstrapState>;
+  /** Bổ sung dữ liệu hệ thống bắt buộc còn thiếu (idempotent). */
+  ensureSystemDefaults(): Promise<void>;
   /** Tạo user ở tầng Auth (chưa có quyền gì). */
   createBootstrapUser(input: {
     email: string;
@@ -108,6 +110,16 @@ export function createSupabaseAuthAdapter(): AuthAdapter {
         );
       }
       return { userId: data.user.id };
+    },
+
+    /**
+     * Database mới sau Remix có thể thiếu permission_catalog / role_permission_config /
+     * app_settings. Hàm DB `ensure_system_defaults` chỉ bổ sung phần thiếu, không ghi đè.
+     */
+    async ensureSystemDefaults() {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.rpc("ensure_system_defaults");
+      if (error) throw new Error("Không khởi tạo được dữ liệu hệ thống mặc định.");
     },
 
     async createProfileAndAssignSystemOwner({ userId, email, displayName }) {
