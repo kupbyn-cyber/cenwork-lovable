@@ -42,6 +42,7 @@ import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
 import { Route as AuthenticatedReportsDocReportIdRouteImport } from './routes/_authenticated/reports.doc.$reportId'
 import { Route as AuthenticatedReportsWeeklyReportIdRouteImport } from './routes/_authenticated/reports.weekly.$reportId'
+import { Route as ApiPublicHooksTelegramDispatchRouteImport } from './routes/api/public/hooks/telegram-dispatch'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -225,6 +226,12 @@ const AuthenticatedReportsWeeklyReportIdRoute =
     path: '/reports/weekly/$reportId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksTelegramDispatchRoute =
+  ApiPublicHooksTelegramDispatchRouteImport.update({
+    id: '/api/public/hooks/telegram-dispatch',
+    path: '/api/public/hooks/telegram-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
@@ -293,6 +301,7 @@ export interface FileRoutesByTo {
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/_authenticated/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/_authenticated/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/reports/daily/$reportId'
     | '/reports/doc/$reportId'
     | '/reports/weekly/$reportId'
+    | '/api/public/hooks/telegram-dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/reports/daily/$reportId'
     | '/reports/doc/$reportId'
     | '/reports/weekly/$reportId'
+    | '/api/public/hooks/telegram-dispatch'
   id:
     | '__root__'
     | '/_authenticated'
@@ -434,6 +446,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/daily/$reportId'
     | '/_authenticated/reports/doc/$reportId'
     | '/_authenticated/reports/weekly/$reportId'
+    | '/api/public/hooks/telegram-dispatch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -441,6 +454,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  ApiPublicHooksTelegramDispatchRoute: typeof ApiPublicHooksTelegramDispatchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -676,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsWeeklyReportIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/telegram-dispatch': {
+      id: '/api/public/hooks/telegram-dispatch'
+      path: '/api/public/hooks/telegram-dispatch'
+      fullPath: '/api/public/hooks/telegram-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksTelegramDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -754,17 +775,8 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  ApiPublicHooksTelegramDispatchRoute: ApiPublicHooksTelegramDispatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

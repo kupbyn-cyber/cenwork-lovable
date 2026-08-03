@@ -8,9 +8,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Báo cáo ngày đi vào Group Chat chung + Daily Report Topic chung (hàng đợi do trigger DB tạo).
  * Notification cá nhân giữ nguyên: gửi tới Telegram User ID của từng thành viên.
  */
-const MAX_ATTEMPTS = 5;
-const BATCH_SIZE = 20;
-
 async function assertAdmin(context: { supabase: { rpc: Function }; userId: string }) {
   // Quản trị toàn hệ thống = Admin hoặc CMO (hàm database is_system_admin là ràng buộc thật).
   const { data: isSystemAdmin, error } = await (context.supabase.rpc as any)("is_system_admin", {
