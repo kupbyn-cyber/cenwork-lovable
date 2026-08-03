@@ -286,7 +286,7 @@ export function AttentionPanel({
               <Badge
                 variant={
                   item.kind === "overdue"
-                    ? "danger"
+                    ? "error"
                     : item.kind === "changes_requested"
                       ? "warning"
                       : "neutral"
