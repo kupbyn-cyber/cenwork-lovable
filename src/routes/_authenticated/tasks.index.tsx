@@ -80,6 +80,22 @@ import {
 } from "@/lib/task-view-data";
 
 export const Route = createFileRoute("/_authenticated/tasks/")({
+  /** DASH-CORE-01 — nhận tham số lọc sẵn khi drill-down từ Dashboard hiệu suất. */
+  validateSearch: (search: Record<string, unknown>) => {
+    const str = (key: string) => (typeof search[key] === "string" ? (search[key] as string) : undefined);
+    return {
+      status: str("status"),
+      assignee: str("assignee"),
+      team: str("team"),
+      project: str("project"),
+      priority: str("priority"),
+      from: str("from"),
+      to: str("to"),
+      overdue: search["overdue"] === "1" || search["overdue"] === true ? "1" : undefined,
+      mine: search["mine"] === "1" || search["mine"] === true ? "1" : undefined,
+      needsMe: search["needsMe"] === "1" || search["needsMe"] === true ? "1" : undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Công việc — CEN WORK" },
@@ -105,6 +121,7 @@ function TasksPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const drill = Route.useSearch();
 
   const tasksResult = useQuery(tasksQuery());
   const projectsResult = useQuery(projectsQuery());
@@ -114,7 +131,18 @@ function TasksPage() {
   const unreadResult = useQuery(taskUnreadCountsQuery(access.userId));
 
   /** Bộ lọc áp dụng (đã debounce phần tìm kiếm). */
-  const [filters, setFilters] = React.useState<TaskFilterState>(EMPTY_FILTERS);
+  const [filters, setFilters] = React.useState<TaskFilterState>(() => ({
+    ...EMPTY_FILTERS,
+    status: drill.status ? drill.status.split(",").filter(Boolean) : [],
+    assignee: drill.assignee ? [drill.assignee] : [],
+    team: drill.team ? [drill.team] : [],
+    project: drill.project ? [drill.project] : [],
+    priority: drill.priority ? [drill.priority] : [],
+    deadlineFrom: drill.overdue ? "" : (drill.from ?? ""),
+    deadlineTo: drill.overdue ? (drill.to ?? hanoiTodayISO()) : (drill.to ?? ""),
+    mine: drill.mine === "1",
+    needsMe: drill.needsMe === "1",
+  }));
   const [searchInput, setSearchInput] = React.useState("");
   const [sort, setSort] = React.useState<TaskSortKey>("created_desc");
   const [columns, setColumns] = React.useState<OptionalColumnId[]>(DEFAULT_COLUMNS);
