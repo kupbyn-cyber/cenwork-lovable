@@ -34,7 +34,9 @@ export interface DutyPerson {
 interface FormState {
   duty_date: string;
   area_id: string;
+  area_custom: string;
   job_type_id: string;
+  job_custom: string;
   duty_team_id: string;
   external_provider_id: string;
   note: string;
@@ -42,11 +44,14 @@ interface FormState {
 }
 
 const NONE = "__none__";
+const CUSTOM = "__custom__";
 
 const EMPTY: FormState = {
   duty_date: "",
   area_id: "",
+  area_custom: "",
   job_type_id: "",
+  job_custom: "",
   duty_team_id: "",
   external_provider_id: "",
   note: "",
@@ -71,11 +76,15 @@ export function DutyFormDrawer({
   onOpenChange: (open: boolean) => void;
   assignment?: DutyAssignmentRow | null;
   catalog: DutyCatalog;
+  catalogLoading?: boolean;
+  catalogError?: string | null;
   people: DutyPerson[];
   submitting: boolean;
   serverError?: string | null;
   onSubmit: (input: DutyAssignmentInput) => void;
-}) {
+} & { catalogLoading?: boolean; catalogError?: string | null }) {
+  const catalogLoading = (arguments[0] as { catalogLoading?: boolean }).catalogLoading ?? false;
+  const catalogError = (arguments[0] as { catalogError?: string | null }).catalogError ?? null;
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
 
@@ -83,8 +92,10 @@ export function DutyFormDrawer({
     if (assignment) {
       return {
         duty_date: assignment.duty_date,
-        area_id: assignment.area_id,
-        job_type_id: assignment.job_type_id,
+        area_id: assignment.area_id ?? (assignment.area_custom ? CUSTOM : ""),
+        area_custom: assignment.area_custom ?? "",
+        job_type_id: assignment.job_type_id ?? (assignment.job_custom ? CUSTOM : ""),
+        job_custom: assignment.job_custom ?? "",
         duty_team_id: assignment.duty_team_id ?? "",
         external_provider_id: assignment.external_provider_id ?? "",
         note: assignment.note ?? "",
@@ -133,7 +144,9 @@ export function DutyFormDrawer({
     const next: Partial<Record<keyof FormState, string>> = {};
     if (!form.duty_date) next.duty_date = "Chọn ngày trực.";
     if (!form.area_id) next.area_id = "Chọn khu vực.";
+    if (form.area_id === CUSTOM && !form.area_custom.trim()) next.area_custom = "Nhập khu vực.";
     if (!form.job_type_id) next.job_type_id = "Chọn nhiệm vụ.";
+    if (form.job_type_id === CUSTOM && !form.job_custom.trim()) next.job_custom = "Nhập nhiệm vụ.";
     if (form.assigneeIds.length === 0 && !form.external_provider_id) {
       next.assigneeIds = "Chọn ít nhất một nhân sự hoặc một dịch vụ ngoài.";
     }
@@ -143,8 +156,10 @@ export function DutyFormDrawer({
     onSubmit({
       id: assignment?.id ?? null,
       duty_date: form.duty_date,
-      area_id: form.area_id,
-      job_type_id: form.job_type_id,
+      area_id: form.area_id === CUSTOM ? null : form.area_id,
+      area_custom: form.area_id === CUSTOM ? form.area_custom.trim() : null,
+      job_type_id: form.job_type_id === CUSTOM ? null : form.job_type_id,
+      job_custom: form.job_type_id === CUSTOM ? form.job_custom.trim() : null,
       duty_team_id: form.duty_team_id || null,
       assigneeIds: form.assigneeIds,
       external_provider_id: form.external_provider_id || null,
