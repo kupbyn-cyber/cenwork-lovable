@@ -5379,6 +5379,7 @@ export type Database = {
       is_system_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_system_owner: { Args: { _user: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
+      locked_member_ids: { Args: never; Returns: string[] }
       member_archived_list: {
         Args: never
         Returns: {
@@ -5394,6 +5395,29 @@ export type Database = {
           role: string
           team_id: string
           team_name: string
+        }[]
+      }
+      member_directory: {
+        Args: never
+        Returns: {
+          avatar_path: string
+          birthday: string
+          collaborator_team_ids: string[]
+          display_name: string
+          email: string
+          id: string
+          job_title: string
+          lock_reason: string
+          locked_at: string
+          phone_number: string
+          primary_team_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["account_status"]
+          telegram_enabled: boolean
+          telegram_test_error: string
+          telegram_test_status: string
+          telegram_tested_at: string
+          telegram_user_id: string
         }[]
       }
       member_lock: { Args: { _reason: string; _user: string }; Returns: Json }
