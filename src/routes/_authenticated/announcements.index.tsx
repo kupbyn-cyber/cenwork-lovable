@@ -34,7 +34,6 @@ import { PERMISSIONS } from "@/lib/permissions";
 import {
   ackStatsQuery,
   ANNOUNCEMENT_STATUS_LABEL,
-  effectiveRecipientStatus,
   inboxQuery,
   myAnnouncementsQuery,
   RECIPIENT_STATUS_LABEL,
