@@ -30,11 +30,20 @@ import {
  * Danh sách người nhận và hạn mức đều lấy từ database; UI chỉ phản ánh kết quả đó.
  */
 export interface RecognitionFormModalProps {
-
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Người nhận gợi ý sẵn (ví dụ mở từ hồ sơ thành viên). */
   defaultReceiverId?: string | null;
+}
+
+/** Bỏ dấu tiếng Việt để tìm kiếm không phân biệt hoa thường và dấu. */
+function normalizeVi(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .trim();
 }
 
 export function RecognitionFormModal({
