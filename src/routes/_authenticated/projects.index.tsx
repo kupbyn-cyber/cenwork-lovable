@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { taskUnreadCountsQuery } from "@/lib/task-comment-data";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
@@ -154,6 +155,7 @@ function projectBucket(project: ProjectRow): ProjectView {
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const unreadCounts = useQuery(taskUnreadCountsQuery(access.userId));
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
@@ -527,6 +529,10 @@ function ProjectsPage() {
           tasks={tasks}
           columns={["assignee", "deadline", "priority", "status"]}
           onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          unreadCount={(taskId) => unreadCounts.data?.[taskId] ?? 0}
+          onOpenComments={(taskId) =>
+            void navigate({ to: "/tasks/$taskId", params: { taskId }, hash: "task-comments" })
+          }
           renderActions={taskActions}
         />
       );

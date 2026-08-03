@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { TaskCommentThread } from "@/components/task/task-comment-thread";
 import { cenToast } from "@/components/ui/toast";
 import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
 import {
@@ -473,6 +474,8 @@ function TaskDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        <TaskCommentThread taskId={task.id} />
       </div>
 
       {access.userId ? (

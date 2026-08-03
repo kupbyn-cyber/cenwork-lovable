@@ -4271,6 +4271,81 @@ export type Database = {
         }
         Relationships: []
       }
+      task_comment_reads: {
+        Row: {
+          last_read_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comment_reads_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comment_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_participants: {
         Row: {
           created_at: string
@@ -5633,6 +5708,7 @@ export type Database = {
         Args: { _approve: boolean; _note?: string; _task: string }
         Returns: undefined
       }
+      task_comments_mark_read: { Args: { _task: string }; Returns: undefined }
       task_member_resubmit: { Args: { _task: string }; Returns: undefined }
       task_member_submit: {
         Args: {
@@ -5648,6 +5724,13 @@ export type Database = {
       }
       task_member_withdraw: { Args: { _task: string }; Returns: undefined }
       task_submission_notify: { Args: { _task: string }; Returns: undefined }
+      task_unread_comment_counts: {
+        Args: never
+        Returns: {
+          task_id: string
+          unread: number
+        }[]
+      }
       team_summary_ensure: {
         Args: { _team: string; _week_start: string }
         Returns: string

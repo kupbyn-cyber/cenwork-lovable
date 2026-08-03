@@ -36,7 +36,12 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DeadlineCountdown, PriorityLabel } from "@/components/task/task-cell-bits";
+import {
+  CommentIndicator,
+  DeadlineCountdown,
+  PriorityLabel,
+} from "@/components/task/task-cell-bits";
+import { taskUnreadCountsQuery } from "@/lib/task-comment-data";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
@@ -106,6 +111,7 @@ function TasksPage() {
   const teamsResult = useQuery(teamsQuery());
   const peopleResult = useQuery(activePeopleQuery());
   const viewsResult = useQuery(savedViewsQuery(access.userId));
+  const unreadResult = useQuery(taskUnreadCountsQuery(access.userId));
 
   /** Bộ lọc áp dụng (đã debounce phần tìm kiếm). */
   const [filters, setFilters] = React.useState<TaskFilterState>(EMPTY_FILTERS);
@@ -285,6 +291,12 @@ function TasksPage() {
 
   const show = (id: OptionalColumnId) => columns.includes(id);
 
+  const unreadCount = (taskId: string) => unreadResult.data?.[taskId] ?? 0;
+
+  /** Mở chi tiết Task và cuộn tới khu vực Bình luận. */
+  const openComments = (taskId: string) =>
+    void navigate({ to: "/tasks/$taskId", params: { taskId }, hash: "task-comments" });
+
   const col = (width: string) => ({ className: `${width} px-3`, headerClassName: `${width} px-3` });
 
   const tableColumns = [
@@ -294,7 +306,12 @@ function TasksPage() {
       className: "px-3",
       headerClassName: "px-3",
       cell: (row: TaskRow) => (
-        <span className="line-clamp-2 font-medium text-text-primary">{row.name}</span>
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="line-clamp-2 min-w-0 flex-1 font-medium text-text-primary">
+            {row.name}
+          </span>
+          <CommentIndicator unread={unreadCount(row.id)} onOpen={() => openComments(row.id)} />
+        </div>
       ),
     },
     ...(show("project")
@@ -544,6 +561,8 @@ function TasksPage() {
           tasks={visibleRows}
           columns={columns}
           onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          unreadCount={unreadCount}
+          onOpenComments={openComments}
           renderActions={rowActions}
         />
       ) : (
