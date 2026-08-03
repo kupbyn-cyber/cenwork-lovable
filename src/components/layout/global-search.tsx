@@ -253,7 +253,7 @@ export function GlobalSearch() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="top"
-          className="flex h-dvh flex-col gap-0 p-0 [&>[data-slot=dialog-close]]:hidden"
+          className="flex h-dvh max-h-dvh flex-col gap-0 p-0 [&>[data-slot=dialog-close]]:hidden"
         >
           <SheetTitle className="sr-only">Tìm kiếm toàn hệ thống</SheetTitle>
           <SheetDescription className="sr-only">
