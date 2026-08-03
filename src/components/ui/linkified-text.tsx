@@ -71,7 +71,7 @@ export function LinkifiedText({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="cursor-pointer break-all text-text-primary underline underline-offset-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1"
+            className="cursor-pointer break-all text-text-primary underline underline-offset-2 transition-opacity hover:opacity-80 rounded-xs"
           >
             {raw}
           </a>
