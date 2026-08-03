@@ -374,8 +374,9 @@ export async function submitTaskForApproval(input: TaskSubmissionInput) {
   const { data, error } = await supabase.rpc("task_member_submit", {
     _project: input.projectId,
     _name: input.name,
-    _description: input.description,
-    _start_date: input.startDate,
+    _description: input.description ?? "",
+    // Không có ngày bắt đầu → gửi NULL cho database (kiểu sinh tự động không cho null).
+    _start_date: (input.startDate ?? null) as unknown as string,
     _deadline: input.deadline,
     _priority: input.priority,
     _participants: input.participantIds,
@@ -398,7 +399,7 @@ export async function decideTaskApproval(taskId: string, approve: boolean, note?
   const { error } = await supabase.rpc("task_approval_decide", {
     _task: taskId,
     _approve: approve,
-    _note: note ?? null,
+    _note: note ?? undefined,
   });
   if (error) throw new Error(error.message);
 }
