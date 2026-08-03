@@ -38,7 +38,6 @@ export function MemberDetailModal({
   if (!member) return null;
 
   const teamName = (id: string | null) => teams.find((team) => team.id === id)?.name ?? "—";
-  const collaborators = member.collaboratorTeamIds.map(teamName);
 
   return (
     <Modal
@@ -77,10 +76,6 @@ export function MemberDetailModal({
           ) : null}
           <Row label="Chức danh" value={member.job_title || "—"} />
           <Row label="Team chính" value={teamName(member.primary_team_id)} />
-          <Row
-            label="Team phối hợp"
-            value={collaborators.length > 0 ? collaborators.join(", ") : "—"}
-          />
           {access.isSystemAdmin ? (
             <Row
               label="Telegram"
