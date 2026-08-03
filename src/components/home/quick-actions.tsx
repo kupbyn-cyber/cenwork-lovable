@@ -64,22 +64,22 @@ const ACTIONS: QuickAction[] = [
   },
 ];
 
-export function QuickActions() {
+export function QuickActions({ className }: { className?: string } = {}) {
   const access = useOrgAccess();
   const actions = ACTIONS.filter((action) => !action.permission || access.can(action.permission));
   if (access.loading || actions.length === 0) return null;
 
   return (
-    <Card density="compact">
+    <Card density="compact" className={className}>
       <CardHeader>
         <CardTitle>Hành động nhanh</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+      <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
         {actions.map((action) => (
-          <Button key={action.key} variant="secondary" size="sm" asChild>
+          <Button key={action.key} variant="secondary" size="sm" className="w-full justify-start" asChild>
             <Link to={action.to!}>
               <action.icon />
-              {action.label}
+              <span className="truncate">{action.label}</span>
             </Link>
           </Button>
         ))}
