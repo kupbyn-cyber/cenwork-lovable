@@ -1,7 +1,7 @@
 import * as React from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, FileText, FolderKanban, ListChecks } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,20 +18,15 @@ import {
   TodayKpiRow,
   TodaySlot,
 } from "@/components/home/today-layout";
-import { ReportSummaryCards } from "@/components/home/report-summary-cards";
 
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useTodayHub } from "@/hooks/use-today-hub";
+import { useTodayInsights } from "@/hooks/use-today-insights";
 import { formatHanoiDate } from "@/lib/datetime";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 
-import {
-  PROJECT_STATUS_LABEL,
-  PROJECT_STATUS_TONE,
-  isProjectApproved,
-  projectsQuery,
-  type ProjectStatus,
-} from "@/lib/project-data";
+import { isProjectApproved, projectsQuery } from "@/lib/project-data";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_TONE,
@@ -41,15 +36,7 @@ import {
   weekStartOf,
   weeklyReportsQuery,
 } from "@/lib/report-data";
-import {
-  TASK_STATUS_LABEL,
-  TASK_STATUS_ORDER,
-  TASK_STATUS_TONE,
-  formatDateTime,
-  isTaskOverdue,
-  tasksQuery,
-  type TaskRow,
-} from "@/lib/task-data";
+import { isTaskOverdue, tasksQuery } from "@/lib/task-data";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -73,7 +60,15 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
-const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = ["planning", "in_progress", "pending_acceptance"];
+const ACTIVE_PROJECT_STATUSES = ["planning", "in_progress", "pending_acceptance"] as const;
+const PENDING_PROJECT_STATUSES = ["leader_review", "proposal"] as const;
+
+const ROLE_LABEL: Record<string, string> = {
+  admin: "Quản trị hệ thống",
+  cmo: "CMO",
+  leader: "Leader",
+  member: "Thành viên",
+};
 
 /** Lời chào theo giờ Hà Nội — chỉ hiển thị, không ảnh hưởng dữ liệu. */
 function greeting(): string {
@@ -116,26 +111,23 @@ function Metric({
       <CardContent className="flex flex-col gap-1 pt-(--card-pad) pl-4">
         <span className="text-caption tracking-[0.12em] text-text-muted uppercase">{label}</span>
         <span className="cen-kpi text-text-primary">{value}</span>
-        {hint ? <span className="text-helper text-text-muted">{hint}</span> : null}
+        {hint ? <span className="min-w-0 text-helper text-text-muted">{hint}</span> : null}
       </CardContent>
     </Card>
   );
 }
 
-const RANGE_OPTIONS = [
-  { key: "today", label: "Hôm nay", days: 1 },
-  { key: "week", label: "Tuần này", days: 7 },
-  { key: "month", label: "Tháng này", days: 30 },
-] as const;
-type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
-
-
+/**
+ * TODAY-R01 — CEN Today theo vai trò.
+ * Chỉ đổi cách hiển thị: dữ liệu vẫn lấy từ đúng các query/permission sẵn có.
+ */
 function Dashboard() {
   const access = useOrgAccess();
   const navigate = useNavigate();
   const [dailyOpen, setDailyOpen] = React.useState(false);
-  const [range, setRange] = React.useState<RangeKey>("today");
 
+  const hub = useTodayHub();
+  const insights = useTodayInsights();
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
   const dailyResult = useQuery(dailyReportsQuery());
@@ -151,73 +143,25 @@ function Dashboard() {
   const dailies = dailyResult.data ?? [];
   const weeklies = weeklyResult.data ?? [];
 
-  const myTasks = React.useMemo(
-    () =>
-      tasks.filter(
-        (task) =>
-          task.assignee_id === access.userId ||
-          (access.userId ? task.participantIds.includes(access.userId) : false),
-      ),
-    [tasks, access.userId],
-  );
-
-  const myOpenTasks = React.useMemo(
-    () => myTasks.filter((task) => task.status !== "done"),
-    [myTasks],
-  );
-
   const overdue = tasks.filter(isTaskOverdue);
-  const dueToday = tasks.filter(
-    (task) => task.status !== "done" && task.deadline.slice(0, 10) === today,
-  );
   const inReview = tasks.filter((task) => task.status === "review");
-
-  /** Bộ lọc thời gian chỉ ảnh hưởng hiển thị KPI, không đổi dữ liệu nguồn. */
-  const rangeMeta = RANGE_OPTIONS.find((option) => option.key === range) ?? RANGE_OPTIONS[1];
-  const rangeEnd = new Date(`${today}T00:00:00+07:00`);
-  rangeEnd.setDate(rangeEnd.getDate() + rangeMeta.days);
-  const dueInRange = tasks.filter(
-    (task) =>
-      task.status !== "done" &&
-      task.deadline >= today &&
-      new Date(task.deadline).getTime() < rangeEnd.getTime(),
-  );
-
-
   const activeProjects = projects.filter((project) =>
-    ACTIVE_PROJECT_STATUSES.includes(project.status),
+    ACTIVE_PROJECT_STATUSES.includes(project.status as (typeof ACTIVE_PROJECT_STATUSES)[number]),
   );
-  /** Dự án chưa duyệt không được tính vào thống kê phạm vi. */
   const approvedProjects = projects.filter(isProjectApproved);
-
-  const projectByStatus = React.useMemo(() => {
-    const map = new Map<ProjectStatus, number>();
-    for (const project of approvedProjects) {
-      map.set(project.status, (map.get(project.status) ?? 0) + 1);
-    }
-    return map;
-  }, [approvedProjects]);
-
-  const taskByStatus = React.useMemo(() => {
-    const map = new Map<TaskRow["status"], number>();
-    for (const task of tasks) map.set(task.status, (map.get(task.status) ?? 0) + 1);
-    return map;
-  }, [tasks]);
+  const pendingProjects = projects.filter((project) =>
+    PENDING_PROJECT_STATUSES.includes(project.status as (typeof PENDING_PROJECT_STATUSES)[number]),
+  );
 
   const myTodayReport = dailies.find(
     (row) => row.author_id === access.userId && row.report_date === today,
   );
-  const todayReports = dailies.filter((row) => row.report_date === today);
   const pendingDaily = dailies.filter((row) => row.status === "submitted");
   const pendingWeekly = weeklies.filter((row) => row.status === "submitted");
   const myWeekly = weeklies.find(
     (row) => row.team_id === access.leaderTeamId && row.week_start === thisWeek,
   );
 
-  /**
-   * Hành động nhanh Báo cáo ngày: nhãn và đích đến bám theo trạng thái báo cáo
-   * hôm nay của chính người dùng. Không tạo bản ghi khi chỉ mở bản xem trước.
-   */
   const canSubmitDaily = access.can("reports.submit_daily");
   const dailyDraft =
     myTodayReport &&
@@ -249,86 +193,131 @@ function Dashboard() {
     setDailyOpen(true);
   }
 
-  const loading = projectsResult.isLoading || tasksResult.isLoading || weeklyResult.isLoading;
+  const hubTotal = hub.data?.total ?? 0;
+  const criticalCount = hub.data?.counts.critical ?? 0;
+  const teamFocus = insights.data?.team ?? null;
+  const myFocus = insights.data?.me ?? null;
+  const roleLabel = access.role ? (ROLE_LABEL[access.role] ?? access.role) : "—";
 
-  if (loading) {
+  /** Dải ưu tiên: tối đa 4 thẻ, nội dung theo vai trò. */
+  const metrics: React.ComponentProps<typeof Metric>[] = access.isSystemAdmin
+    ? [
+        {
+          label: "Việc cần xử lý",
+          value: hubTotal,
+          tone: "brand",
+          hint: `${criticalCount} mục khẩn cấp`,
+        },
+        {
+          label: "Quá hạn toàn hệ thống",
+          value: overdue.length,
+          tone: "danger",
+          hint: "Công việc đã trễ deadline",
+        },
+        {
+          label: "Chờ duyệt",
+          value: inReview.length + pendingProjects.length + pendingDaily.length + pendingWeekly.length,
+          tone: "yellow",
+          hint: `${pendingProjects.length} dự án · ${pendingDaily.length + pendingWeekly.length} báo cáo`,
+        },
+        {
+          label: "Dự án đang triển khai",
+          value: activeProjects.length,
+          tone: "orange",
+          hint: `${approvedProjects.length} dự án đã duyệt`,
+        },
+      ]
+    : access.isLeader
+      ? [
+          {
+            label: "Việc cần xử lý",
+            value: hubTotal,
+            tone: "brand",
+            hint: `${criticalCount} mục khẩn cấp`,
+          },
+          {
+            label: "Quá hạn của Team",
+            value: teamFocus?.overdue_tasks ?? 0,
+            tone: "danger",
+            hint: teamFocus ? `Team ${teamFocus.team_name}` : "Chưa gắn Team",
+          },
+          {
+            label: "Chờ bạn kiểm tra",
+            value: teamFocus?.pending_reviews ?? 0,
+            tone: "yellow",
+            hint: "Công việc ở trạng thái kiểm tra",
+          },
+          {
+            label: "Chưa gửi báo cáo ngày",
+            value: teamFocus?.missing_daily.length ?? 0,
+            tone: "orange",
+            hint: "Thành viên trong Team",
+          },
+        ]
+      : [
+          {
+            label: "Việc cần xử lý",
+            value: hubTotal,
+            tone: "brand",
+            hint: `${criticalCount} mục khẩn cấp`,
+          },
+          {
+            label: "Việc của tôi quá hạn",
+            value: myFocus?.overdue_tasks ?? 0,
+            tone: "danger",
+            hint: "Cần xử lý ngay",
+          },
+          {
+            label: "Đến hạn hôm nay",
+            value: myFocus?.due_today ?? 0,
+            tone: "yellow",
+            hint: `${myFocus?.open_tasks ?? 0} việc đang mở`,
+          },
+          {
+            label: "Hoàn thành tuần này",
+            value: myFocus?.done_this_week ?? 0,
+            tone: "orange",
+            hint: "Công việc đã xong",
+          },
+        ];
+
+  const initialLoading = access.loading || (hub.isLoading && insights.isLoading);
+
+  if (initialLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <SkeletonCard lines={3} />
-        <SkeletonCard lines={3} />
-        <SkeletonCard lines={3} />
-      </div>
+      <TodayDashboardLayout>
+        <TodayKpiRow>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </TodayKpiRow>
+        <SkeletonCard lines={5} />
+      </TodayDashboardLayout>
     );
   }
 
   return (
     <TodayDashboardLayout>
-      <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default shadow-level-2">
-        <div className="relative z-10 flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+      {/* Header gọn: lời chào, ngày, vai trò */}
+      <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default px-4 py-4 shadow-level-2 sm:px-5">
+        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <img src="/brand/logo-mark.svg" alt="" aria-hidden className="size-6 object-contain" />
-              <span className="text-caption tracking-[0.24em] text-accent-yellow/80 uppercase">
-                Marketing Command Center
-              </span>
-            </div>
-            <h1 className="mt-2 text-h1 font-semibold text-text-primary">
+            <h1 className="truncate text-h2 font-semibold text-text-primary">
               {greeting()}, {me?.display_name ?? "bạn"}
             </h1>
-            <p className="mt-1 max-w-2xl text-body text-text-secondary">
-              Hôm nay {formatHanoiDate(today)} · Tổng quan việc cần xử lý, dự án, công việc và báo
-              cáo trong phạm vi bạn được xem.
+            <p className="mt-0.5 truncate text-helper text-text-secondary">
+              Hôm nay {formatHanoiDate(today)}
             </p>
           </div>
-
-          <div
-            role="group"
-            aria-label="Bộ lọc thời gian"
-            className="flex shrink-0 gap-1 self-start rounded-control border border-border-default bg-background/60 p-1 backdrop-blur lg:self-auto"
-          >
-            {RANGE_OPTIONS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                aria-pressed={range === option.key}
-                onClick={() => setRange(option.key)}
-                className={
-                  range === option.key
-                    ? "cen-transition rounded-badge bg-brand-primary px-3 py-1.5 text-label font-medium text-brand-foreground"
-                    : "cen-transition rounded-badge px-3 py-1.5 text-label text-text-secondary hover:bg-surface-subtle hover:text-text-primary"
-                }
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <StatusBadge label={roleLabel} tone="neutral" />
         </div>
       </section>
 
       <TodayKpiRow>
-        <Metric
-          label="Dự án đang triển khai"
-          value={activeProjects.length}
-          hint={`${approvedProjects.length} dự án đã duyệt trong phạm vi`}
-        />
-        <Metric
-          label="Công việc cần xử lý"
-          value={myTasks.filter((task) => task.status !== "done").length}
-          tone="yellow"
-          hint={`${dueToday.length} việc đến hạn hôm nay`}
-        />
-        <Metric
-          label={`Đến hạn · ${rangeMeta.label}`}
-          value={dueInRange.length}
-          tone="orange"
-          hint="Theo bộ lọc thời gian đang chọn"
-        />
-        <Metric
-          label="Công việc quá hạn"
-          value={overdue.length}
-          tone="danger"
-          hint={`${inReview.length} nội dung chờ duyệt`}
-        />
+        {metrics.map((metric) => (
+          <Metric key={metric.label} {...metric} />
+        ))}
       </TodayKpiRow>
 
       {canSubmitDaily && dailyResult.isError ? (
@@ -342,92 +331,23 @@ function Dashboard() {
         </div>
       ) : null}
 
-      {/* Lưới widget 3 cột, tự dồn khi widget bị ẩn theo vai trò */}
       <TodayGrid>
-        <DailyActionHub />
+        {/* Khối chính: việc cần xử lý ngay, đã sắp theo mức khẩn cấp */}
+        <DailyActionHub limit={8} />
+
         <QuickActions />
+
+        {/* Khối phụ theo vai trò: Member → việc của tôi, Leader → Team, Admin/CMO → hệ thống */}
         <RoleInsights flow />
 
-        <DashboardCard
-          size="compact"
-          icon={FolderKanban}
-          title="Dự án theo trạng thái"
-          to="/projects"
-        >
-          {approvedProjects.length === 0 ? (
-            <p className="text-helper text-text-muted">Chưa có dự án đã duyệt trong phạm vi.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {[...projectByStatus.entries()].map(([status, count]) => (
-                <StatusBadge
-                  key={status}
-                  label={`${PROJECT_STATUS_LABEL[status]}: ${count}`}
-                  tone={PROJECT_STATUS_TONE[status]}
-                />
-              ))}
-            </div>
-          )}
-        </DashboardCard>
-
-        <DashboardCard size="compact" icon={BarChart3} title="Tiến độ công việc" to="/tasks">
-          {tasks.length === 0 ? (
-            <p className="text-helper text-text-muted">Chưa có công việc nào trong phạm vi.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {TASK_STATUS_ORDER.map((status) => (
-                <StatusBadge
-                  key={status}
-                  label={`${TASK_STATUS_LABEL[status]}: ${taskByStatus.get(status) ?? 0}`}
-                  tone={TASK_STATUS_TONE[status]}
-                />
-              ))}
-            </div>
-          )}
-        </DashboardCard>
-
-        <DashboardCard
-          size="compact"
-          icon={ListChecks}
-          title="Công việc của tôi cần xử lý"
-          to="/tasks"
-        >
-          {myOpenTasks.length === 0 ? (
-            <p className="text-helper text-text-muted">Không có công việc nào đang mở.</p>
-          ) : (
-            myOpenTasks.slice(0, 5).map((task) => (
-              <Link
-                key={task.id}
-                to="/tasks/$taskId"
-                params={{ taskId: task.id }}
-                className="cen-transition flex min-w-0 flex-col gap-0.5 rounded-control px-2 py-1.5 hover:bg-surface-subtle"
-              >
-                <span className="line-clamp-2 min-w-0 text-body text-text-primary">
-                  {task.name}
-                </span>
-                <span
-                  className={
-                    isTaskOverdue(task)
-                      ? "text-helper text-state-danger"
-                      : "text-helper text-text-muted"
-                  }
-                >
-                  {formatDateTime(task.deadline)} · {TASK_STATUS_LABEL[task.status]}
-                </span>
-              </Link>
-            ))
-          )}
-        </DashboardCard>
-
-        <DashboardCard size="wide" icon={FileText} title="Tình trạng báo cáo" to="/reports">
+        <DashboardCard size="compact" icon={FileText} title="Báo cáo của tôi" to="/reports">
           {mustSubmitDaily({
             userId: access.userId,
             role: access.role,
             leaderTeamId: access.leaderTeamId,
           }) ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-body text-text-secondary">
-                Báo cáo ngày {formatHanoiDate(today)}:
-              </span>
+              <span className="text-body text-text-secondary">Báo cáo ngày:</span>
               {myTodayReport ? (
                 <StatusBadge
                   label={REPORT_STATUS_LABEL[myTodayReport.status]}
@@ -438,18 +358,6 @@ function Dashboard() {
               )}
             </div>
           ) : null}
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <p className="text-body text-text-secondary">
-              Đã nộp hôm nay: <strong>{todayReports.length}</strong>
-            </p>
-            <p className="text-body text-text-secondary">
-              Báo cáo ngày chờ duyệt: <strong>{pendingDaily.length}</strong>
-            </p>
-            <p className="text-body text-text-secondary">
-              Báo cáo tuần chờ duyệt: <strong>{pendingWeekly.length}</strong>
-            </p>
-          </div>
 
           {access.leaderTeamId ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -464,11 +372,18 @@ function Dashboard() {
               )}
             </div>
           ) : null}
-          {access.loading || canSubmitDaily ? (
+
+          {access.isSystemAdmin ? (
+            <p className="text-helper text-text-muted">
+              Chờ duyệt: {pendingDaily.length} báo cáo ngày · {pendingWeekly.length} báo cáo tuần.
+            </p>
+          ) : null}
+
+          {canSubmitDaily ? (
             <Button
-              className="self-start"
+              className="mt-auto self-start"
               onClick={openDailyAction}
-              loading={dailyResult.isLoading || access.loading}
+              loading={dailyResult.isLoading}
               disabled={
                 dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)
               }
@@ -483,10 +398,6 @@ function Dashboard() {
             </p>
           ) : null}
         </DashboardCard>
-
-        <TodaySlot size="wide">
-          <ReportSummaryCards />
-        </TodaySlot>
 
         <TodaySlot size="full">
           <PendingAnnouncementsPanel />
