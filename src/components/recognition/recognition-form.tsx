@@ -5,14 +5,9 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { FormErrorSummary } from "@/components/ui/error-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,6 +36,16 @@ export interface RecognitionFormModalProps {
   defaultReceiverId?: string | null;
 }
 
+/** Bỏ dấu tiếng Việt để tìm kiếm không phân biệt hoa thường và dấu. */
+function normalizeVi(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .trim();
+}
+
 export function RecognitionFormModal({
   open,
   onOpenChange,
@@ -56,6 +61,7 @@ export function RecognitionFormModal({
   const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [burstName, setBurstName] = React.useState<string | null>(null);
+  const [search, setSearch] = React.useState("");
 
   React.useEffect(() => {
     if (!open) return;
@@ -63,6 +69,7 @@ export function RecognitionFormModal({
     setCategory("teamwork");
     setMessage("");
     setError(null);
+    setSearch("");
   }, [open, defaultReceiverId]);
 
   /** Chính mình luôn đứng đầu danh sách với nhãn "Bạn". */
@@ -80,6 +87,13 @@ export function RecognitionFormModal({
     trimmed.length >= RECOGNITION_MIN_LENGTH && trimmed.length <= RECOGNITION_MAX_LENGTH;
   const receiver = members.find((person) => person.id === receiverId) ?? null;
   const isSelf = Boolean(receiverId) && receiverId === user?.id;
+
+  /** Tìm kiếm không phân biệt hoa thường và dấu tiếng Việt. */
+  const filtered = React.useMemo(() => {
+    const needle = normalizeVi(search);
+    if (!needle) return members;
+    return members.filter((person) => normalizeVi(person.display_name).includes(needle));
+  }, [members, search]);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -152,20 +166,64 @@ export function RecognitionFormModal({
             }
           >
             {(control) => (
-              <Select value={receiverId} onValueChange={setReceiverId}>
-                <SelectTrigger id={control.id} aria-invalid={control["aria-invalid"]}>
-                  <SelectValue placeholder="Chọn người nhận" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.id === user?.id
-                        ? `Bạn — ${member.display_name}`
-                        : member.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex min-w-0 flex-col gap-2">
+                <Input
+                  id={control.id}
+                  aria-invalid={control["aria-invalid"]}
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Tìm theo tên…"
+                />
+                <div
+                  role="listbox"
+                  aria-label="Danh sách người nhận"
+                  className="max-h-56 min-w-0 overflow-y-auto rounded-card border border-border-default"
+                >
+                  {membersResult.isLoading ? (
+                    <p className="px-3 py-3 text-helper text-text-muted">Đang tải danh sách…</p>
+                  ) : membersResult.isError ? (
+                    <ErrorState
+                      variant="compact"
+                      title="Không tải được danh sách thành viên"
+                      onRetry={() => void membersResult.refetch()}
+                    />
+                  ) : filtered.length === 0 ? (
+                    <p className="px-3 py-3 text-helper text-text-muted">
+                      Không tìm thấy thành viên phù hợp.
+                    </p>
+                  ) : (
+                    filtered.map((member) => {
+                      const self = member.id === user?.id;
+                      const active = member.id === receiverId;
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => setReceiverId(member.id)}
+                          className={cn(
+                            "cen-transition flex w-full min-w-0 flex-col items-start gap-0.5 px-3 py-2 text-left",
+                            active
+                              ? "bg-brand-primary/10 text-text-primary"
+                              : "text-text-secondary hover:bg-surface-subtle",
+                          )}
+                        >
+                          <span className="min-w-0 truncate text-body text-text-primary">
+                            {self ? `Bạn — ${member.display_name}` : member.display_name}
+                          </span>
+                          {member.job_title ? (
+                            <span className="min-w-0 truncate text-helper text-text-muted">
+                              {member.job_title}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             )}
           </FormField>
 
