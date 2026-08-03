@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
+import {
+  getTaskNameWarning,
+  TASK_NAME_HELPER,
+  TASK_NAME_PLACEHOLDER,
+} from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import { isProjectApproved, type PersonOption, type ProjectRow } from "@/lib/project-data";
@@ -121,6 +127,7 @@ export function TaskFormDrawer({
   const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  const nameWarning = getTaskNameWarning(form.name);
 
   React.useEffect(() => {
     if (open) {
@@ -301,16 +308,28 @@ export function TaskFormDrawer({
           </p>
         ) : null}
 
-        <FormField id="task-name" label="Tên công việc" required error={errors.name}>
+        <FormField
+          id="task-name"
+          label="Tên công việc"
+          required
+          helperText={TASK_NAME_HELPER}
+          error={errors.name}
+        >
           {(control) => (
             <Input
               {...control}
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
-              placeholder="Ví dụ: Chuẩn bị nội dung truyền thông tuần 1"
+              placeholder={TASK_NAME_PLACEHOLDER}
             />
           )}
         </FormField>
+        {nameWarning ? (
+          <p className="-mt-2 flex items-start gap-1.5 text-helper text-state-warning">
+            <Info className="mt-px size-icon-sm shrink-0" aria-hidden="true" />
+            <span className="break-words">{nameWarning}</span>
+          </p>
+        ) : null}
 
         <FormField id="task-description" label="Mô tả" error={errors.description}>
           {(control) => (
