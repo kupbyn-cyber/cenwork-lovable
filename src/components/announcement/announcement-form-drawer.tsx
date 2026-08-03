@@ -11,14 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useAnnouncementLock } from "@/hooks/use-announcement-lock";
-import {
-  RecipientPicker,
-  useRecipientScope,
-} from "@/components/announcement/recipient-picker";
-import {
-  QuestionEditor,
-  validateQuestionDrafts,
-} from "@/components/announcement/question-editor";
+import { RecipientPicker, useRecipientScope } from "@/components/announcement/recipient-picker";
+import { QuestionEditor, validateQuestionDrafts } from "@/components/announcement/question-editor";
 import {
   announcementTargetsQuery,
   RESULT_VISIBILITY_LABEL,
@@ -31,10 +25,7 @@ import {
   surveyQuery,
   type QuestionDraft,
 } from "@/lib/announcement-interaction";
-import {
-  estimateAnnouncementRecipients,
-  publishAnnouncement,
-} from "@/lib/announcement.functions";
+import { estimateAnnouncementRecipients, publishAnnouncement } from "@/lib/announcement.functions";
 import { hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 
 /**
@@ -246,12 +237,12 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
         !announcement?.id &&
         Boolean(
           state.title.trim() ||
-            state.body.trim() ||
-            state.userIds.length ||
-            state.teamIds.length ||
-            state.questions.length ||
-            state.allUsers ||
-            state.allTeams,
+          state.body.trim() ||
+          state.userIds.length ||
+          state.teamIds.length ||
+          state.questions.length ||
+          state.allUsers ||
+          state.allTeams,
         )
       }
       title={announcement?.id ? "Sửa bản nháp" : "Soạn thông báo nội bộ"}
@@ -339,9 +330,7 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
                 type="date"
                 value={state.dueDate}
                 disabled={busy}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, dueDate: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, dueDate: event.target.value }))}
               />
             )}
           </FormField>
@@ -352,9 +341,7 @@ export function AnnouncementFormDrawer({ open, onOpenChange, announcement, onSav
                 type="time"
                 value={state.dueTime}
                 disabled={busy}
-                onChange={(event) =>
-                  setState((prev) => ({ ...prev, dueTime: event.target.value }))
-                }
+                onChange={(event) => setState((prev) => ({ ...prev, dueTime: event.target.value }))}
               />
             )}
           </FormField>

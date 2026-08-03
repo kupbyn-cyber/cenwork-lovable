@@ -19,13 +19,7 @@ import { formatHanoiDateTime } from "@/lib/datetime";
  * CEN 1.0 — M6.1 theo dõi tiến độ xác nhận.
  * RLS quyết định người dùng thấy được bao nhiêu người nhận; UI chỉ hiển thị dữ liệu trả về.
  */
-const ORDER: EffectiveRecipientStatus[] = [
-  "unread",
-  "reading",
-  "completed",
-  "overdue",
-  "exempt",
-];
+const ORDER: EffectiveRecipientStatus[] = ["unread", "reading", "completed", "overdue", "exempt"];
 
 export function AnnouncementProgress({ announcementId }: { announcementId: string }) {
   const recipients = useQuery(announcementRecipientsQuery(announcementId));

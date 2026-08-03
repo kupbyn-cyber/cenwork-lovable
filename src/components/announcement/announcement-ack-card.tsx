@@ -170,13 +170,13 @@ export function AnnouncementAckCard({
                 </Button>
               ) : (
                 <Button asChild variant="secondary" size="sm">
-                <Link
-                  to="/announcements/$announcementId"
-                  params={{ announcementId: row.announcement_id }}
-                >
-                  <MessageSquare />
-                  Xem chi tiết &amp; thảo luận
-                </Link>
+                  <Link
+                    to="/announcements/$announcementId"
+                    params={{ announcementId: row.announcement_id }}
+                  >
+                    <MessageSquare />
+                    Xem chi tiết &amp; thảo luận
+                  </Link>
                 </Button>
               )}
 

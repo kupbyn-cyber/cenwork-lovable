@@ -5,7 +5,5 @@ import { LinkifiedText } from "@/components/ui/linkified-text";
  * URL được nhận diện và mở tab mới; không hỗ trợ HTML, Markdown hay nội dung nhúng.
  */
 export function AnnouncementBody({ body }: { body: string }) {
-  return (
-    <LinkifiedText as="div" className="text-body text-text-secondary" text={body} />
-  );
+  return <LinkifiedText as="div" className="text-body text-text-secondary" text={body} />;
 }

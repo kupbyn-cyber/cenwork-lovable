@@ -11,10 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import {
-  QuestionEditor,
-  validateQuestionDrafts,
-} from "@/components/announcement/question-editor";
+import { QuestionEditor, validateQuestionDrafts } from "@/components/announcement/question-editor";
 import {
   createMinorRevision,
   createNewVersion,
@@ -210,9 +207,7 @@ export function AnnouncementActions({ announcement, questions }: Props) {
                 {...props}
                 value={minor.title}
                 maxLength={200}
-                onChange={(event) =>
-                  setMinor((prev) => ({ ...prev, title: event.target.value }))
-                }
+                onChange={(event) => setMinor((prev) => ({ ...prev, title: event.target.value }))}
               />
             )}
           </FormField>
@@ -233,9 +228,7 @@ export function AnnouncementActions({ announcement, questions }: Props) {
                 {...props}
                 value={minor.reason}
                 maxLength={300}
-                onChange={(event) =>
-                  setMinor((prev) => ({ ...prev, reason: event.target.value }))
-                }
+                onChange={(event) => setMinor((prev) => ({ ...prev, reason: event.target.value }))}
               />
             )}
           </FormField>
@@ -282,9 +275,7 @@ export function AnnouncementActions({ announcement, questions }: Props) {
                 {...props}
                 value={version.title}
                 maxLength={200}
-                onChange={(event) =>
-                  setVersion((prev) => ({ ...prev, title: event.target.value }))
-                }
+                onChange={(event) => setVersion((prev) => ({ ...prev, title: event.target.value }))}
               />
             )}
           </FormField>
@@ -295,9 +286,7 @@ export function AnnouncementActions({ announcement, questions }: Props) {
                 rows={8}
                 value={version.body}
                 maxLength={20000}
-                onChange={(event) =>
-                  setVersion((prev) => ({ ...prev, body: event.target.value }))
-                }
+                onChange={(event) => setVersion((prev) => ({ ...prev, body: event.target.value }))}
               />
             )}
           </FormField>
@@ -349,11 +338,7 @@ export function AnnouncementActions({ announcement, questions }: Props) {
               />
             )}
           </FormField>
-          <FormField
-            id="ver-summary"
-            label="Tóm tắt thay đổi gửi tới người nhận"
-            required
-          >
+          <FormField id="ver-summary" label="Tóm tắt thay đổi gửi tới người nhận" required>
             {(props) => (
               <Textarea
                 {...props}

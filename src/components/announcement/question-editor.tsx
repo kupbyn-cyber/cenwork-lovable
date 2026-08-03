@@ -111,9 +111,7 @@ export function QuestionEditor({ value, disabled, onChange }: Props) {
                   {...props}
                   value={question.type}
                   disabled={disabled}
-                  onChange={(event) =>
-                    update(index, { type: event.target.value as QuestionType })
-                  }
+                  onChange={(event) => update(index, { type: event.target.value as QuestionType })}
                   className="h-10 w-full rounded-control border border-border-default bg-surface-raised px-3 text-body-sm text-text-primary cen-transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                 >
                   {TYPES.map((type) => (

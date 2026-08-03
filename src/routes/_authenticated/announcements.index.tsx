@@ -336,7 +336,9 @@ function AnnouncementsPage() {
             }}
           >
             <TabsList>
-              <TabsTrigger value="todo">Cần tôi xử lý{todoItems.length ? ` (${todoItems.length})` : ""}</TabsTrigger>
+              <TabsTrigger value="todo">
+                Cần tôi xử lý{todoItems.length ? ` (${todoItems.length})` : ""}
+              </TabsTrigger>
               <TabsTrigger value="done">Đã xử lý / Lịch sử</TabsTrigger>
               <TabsTrigger value="created">Đã gửi</TabsTrigger>
             </TabsList>

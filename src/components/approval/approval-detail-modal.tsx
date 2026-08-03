@@ -126,7 +126,9 @@ export function ApprovalDetailModal({ approvalId, open, onOpenChange }: Props) {
                   as="div"
                   className="mt-2 text-body text-text-primary"
                   text={request.content}
-                  fallback={<div className="mt-2 text-body text-text-muted">(Không có nội dung)</div>}
+                  fallback={
+                    <div className="mt-2 text-body text-text-muted">(Không có nội dung)</div>
+                  }
                 />
                 <p className="mt-2 text-helper text-text-muted">
                   Cơ chế: {APPROVAL_MODE_LABEL[request.approval_mode]}
@@ -197,7 +199,9 @@ export function ApprovalDetailModal({ approvalId, open, onOpenChange }: Props) {
                     variant="ghost"
                     onClick={() => setShowHistory((prev) => !prev)}
                   >
-                    {showHistory ? "Ẩn lịch sử phiên bản" : `Lịch sử phiên bản (${historyVersions.length})`}
+                    {showHistory
+                      ? "Ẩn lịch sử phiên bản"
+                      : `Lịch sử phiên bản (${historyVersions.length})`}
                   </Button>
                   {showHistory ? (
                     <div className="mt-3 flex min-w-0 flex-col gap-2">
