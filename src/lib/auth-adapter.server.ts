@@ -17,6 +17,10 @@ export interface AuthAdapter {
   readBootstrapState(): Promise<BootstrapState>;
   /** Bổ sung dữ liệu hệ thống bắt buộc còn thiếu (idempotent). */
   ensureSystemDefaults(): Promise<void>;
+  /** Xác nhận dữ liệu hệ thống đã đầy đủ (catalog + cấu hình 4 role + app_settings). */
+  verifySystemDefaults(): Promise<void>;
+  /** Xác nhận Admin đầu tiên có role admin, system owner và đủ quyền tối thiểu. */
+  verifyAdminBootstrap(userId: string): Promise<void>;
   /** Tạo user ở tầng Auth (chưa có quyền gì). */
   createBootstrapUser(input: {
     email: string;
@@ -120,6 +124,29 @@ export function createSupabaseAuthAdapter(): AuthAdapter {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.rpc("ensure_system_defaults");
       if (error) throw new Error("Không khởi tạo được dữ liệu hệ thống mặc định.");
+    },
+
+    /**
+     * Chặn thiết lập nếu database mới còn thiếu danh mục quyền / cấu hình 4 vai trò /
+     * app_settings bắt buộc — tránh tạo Admin không có quyền hiệu lực.
+     */
+    async verifySystemDefaults() {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin.rpc("verify_system_defaults");
+      const report = data as { ok?: boolean } | null;
+      if (error || !report?.ok) {
+        throw new Error("Dữ liệu hệ thống bắt buộc chưa đầy đủ. Không thể tạo quản trị viên.");
+      }
+    },
+
+    /** Sau khi tạo Admin: xác nhận quyền tối thiểu thực sự hoạt động. */
+    async verifyAdminBootstrap(userId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin.rpc("verify_admin_bootstrap", { _user: userId });
+      const report = data as { ok?: boolean } | null;
+      if (error || !report?.ok) {
+        throw new Error("Tài khoản quản trị chưa nhận đủ quyền hệ thống.");
+      }
     },
 
     async createProfileAndAssignSystemOwner({ userId, email, displayName }) {
