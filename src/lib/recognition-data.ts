@@ -346,3 +346,46 @@ export const recognitionTeamPulseQuery = (teamId?: string | null) =>
     queryKey: ["recognition-team-pulse", teamId ?? "mine"],
     queryFn: () => fetchRecognitionTeamPulse(teamId),
   });
+
+/* ------------------------------------------------------------------ */
+/* RECOG-02 — thiệp ghi nhận cho người nhận (chỉ hiện một lần)         */
+/* ------------------------------------------------------------------ */
+
+export interface UnseenRecognitionRow {
+  id: string;
+  sender_id: string;
+  sender_name: string | null;
+  category: RecognitionCategory;
+  message: string;
+  created_at: string;
+}
+
+/** Các lời ghi nhận gửi cho tôi mà tôi chưa xem (bỏ qua tự ghi nhận). */
+export async function fetchUnseenRecognitions(): Promise<UnseenRecognitionRow[]> {
+  const { data, error } = await supabase.rpc("recognition_unseen");
+  fail(error);
+  return (data ?? []) as UnseenRecognitionRow[];
+}
+
+export const unseenRecognitionsQuery = (userId: string | null | undefined) =>
+  queryOptions({
+    queryKey: ["recognitions-unseen", userId ?? "anon"],
+    queryFn: fetchUnseenRecognitions,
+    enabled: Boolean(userId),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+/** Đánh dấu toàn bộ ghi nhận chưa xem của tôi là đã xem. */
+export async function markRecognitionsSeen(): Promise<void> {
+  const { error } = await supabase.rpc("recognition_mark_seen");
+  fail(error);
+}
+
+/** Giới hạn nội dung hiển thị trên thiệp để bố cục không bị vỡ. */
+export const RECOGNITION_CARD_PREVIEW_LENGTH = 200;
+export function previewRecognitionMessage(message: string): string {
+  const text = message.trim();
+  if (text.length <= RECOGNITION_CARD_PREVIEW_LENGTH) return text;
+  return `${text.slice(0, RECOGNITION_CARD_PREVIEW_LENGTH).trimEnd()}...`;
+}
