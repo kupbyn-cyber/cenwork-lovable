@@ -72,14 +72,20 @@ export const createMemberAccount = createServerFn({ method: "POST" })
 
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({
-        display_name: data.displayName,
-        job_title: data.jobTitle?.trim() || null,
-        primary_team_id: data.primaryTeamId,
-        phone_number: data.phoneNumber.trim(),
-        birthday: data.birthday,
-      })
-      .eq("id", userId);
+      // Không có trigger tạo profile từ auth.users, nên phải upsert (insert nếu chưa có).
+      .upsert(
+        {
+          id: userId,
+          email: data.email,
+          display_name: data.displayName,
+          job_title: data.jobTitle?.trim() || null,
+          primary_team_id: data.primaryTeamId,
+          phone_number: data.phoneNumber.trim(),
+          birthday: data.birthday,
+          status: "active",
+        },
+        { onConflict: "id" },
+      );
     if (profileError) throw new Error("Không lưu được hồ sơ thành viên.");
 
     // Mỗi user chỉ có đúng một system role: thay thế thay vì chèn thêm.
