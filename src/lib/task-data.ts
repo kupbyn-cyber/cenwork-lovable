@@ -195,13 +195,16 @@ export async function fetchTasks(): Promise<TaskRow[]> {
   return (data ?? []).map((row) => mapTask(row as RawTask));
 }
 
-/** Yêu cầu duyệt (chưa phải công việc chính thức). RLS quyết định ai thấy gì. */
+/**
+ * Yêu cầu duyệt đang còn hiệu lực (chưa duyệt, chưa thu hồi).
+ * Yêu cầu đã thu hồi chỉ còn dấu vết trong Lịch sử hoạt động.
+ */
 export async function fetchTaskApprovals(): Promise<TaskRow[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
-    .neq("approval_status", "approved")
+    .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapTask(row as RawTask));
@@ -353,10 +356,7 @@ export function canWithdrawTaskSubmission(task: TaskRow, ctx: TaskAccessContext)
 }
 
 export function canResubmitTask(task: TaskRow, ctx: TaskAccessContext) {
-  return (
-    isTaskSubmissionAuthor(task, ctx) &&
-    (task.approval_status === "changes_requested" || task.approval_status === "withdrawn")
-  );
+  return isTaskSubmissionAuthor(task, ctx) && task.approval_status === "changes_requested";
 }
 
 export interface TaskSubmissionInput {
