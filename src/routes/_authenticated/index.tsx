@@ -319,9 +319,14 @@ function Dashboard() {
         />
       </div>
 
-      <DailyActionHub />
-      <QuickActions />
-      <RoleInsights />
+      {/* Hàng điều hành chính: Việc cần xử lý ~2/3, Hành động nhanh ~1/3 */}
+      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="min-w-0 lg:flex-[2]">
+          <DailyActionHub />
+        </div>
+        <QuickActions className="min-w-0 lg:flex-[1]" />
+      </div>
+
       <ReportSummaryCards />
 
       {canSubmitDaily && dailyResult.isError ? (
@@ -337,10 +342,10 @@ function Dashboard() {
 
       <PendingAnnouncementsPanel />
 
+      {/* Hàng tổng quan: Việc của tôi + các card theo vai trò + Dự án/Tiến độ, tự dồn */}
+      <div className="flex min-w-0 flex-wrap items-start gap-4 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:basis-[min(100%,20rem)]">
+        <RoleInsights flow />
 
-
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Dự án theo trạng thái</CardTitle>
@@ -381,8 +386,9 @@ function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+      {/* Hàng cuối: Việc của tôi cần xử lý ~1/3, Tình trạng báo cáo ~2/3 */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Công việc của tôi cần xử lý</CardTitle>
           </CardHeader>
@@ -418,7 +424,7 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Tình trạng báo cáo</CardTitle>
           </CardHeader>
