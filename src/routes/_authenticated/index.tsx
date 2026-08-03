@@ -1,16 +1,23 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { FileText } from "lucide-react";
+import { BarChart3, FileText, FolderKanban, ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportPreviewModal } from "@/components/report/daily-report-preview-modal";
 import { DailyActionHub } from "@/components/home/daily-action-hub";
 import { QuickActions } from "@/components/home/quick-actions";
 import { RoleInsights } from "@/components/home/role-insights";
+import {
+  DashboardCard,
+  TodayDashboardLayout,
+  TodayGrid,
+  TodayKpiRow,
+  TodaySlot,
+} from "@/components/home/today-layout";
 import { ReportSummaryCards } from "@/components/home/report-summary-cards";
 
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
@@ -154,6 +161,11 @@ function Dashboard() {
     [tasks, access.userId],
   );
 
+  const myOpenTasks = React.useMemo(
+    () => myTasks.filter((task) => task.status !== "done"),
+    [myTasks],
+  );
+
   const overdue = tasks.filter(isTaskOverdue);
   const dueToday = tasks.filter(
     (task) => task.status !== "done" && task.deadline.slice(0, 10) === today,
@@ -250,7 +262,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-5">
+    <TodayDashboardLayout>
       <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default shadow-level-2">
         <div className="relative z-10 flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -293,7 +305,7 @@ function Dashboard() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <TodayKpiRow>
         <Metric
           label="Dự án đang triển khai"
           value={activeProjects.length}
@@ -317,15 +329,7 @@ function Dashboard() {
           tone="danger"
           hint={`${inReview.length} nội dung chờ duyệt`}
         />
-      </div>
-
-      {/* Hàng điều hành chính: Việc cần xử lý ~2/3, Hành động nhanh ~1/3 */}
-      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="min-w-0 lg:flex-[2]">
-          <DailyActionHub />
-        </div>
-        <QuickActions className="min-w-0 lg:flex-[1]" />
-      </div>
+      </TodayKpiRow>
 
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
@@ -338,115 +342,106 @@ function Dashboard() {
         </div>
       ) : null}
 
-      {/* Hàng tổng quan: lưới 3 cột đều nhau cho các khối thống kê */}
-      <div className="grid min-w-0 grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Lưới widget 3 cột, tự dồn khi widget bị ẩn theo vai trò */}
+      <TodayGrid>
+        <DailyActionHub />
+        <QuickActions />
         <RoleInsights flow />
 
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Dự án theo trạng thái</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {approvedProjects.length === 0 ? (
-              <p className="text-helper text-text-muted">Chưa có dự án đã duyệt trong phạm vi.</p>
-            ) : (
-              [...projectByStatus.entries()].map(([status, count]) => (
-                <span key={status} className="flex items-center gap-2">
-                  <StatusBadge
-                    label={`${PROJECT_STATUS_LABEL[status]}: ${count}`}
-                    tone={PROJECT_STATUS_TONE[status]}
-                  />
-                </span>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <DashboardCard
+          size="compact"
+          icon={FolderKanban}
+          title="Dự án theo trạng thái"
+          to="/projects"
+        >
+          {approvedProjects.length === 0 ? (
+            <p className="text-helper text-text-muted">Chưa có dự án đã duyệt trong phạm vi.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {[...projectByStatus.entries()].map(([status, count]) => (
+                <StatusBadge
+                  key={status}
+                  label={`${PROJECT_STATUS_LABEL[status]}: ${count}`}
+                  tone={PROJECT_STATUS_TONE[status]}
+                />
+              ))}
+            </div>
+          )}
+        </DashboardCard>
 
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Tiến độ công việc</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {tasks.length === 0 ? (
-              <p className="text-helper text-text-muted">Chưa có công việc nào trong phạm vi.</p>
-            ) : (
-              TASK_STATUS_ORDER.map((status) => (
+        <DashboardCard size="compact" icon={BarChart3} title="Tiến độ công việc" to="/tasks">
+          {tasks.length === 0 ? (
+            <p className="text-helper text-text-muted">Chưa có công việc nào trong phạm vi.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {TASK_STATUS_ORDER.map((status) => (
                 <StatusBadge
                   key={status}
                   label={`${TASK_STATUS_LABEL[status]}: ${taskByStatus.get(status) ?? 0}`}
                   tone={TASK_STATUS_TONE[status]}
                 />
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              ))}
+            </div>
+          )}
+        </DashboardCard>
 
-      {/* Hàng cuối: Việc của tôi cần xử lý ~1/3, Tình trạng báo cáo ~2/3 */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Công việc của tôi cần xử lý</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {myTasks.filter((task) => task.status !== "done").length === 0 ? (
-              <p className="text-helper text-text-muted">Không có công việc nào đang mở.</p>
-            ) : (
-              myTasks
-                .filter((task) => task.status !== "done")
-                .slice(0, 6)
-                .map((task) => (
-                  <Link
-                    key={task.id}
-                    to="/tasks/$taskId"
-                    params={{ taskId: task.id }}
-                    className="cen-transition flex min-w-0 flex-col gap-1 rounded-control px-2 py-1.5 hover:bg-surface-subtle"
-                  >
-                    <span className="min-w-0 break-words text-body text-text-primary">
-                      {task.name}
-                    </span>
-                    <span
-                      className={
-                        isTaskOverdue(task)
-                          ? "text-helper text-state-danger"
-                          : "text-helper text-text-muted"
-                      }
-                    >
-                      {formatDateTime(task.deadline)} · {TASK_STATUS_LABEL[task.status]}
-                    </span>
-                  </Link>
-                ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Tình trạng báo cáo</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {mustSubmitDaily({
-              userId: access.userId,
-              role: access.role,
-              leaderTeamId: access.leaderTeamId,
-            }) ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-body text-text-secondary">
-                  Báo cáo ngày {formatHanoiDate(today)}:
+        <DashboardCard
+          size="compact"
+          icon={ListChecks}
+          title="Công việc của tôi cần xử lý"
+          to="/tasks"
+        >
+          {myOpenTasks.length === 0 ? (
+            <p className="text-helper text-text-muted">Không có công việc nào đang mở.</p>
+          ) : (
+            myOpenTasks.slice(0, 5).map((task) => (
+              <Link
+                key={task.id}
+                to="/tasks/$taskId"
+                params={{ taskId: task.id }}
+                className="cen-transition flex min-w-0 flex-col gap-0.5 rounded-control px-2 py-1.5 hover:bg-surface-subtle"
+              >
+                <span className="line-clamp-2 min-w-0 text-body text-text-primary">
+                  {task.name}
                 </span>
-                {myTodayReport ? (
-                  <StatusBadge
-                    label={REPORT_STATUS_LABEL[myTodayReport.status]}
-                    tone={REPORT_STATUS_TONE[myTodayReport.status]}
-                  />
-                ) : (
-                  <StatusBadge label="Chưa gửi" tone="warning" />
-                )}
-              </div>
-            ) : null}
+                <span
+                  className={
+                    isTaskOverdue(task)
+                      ? "text-helper text-state-danger"
+                      : "text-helper text-text-muted"
+                  }
+                >
+                  {formatDateTime(task.deadline)} · {TASK_STATUS_LABEL[task.status]}
+                </span>
+              </Link>
+            ))
+          )}
+        </DashboardCard>
 
+        <DashboardCard size="wide" icon={FileText} title="Tình trạng báo cáo" to="/reports">
+          {mustSubmitDaily({
+            userId: access.userId,
+            role: access.role,
+            leaderTeamId: access.leaderTeamId,
+          }) ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body text-text-secondary">
+                Báo cáo ngày {formatHanoiDate(today)}:
+              </span>
+              {myTodayReport ? (
+                <StatusBadge
+                  label={REPORT_STATUS_LABEL[myTodayReport.status]}
+                  tone={REPORT_STATUS_TONE[myTodayReport.status]}
+                />
+              ) : (
+                <StatusBadge label="Chưa gửi" tone="warning" />
+              )}
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <p className="text-body text-text-secondary">
-              Báo cáo ngày hôm nay đã nộp: <strong>{todayReports.length}</strong>
+              Đã nộp hôm nay: <strong>{todayReports.length}</strong>
             </p>
             <p className="text-body text-text-secondary">
               Báo cáo ngày chờ duyệt: <strong>{pendingDaily.length}</strong>
@@ -454,44 +449,49 @@ function Dashboard() {
             <p className="text-body text-text-secondary">
               Báo cáo tuần chờ duyệt: <strong>{pendingWeekly.length}</strong>
             </p>
-            {access.leaderTeamId ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-body text-text-secondary">Báo cáo tuần của Team:</span>
-                {myWeekly ? (
-                  <StatusBadge
-                    label={REPORT_STATUS_LABEL[myWeekly.status]}
-                    tone={REPORT_STATUS_TONE[myWeekly.status]}
-                  />
-                ) : (
-                  <StatusBadge label="Chưa gửi" tone="warning" />
-                )}
-              </div>
-            ) : null}
-            {access.loading || canSubmitDaily ? (
-              <Button
-                className="self-start"
-                onClick={openDailyAction}
-                loading={dailyResult.isLoading || access.loading}
-                disabled={
-                  dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)
-                }
-              >
-                <FileText />
-                {dailyActionLabel}
-              </Button>
-            ) : null}
-            {!membersResult.isLoading && !membersResult.isError && !me ? (
-              <p className="text-helper text-state-danger">
-                Tài khoản chưa được liên kết với hồ sơ thành viên.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      <ReportSummaryCards />
+          {access.leaderTeamId ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body text-text-secondary">Báo cáo tuần của Team:</span>
+              {myWeekly ? (
+                <StatusBadge
+                  label={REPORT_STATUS_LABEL[myWeekly.status]}
+                  tone={REPORT_STATUS_TONE[myWeekly.status]}
+                />
+              ) : (
+                <StatusBadge label="Chưa gửi" tone="warning" />
+              )}
+            </div>
+          ) : null}
+          {access.loading || canSubmitDaily ? (
+            <Button
+              className="self-start"
+              onClick={openDailyAction}
+              loading={dailyResult.isLoading || access.loading}
+              disabled={
+                dailyResult.isError || membersResult.isError || (!membersResult.isLoading && !me)
+              }
+            >
+              <FileText />
+              {dailyActionLabel}
+            </Button>
+          ) : null}
+          {!membersResult.isLoading && !membersResult.isError && !me ? (
+            <p className="text-helper text-state-danger">
+              Tài khoản chưa được liên kết với hồ sơ thành viên.
+            </p>
+          ) : null}
+        </DashboardCard>
 
-      <PendingAnnouncementsPanel />
+        <TodaySlot size="wide">
+          <ReportSummaryCards />
+        </TodaySlot>
+
+        <TodaySlot size="full">
+          <PendingAnnouncementsPanel />
+        </TodaySlot>
+      </TodayGrid>
 
       {canSubmitDaily && access.userId ? (
         <DailyReportPreviewModal
@@ -508,6 +508,6 @@ function Dashboard() {
           }
         />
       ) : null}
-    </div>
+    </TodayDashboardLayout>
   );
 }
