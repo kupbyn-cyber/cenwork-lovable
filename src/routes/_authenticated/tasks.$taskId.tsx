@@ -473,6 +473,8 @@ function TaskDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        <TaskCommentThread taskId={task.id} />
       </div>
 
       {access.userId ? (
