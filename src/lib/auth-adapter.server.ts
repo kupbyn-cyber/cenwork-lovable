@@ -124,6 +124,9 @@ export function createSupabaseAuthAdapter(): AuthAdapter {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.rpc("ensure_system_defaults");
       if (error) throw new Error("Không khởi tạo được dữ liệu hệ thống mặc định.");
+      // Danh mục vận hành (Trực nhật): thiếu thì dropdown trống sau khi remix.
+      const { error: catalogError } = await supabaseAdmin.rpc("ensure_catalog_defaults");
+      if (catalogError) throw new Error("Không khởi tạo được danh mục mặc định.");
     },
 
     /**
