@@ -27,6 +27,12 @@ export interface RecognitionStatRow {
   speed_count: number;
   initiative_count: number;
   teamwork_count: number;
+  creativity_count: number;
+  effectiveness_count: number;
+  progress_count: number;
+  dedication_count: number;
+  /** Số lời tự ghi nhận — tách riêng để không lẫn với ghi nhận đồng đội. */
+  self_count: number;
   total_count: number;
 }
 

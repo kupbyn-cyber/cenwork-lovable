@@ -15,13 +15,18 @@ import { cenToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { formatHanoiDateTime } from "@/lib/datetime";
 import {
-  RECOGNITION_CATEGORY_LABEL,
+  RECOGNITION_CATEGORY_META,
   canRevoke,
+  isSelfRecognition,
+  recognitionReactionsQuery,
   recognitionsQuery,
   reportRecognition,
   revokeRecognition,
+  type RecognitionReactionRow,
   type RecognitionRow,
 } from "@/lib/recognition-data";
+import { cn } from "@/lib/utils";
+import { RecognitionReactionBar } from "@/components/recognition/recognition-reaction-bar";
 
 /**
  * CEN TODAY-02 — Feed ghi nhận đồng đội.
@@ -38,16 +43,20 @@ export interface RecognitionFeedProps {
 function RecognitionCard({
   row,
   userId,
+  reactions,
   onRevoke,
   onReport,
   revoking,
 }: {
   row: RecognitionRow;
   userId: string | null;
+  reactions: RecognitionReactionRow[];
   onRevoke: (id: string) => void;
   onReport: (row: RecognitionRow) => void;
   revoking: boolean;
 }) {
+  const self = isSelfRecognition(row);
+  const meta = RECOGNITION_CATEGORY_META[row.category];
   return (
     <Card density="compact">
       <CardContent className="flex min-w-0 flex-col gap-2 pt-(--card-pad)">
@@ -56,14 +65,36 @@ function RecognitionCard({
           <div className="min-w-0 flex-1">
             <p className="min-w-0 break-words text-body text-text-primary">
               <strong>{row.sender?.display_name ?? "Ẩn danh"}</strong>
-              <span className="text-text-muted"> đã ghi nhận </span>
-              <strong>{row.receiver?.display_name ?? "đồng đội"}</strong>
+              {self ? (
+                <span className="text-text-muted"> đã tự ghi nhận</span>
+              ) : (
+                <>
+                  <span className="text-text-muted"> đã ghi nhận </span>
+                  <strong>{row.receiver?.display_name ?? "đồng đội"}</strong>
+                </>
+              )}
             </p>
             <p className="text-helper text-text-muted">{formatHanoiDateTime(row.created_at)}</p>
           </div>
-          <Badge variant="brand">{RECOGNITION_CATEGORY_LABEL[row.category]}</Badge>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+            {self ? <Badge variant="outline">Tự ghi nhận</Badge> : null}
+            <span
+              className={cn(
+                "inline-flex max-w-full items-center gap-1 rounded-badge border px-2 py-0.5 text-helper font-medium",
+                meta.tone,
+              )}
+            >
+              <span aria-hidden>{meta.emoji}</span>
+              <span className="min-w-0 truncate">{meta.label}</span>
+            </span>
+          </div>
         </div>
         <p className="min-w-0 break-words text-body text-text-secondary">{row.message}</p>
+        <RecognitionReactionBar
+          recognitionId={row.id}
+          reactions={reactions}
+          userId={userId}
+        />
         <div className="flex flex-wrap gap-2">
           {canRevoke(row, userId) ? (
             <Button
@@ -123,6 +154,8 @@ export function RecognitionFeed({ personId = null, pageSize = 20 }: RecognitionF
   });
 
   const rows = data ?? [];
+  const reactionsResult = useQuery(recognitionReactionsQuery(rows.map((row) => row.id)));
+  const reactions = reactionsResult.data ?? [];
 
   if (isLoading) return <SkeletonCard lines={4} />;
   if (isError) {
@@ -155,6 +188,7 @@ export function RecognitionFeed({ personId = null, pageSize = 20 }: RecognitionF
           key={row.id}
           row={row}
           userId={user?.id ?? null}
+          reactions={reactions}
           onRevoke={(id) => revokeMutation.mutate(id)}
           onReport={(target) => {
             setReporting(target);
