@@ -489,6 +489,10 @@ function Dashboard() {
         </Card>
       </div>
 
+      <ReportSummaryCards />
+
+      <PendingAnnouncementsPanel />
+
       {canSubmitDaily && access.userId ? (
         <DailyReportPreviewModal
           open={dailyOpen}
