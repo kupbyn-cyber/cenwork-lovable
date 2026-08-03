@@ -5,14 +5,9 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { FormErrorSummary } from "@/components/ui/error-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
