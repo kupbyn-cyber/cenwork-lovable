@@ -80,8 +80,6 @@ export interface ProjectRow {
   created_at: string;
   updated_at: string;
   teamIds: string[];
-  memberIds: string[];
-  memberNames: string[];
   facilityIds: string[];
 }
 
@@ -93,7 +91,6 @@ const SELECT = `
   owner:profiles!projects_owner_id_fkey(id,display_name),
   creator:profiles!projects_created_by_fkey(id,display_name,primary_team_id),
   project_teams(team_id),
-  project_members(user_id,profiles(display_name)),
   project_facilities(facility_id)
 `;
 
@@ -103,10 +100,6 @@ function mapProject(raw: RawProject): ProjectRow {
   const owner = raw["owner"] as { display_name: string } | null;
   const creator = raw["creator"] as { display_name: string; primary_team_id: string | null } | null;
   const teams = (raw["project_teams"] ?? []) as { team_id: string }[];
-  const members = (raw["project_members"] ?? []) as {
-    user_id: string;
-    profiles: { display_name: string } | null;
-  }[];
   const facilities = (raw["project_facilities"] ?? []) as { facility_id: string }[];
 
   return {
@@ -474,10 +467,9 @@ export async function setProjectStatus(id: string, status: ProjectStatus, note?:
   fail(error);
 }
 
-type LinkTable = "project_teams" | "project_members" | "project_facilities";
-const LINK_COLUMN: Record<LinkTable, "team_id" | "user_id" | "facility_id"> = {
+type LinkTable = "project_teams" | "project_facilities";
+const LINK_COLUMN: Record<LinkTable, "team_id" | "facility_id"> = {
   project_teams: "team_id",
-  project_members: "user_id",
   project_facilities: "facility_id",
 };
 
