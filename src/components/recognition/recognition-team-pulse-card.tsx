@@ -40,7 +40,7 @@ export function RecognitionTeamPulseCard({ teamId = null }: { teamId?: string | 
       <CardHeader>
         <CardTitle className="flex min-w-0 items-center gap-2">
           <Users className="size-icon-sm shrink-0" />
-          <span className="min-w-0 truncate">Tuần này · {data.team_name ?? "Team của tôi"}</span>
+          <span className="min-w-0 truncate">Tuần này · {data.team_name ?? "Toàn tổ chức"}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex min-w-0 flex-col gap-3">
