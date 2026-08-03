@@ -5323,6 +5323,10 @@ export type Database = {
         Returns: boolean
       }
       is_active_account: { Args: { _user?: string }; Returns: boolean }
+      is_active_team_member: {
+        Args: { _person: string; _team: string }
+        Returns: boolean
+      }
       is_announcement_recipient: {
         Args: { _announcement: string; _user: string }
         Returns: boolean

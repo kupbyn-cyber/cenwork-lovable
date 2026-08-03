@@ -48,7 +48,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "project.cmo_rejected": "CMO từ chối dự án",
   "project.status_changed": "Đổi trạng thái dự án",
   "project.archived": "Lưu trữ dự án",
-  "project.owner_changed": "Đổi Project Owner",
+  "project.owner_changed": "Đổi Chủ dự án",
   "project.schedule_changed": "Đổi mốc thời gian dự án",
   "project.updated": "Cập nhật thông tin dự án",
   "project.team_linked": "Thêm Team tham gia",

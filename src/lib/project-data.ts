@@ -326,7 +326,7 @@ export function isCompletedEarly(project: ProjectRow) {
   return new Date(project.completed_at).getTime() < end;
 }
 
-/** Gửi yêu cầu đổi deadline: Project Owner, Leader đúng phạm vi, Admin và CMO. */
+/** Gửi yêu cầu đổi deadline: Chủ dự án, Leader đúng phạm vi, Admin và CMO. */
 export function canRequestProjectDeadline(project: ProjectRow, ctx: ProjectAccessContext) {
   if (isProjectArchived(project) || !isProjectApproved(project)) return false;
   if (privileged(ctx) || isProjectOwner(project, ctx)) return true;

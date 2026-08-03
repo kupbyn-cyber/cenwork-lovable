@@ -135,8 +135,8 @@ export function TaskFormDrawer({
   const selectableProjects = projects.filter((project) => {
     const usable = isProjectApproved(project) && project.status !== "archived";
     if (!memberFlow) return usable || project.id === form.projectId;
-    // Member chỉ thấy dự án mình đang tham gia và có Team phụ trách.
-    return usable && Boolean(ctx.userId && project.memberIds.includes(ctx.userId));
+    // Member chỉ thấy dự án trong phạm vi của mình (RLS đã lọc theo Chủ dự án/Team phụ trách/Team tham gia).
+    return usable;
   });
 
   const selectedProject = projects.find((project) => project.id === form.projectId) ?? null;
@@ -263,9 +263,7 @@ export function TaskFormDrawer({
     : people.filter((person) => person.id === ctx.userId);
   const selfName =
     people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
-  const participantPool = memberFlow
-    ? people.filter((person) => selectedProject?.memberIds.includes(person.id))
-    : people;
+  const participantPool = people;
 
   return (
     <Modal

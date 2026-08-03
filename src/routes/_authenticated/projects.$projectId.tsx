@@ -366,7 +366,7 @@ function ProjectDetailPage() {
             <CardTitle>Thông tin tổng quan</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <InfoRow label="Project Owner" value={detail.ownerName ?? "Chưa chỉ định"} />
+            <InfoRow label="Chủ dự án" value={detail.ownerName ?? "Chưa chỉ định"} />
             <InfoRow label="Người tạo" value={detail.creatorName ?? "—"} />
             <InfoRow label="Ngày bắt đầu" value={formatDate(detail.start_date)} />
             <InfoRow
@@ -388,8 +388,8 @@ function ProjectDetailPage() {
               }
             />
             <InfoRow
-              label="Thành viên tham gia"
-              value={detail.memberNames.length ? detail.memberNames.join(", ") : "—"}
+              label="Phạm vi tham gia"
+              value="Thành viên của Team phụ trách và các Team tham gia"
             />
             <InfoRow label="Cập nhật gần nhất" value={formatAuditTime(detail.updated_at)} />
             <div className="sm:col-span-2">

@@ -299,7 +299,7 @@ export function canRequestTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
   return isTaskAssignee(task, ctx) || canApproveTaskDeadline(task, ctx);
 }
 
-/** Duyệt: Admin, CMO, Project Owner của dự án chứa Task, Leader đúng phạm vi. */
+/** Duyệt: Admin, CMO, Chủ dự án của dự án chứa Task, Leader đúng phạm vi. */
 export function canApproveTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
   if (privileged(ctx)) return true;
   if (ctx.userId && task.projectOwnerId === ctx.userId) return true;
@@ -310,7 +310,7 @@ export function canApproveTaskDeadline(task: TaskRow, ctx: TaskAccessContext) {
   return false;
 }
 
-/** Chỉ CMO, Admin, Leader hoặc Project Owner được gắn Task vào dự án. */
+/** Chỉ CMO, Admin, Leader hoặc Chủ dự án được gắn Task vào dự án. */
 export function canCreateProjectTask(ctx: TaskAccessContext) {
   return privileged(ctx) || ctx.role === "leader";
 }
