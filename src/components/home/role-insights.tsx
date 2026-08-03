@@ -113,16 +113,10 @@ function Stat({ label, value, tone }: { label: string; value: number | string; t
   );
 }
 
-function MyFocusCard({ focus }: { focus: MyFocus }) {
+function MyFocusCard({ focus, size = "compact" }: { focus: MyFocus; size?: TodaySize }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="size-icon-sm text-state-info" aria-hidden="true" />
-          Việc của tôi
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <DashboardCard size={size} icon={Activity} title="Việc của tôi" to="/tasks">
+      <div className="grid grid-cols-2 gap-3">
         <Stat label="Đang mở" value={focus.open_tasks} />
         <Stat
           label="Quá hạn"
@@ -131,127 +125,132 @@ function MyFocusCard({ focus }: { focus: MyFocus }) {
         />
         <Stat label="Hạn hôm nay" value={focus.due_today} />
         <Stat label="Hoàn thành tuần này" value={focus.done_this_week} />
-        <div className="col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-1">
-          <span className="text-caption tracking-[0.1em] text-text-muted uppercase">
-            Ghi nhận nhận được
-          </span>
-          <span className="flex items-center gap-1.5 text-h3 font-semibold tabular-nums text-text-primary">
-            <Sparkles className="size-icon-sm text-state-success" aria-hidden="true" />
-            {focus.recognitions_received_week}
-          </span>
-          <Link to="/recognitions" className="text-helper text-text-link underline-offset-2 hover:underline">
-            Xem ghi nhận đồng đội
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex min-w-0 items-center justify-between gap-2 border-t border-border-default pt-2">
+        <span className="text-caption tracking-[0.1em] text-text-muted uppercase">
+          Ghi nhận nhận được
+        </span>
+        <Link
+          to="/recognitions"
+          className="flex items-center gap-1.5 text-h4 font-semibold tabular-nums text-text-primary hover:underline"
+        >
+          <Sparkles className="size-icon-sm text-state-success" aria-hidden="true" />
+          {focus.recognitions_received_week}
+        </Link>
+      </div>
+    </DashboardCard>
   );
 }
 
-function TeamFocusCard({ focus }: { focus: TeamFocus }) {
+function TeamFocusCard({ focus, size = "compact" }: { focus: TeamFocus; size?: TodaySize }) {
+  const missing = focus.missing_daily.slice(0, 5);
+  const overdue = focus.top_overdue.slice(0, 4);
   return (
-    <Card>
-      <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex min-w-0 items-center gap-2">
-          <Users className="size-icon-sm text-state-warning" aria-hidden="true" />
-          Team {focus.team_name}
-        </CardTitle>
-        <StatusBadge
-          label={`${focus.member_count} thành viên`}
-          tone="neutral"
+    <DashboardCard
+      size={size}
+      icon={Users}
+      title={`Team ${focus.team_name}`}
+      to="/tasks"
+      headerExtra={<StatusBadge label={`${focus.member_count} thành viên`} tone="neutral" />}
+    >
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Việc đang mở" value={focus.open_tasks} />
+        <Stat
+          label="Quá hạn"
+          value={focus.overdue_tasks}
+          {...(focus.overdue_tasks > 0 ? { tone: "danger" as const } : {})}
         />
-      </CardHeader>
-      <CardContent className="flex min-w-0 flex-col gap-3">
-        <div className="grid grid-cols-3 gap-3">
-          <Stat label="Việc đang mở" value={focus.open_tasks} />
-          <Stat
-            label="Quá hạn"
-            value={focus.overdue_tasks}
-            {...(focus.overdue_tasks > 0 ? { tone: "danger" as const } : {})}
-          />
-          <Stat label="Chờ kiểm tra" value={focus.pending_reviews} />
-        </div>
+        <Stat label="Chờ kiểm tra" value={focus.pending_reviews} />
+      </div>
 
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-label font-semibold text-text-primary">
-            Chưa gửi báo cáo ngày ({focus.missing_daily.length})
-          </span>
-          {focus.missing_daily.length === 0 ? (
-            <span className="text-helper text-text-muted">Cả Team đã gửi báo cáo hôm nay.</span>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {focus.missing_daily.map((person) => (
-                <StatusBadge key={person.id} label={person.name} tone="warning" />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {focus.top_overdue.length > 0 ? (
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-label font-semibold text-text-primary">Việc quá hạn cần xử lý</span>
-            {focus.top_overdue.map((task) => (
-              <Link
-                key={task.id}
-                to="/tasks/$taskId"
-                params={{ taskId: task.id }}
-                className="cen-transition flex min-w-0 flex-col rounded-control px-2 py-1 hover:bg-surface-subtle"
-              >
-                <span className="min-w-0 break-words text-body text-text-primary">{task.name}</span>
-                <span className="text-helper text-state-danger">
-                  {task.assignee} · {formatHanoiDateTime(task.deadline)}
-                </span>
-              </Link>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="text-label font-semibold text-text-primary">
+          Chưa gửi báo cáo ngày ({focus.missing_daily.length})
+        </span>
+        {focus.missing_daily.length === 0 ? (
+          <span className="text-helper text-text-muted">Cả Team đã gửi báo cáo hôm nay.</span>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {missing.map((person) => (
+              <StatusBadge key={person.id} label={person.name} tone="warning" />
             ))}
+            {focus.missing_daily.length > missing.length ? (
+              <span className="text-helper text-text-muted">
+                +{focus.missing_daily.length - missing.length}
+              </span>
+            ) : null}
           </div>
-        ) : null}
-      </CardContent>
-    </Card>
+        )}
+      </div>
+
+      {overdue.length > 0 ? (
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-label font-semibold text-text-primary">Việc quá hạn cần xử lý</span>
+          {overdue.map((task) => (
+            <Link
+              key={task.id}
+              to="/tasks/$taskId"
+              params={{ taskId: task.id }}
+              className="cen-transition flex min-w-0 flex-col rounded-control px-2 py-1 hover:bg-surface-subtle"
+            >
+              <span className="line-clamp-2 min-w-0 text-body text-text-primary">{task.name}</span>
+              <span className="text-helper text-state-danger">
+                {task.assignee} · {formatHanoiDateTime(task.deadline)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </DashboardCard>
   );
 }
 
-function MarketingFocusCard({ focus, className }: { focus: MarketingFocus; className?: string }) {
+function MarketingFocusCard({
+  focus,
+  size = "compact",
+}: {
+  focus: MarketingFocus;
+  size?: TodaySize;
+}) {
+  const teams = focus.teams_attention.slice(0, 4);
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex min-w-0 items-center gap-2">
-          <Activity className="size-icon-sm text-state-danger" aria-hidden="true" />
-          Sức khỏe Marketing
-        </CardTitle>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/tasks">Mở Công việc</Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="flex min-w-0 flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat
-            label="Việc quá hạn"
-            value={focus.overdue_tasks}
-            {...(focus.overdue_tasks > 0 ? { tone: "danger" as const } : {})}
-          />
-          <Stat label="Dự án chờ duyệt" value={focus.projects_awaiting_decision} />
-          <Stat label="Dự án trễ hạn" value={focus.projects_overdue} />
-          <Stat label="Tỷ lệ báo cáo ngày" value={formatPercent(focus.daily_report_rate)} />
-        </div>
+    <DashboardCard
+      size={size}
+      icon={Activity}
+      title="Sức khỏe Marketing"
+      to="/tasks"
+      actionLabel="Mở Công việc"
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label="Việc quá hạn"
+          value={focus.overdue_tasks}
+          {...(focus.overdue_tasks > 0 ? { tone: "danger" as const } : {})}
+        />
+        <Stat label="Dự án chờ duyệt" value={focus.projects_awaiting_decision} />
+        <Stat label="Dự án trễ hạn" value={focus.projects_overdue} />
+        <Stat label="Tỷ lệ báo cáo ngày" value={formatPercent(focus.daily_report_rate)} />
+      </div>
 
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-label font-semibold text-text-primary">
-            Team cần chú ý ({focus.teams_attention.length}/{focus.total_teams})
-          </span>
-          {focus.teams_attention.length === 0 ? (
-            <EmptyState
-              variant="compact"
-              title="Không có Team nào vượt ngưỡng cảnh báo"
-              description="Ngưỡng: từ 3 việc quá hạn hoặc từ 20% việc đang mở bị quá hạn."
-            />
-          ) : (
-            focus.teams_attention.map((team) => (
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <span className="text-label font-semibold text-text-primary">
+          Team cần chú ý ({focus.teams_attention.length}/{focus.total_teams})
+        </span>
+        {focus.teams_attention.length === 0 ? (
+          <EmptyState
+            variant="compact"
+            title="Không có Team nào vượt ngưỡng cảnh báo"
+            description="Ngưỡng: từ 3 việc quá hạn hoặc từ 20% việc đang mở bị quá hạn."
+          />
+        ) : (
+          <>
+            {teams.map((team) => (
               <div
                 key={team.team_id}
                 className="flex min-w-0 flex-col gap-1 rounded-card border border-border-default bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 flex-col">
-                  <span className="min-w-0 break-words text-body font-medium text-text-primary">
+                  <span className="min-w-0 truncate text-body font-medium text-text-primary">
                     {team.team_name}
                   </span>
                   <span className="text-helper text-text-muted">
@@ -261,15 +260,20 @@ function MarketingFocusCard({ focus, className }: { focus: MarketingFocus; class
                 </div>
                 <StatusBadge label={team.reason} tone="error" />
               </div>
-            ))
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+            {focus.teams_attention.length > teams.length ? (
+              <Link to="/organization" className="text-helper text-text-link hover:underline">
+                Xem thêm {focus.teams_attention.length - teams.length} Team
+              </Link>
+            ) : null}
+          </>
+        )}
+      </div>
+    </DashboardCard>
   );
 }
 
-function SystemFocusCard({ focus, className }: { focus: SystemFocus; className?: string }) {
+function SystemFocusCard({ focus, size = "compact" }: { focus: SystemFocus; size?: TodaySize }) {
   const items: { label: string; value: number; danger?: boolean }[] = [
     { label: "Tài khoản bị khóa", value: focus.locked_accounts },
     { label: "Chưa gắn Team", value: focus.members_without_team },
@@ -280,17 +284,14 @@ function SystemFocusCard({ focus, className }: { focus: SystemFocus; className?:
     { label: "Thông báo quá hạn", value: focus.announcements_overdue, danger: true },
   ];
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle className="flex min-w-0 items-center gap-2">
-          <ServerCog className="size-icon-sm text-text-muted" aria-hidden="true" />
-          Tình trạng hệ thống
-        </CardTitle>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/settings">Mở Cài đặt</Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <DashboardCard
+      size={size}
+      icon={ServerCog}
+      title="Tình trạng hệ thống"
+      to="/settings"
+      actionLabel="Mở Cài đặt"
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {items.map((item) => (
           <Stat
             key={item.label}
@@ -299,7 +300,7 @@ function SystemFocusCard({ focus, className }: { focus: SystemFocus; className?:
             {...(item.danger && item.value > 0 ? { tone: "danger" as const } : {})}
           />
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </DashboardCard>
   );
 }
