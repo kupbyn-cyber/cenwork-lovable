@@ -386,7 +386,7 @@ export async function buildDashboard(
       async () => {
         let q = supabase
           .from("report_obligations")
-          .select("user_id,team_id,due_at,is_exempt,first_submitted_at,is_late,status")
+          .select("user_id,team_id,due_at,is_exempt,first_submitted_at,is_late,reports:report_id(status)")
           .gte("due_at", period.startISO)
           .lt("due_at", period.endISO)
           .limit(5000);
@@ -409,7 +409,8 @@ export async function buildDashboard(
               result.late_or_missing += 1;
               lateReportByUser.set(row.user_id, (lateReportByUser.get(row.user_id) ?? 0) + 1);
             } else result.on_time += 1;
-            if (row.status === "submitted") result.pending_review += 1;
+            const linked = row.reports as { status: string } | null;
+            if (linked && linked.status === "submitted") result.pending_review += 1;
           } else if (row.due_at < nowISO) {
             result.late_or_missing += 1;
             lateReportByUser.set(row.user_id, (lateReportByUser.get(row.user_id) ?? 0) + 1);
