@@ -156,20 +156,64 @@ export function RecognitionFormModal({
             }
           >
             {(control) => (
-              <Select value={receiverId} onValueChange={setReceiverId}>
-                <SelectTrigger id={control.id} aria-invalid={control["aria-invalid"]}>
-                  <SelectValue placeholder="Chọn người nhận" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.id === user?.id
-                        ? `Bạn — ${member.display_name}`
-                        : member.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex min-w-0 flex-col gap-2">
+                <Input
+                  id={control.id}
+                  aria-invalid={control["aria-invalid"]}
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Tìm theo tên…"
+                />
+                <div
+                  role="listbox"
+                  aria-label="Danh sách người nhận"
+                  className="max-h-56 min-w-0 overflow-y-auto rounded-card border border-border-default"
+                >
+                  {membersResult.isLoading ? (
+                    <p className="px-3 py-3 text-helper text-text-muted">Đang tải danh sách…</p>
+                  ) : membersResult.isError ? (
+                    <ErrorState
+                      variant="compact"
+                      title="Không tải được danh sách thành viên"
+                      onRetry={() => void membersResult.refetch()}
+                    />
+                  ) : filtered.length === 0 ? (
+                    <p className="px-3 py-3 text-helper text-text-muted">
+                      Không tìm thấy thành viên phù hợp.
+                    </p>
+                  ) : (
+                    filtered.map((member) => {
+                      const self = member.id === user?.id;
+                      const active = member.id === receiverId;
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => setReceiverId(member.id)}
+                          className={cn(
+                            "cen-transition flex w-full min-w-0 flex-col items-start gap-0.5 px-3 py-2 text-left",
+                            active
+                              ? "bg-brand-primary/10 text-text-primary"
+                              : "text-text-secondary hover:bg-surface-subtle",
+                          )}
+                        >
+                          <span className="min-w-0 truncate text-body text-text-primary">
+                            {self ? `Bạn — ${member.display_name}` : member.display_name}
+                          </span>
+                          {member.job_title ? (
+                            <span className="min-w-0 truncate text-helper text-text-muted">
+                              {member.job_title}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             )}
           </FormField>
 
