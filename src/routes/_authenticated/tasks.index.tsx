@@ -331,7 +331,8 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            ...col("w-[84px]"),
+            className: "w-[84px] px-3 hidden lg:table-cell",
+            headerClassName: "w-[84px] px-3 hidden lg:table-cell",
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.teamName ?? "—"}</span>
             ),
