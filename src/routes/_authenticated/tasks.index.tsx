@@ -36,15 +36,13 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { DeadlineCountdown, PriorityLabel } from "@/components/task/task-cell-bits";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
-  TASK_PRIORITY_LABEL,
-  TASK_PRIORITY_TONE,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
@@ -53,9 +51,7 @@ import {
   canManuallyArchiveTask,
   canRequestTaskDeadline,
   canRestoreTask,
-  formatDateTime,
   isTaskArchived,
-  isTaskOverdue,
   tasksQuery,
   type TaskAccessContext,
   type TaskRow,
@@ -298,7 +294,7 @@ function TasksPage() {
       className: "px-3",
       headerClassName: "px-3",
       cell: (row: TaskRow) => (
-        <span className="block truncate font-medium text-text-primary">{row.name}</span>
+        <span className="line-clamp-2 font-medium text-text-primary">{row.name}</span>
       ),
     },
     ...(show("project")
@@ -335,7 +331,8 @@ function TasksPage() {
           {
             id: "team",
             header: "Team",
-            ...col("w-[84px]"),
+            className: "w-[84px] px-3 hidden lg:table-cell",
+            headerClassName: "w-[84px] px-3 hidden lg:table-cell",
             cell: (row: TaskRow) => (
               <span className="block truncate text-text-secondary">{row.teamName ?? "—"}</span>
             ),
@@ -347,17 +344,8 @@ function TasksPage() {
           {
             id: "deadline",
             header: "Deadline",
-            ...col("w-[136px]"),
-            cell: (row: TaskRow) => (
-              <span
-                className={cn(
-                  "block truncate",
-                  isTaskOverdue(row) ? "text-state-danger" : "text-text-secondary",
-                )}
-              >
-                {formatDateTime(row.deadline)}
-              </span>
-            ),
+            ...col("w-[128px]"),
+            cell: (row: TaskRow) => <DeadlineCountdown task={row} />,
           },
         ]
       : []),
@@ -366,13 +354,8 @@ function TasksPage() {
           {
             id: "priority",
             header: "Ưu tiên",
-            ...col("w-[100px]"),
-            cell: (row: TaskRow) => (
-              <StatusBadge
-                label={TASK_PRIORITY_LABEL[row.priority]}
-                tone={TASK_PRIORITY_TONE[row.priority]}
-              />
-            ),
+            ...col("w-[96px]"),
+            cell: (row: TaskRow) => <PriorityLabel priority={row.priority} />,
           },
         ]
       : []),
@@ -381,7 +364,7 @@ function TasksPage() {
           {
             id: "status",
             header: "Trạng thái",
-            ...col("w-[128px]"),
+            ...col("w-[148px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
                 label={TASK_STATUS_LABEL[row.status]}
