@@ -39,6 +39,7 @@ import {
   canResolveLink,
   canRestoreDocument,
   createDocumentDraft,
+  publishDocumentNow,
   deleteDocumentDraft,
   documentStatus,
   documentsQuery,
@@ -144,9 +145,14 @@ function DocumentsPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (input: DocumentDraftInput) => createDocumentDraft(input, access.userId!),
+    mutationFn: async (input: DocumentDraftInput) => {
+      const id = await createDocumentDraft(input, access.userId!);
+      // DOC-RULE-08B — Admin/CMO tạo là phát hành luôn, không cần tự duyệt thêm.
+      if (access.isSystemAdmin) await publishDocumentNow(id);
+      return id;
+    },
     onSuccess: () => {
-      cenToast.success("Đã tạo bản nháp tài liệu.");
+      cenToast.success(access.isSystemAdmin ? "Đã tạo tài liệu." : "Đã tạo bản nháp tài liệu.");
       setFormOpen(false);
       setFormError(null);
       invalidate();
@@ -372,7 +378,9 @@ function DocumentsPage() {
           description={
             hasActiveDocumentFilters(filters)
               ? "Thử xóa bớt bộ lọc hoặc đổi từ khóa tìm kiếm."
-              : "Tạo bản nháp đầu tiên để bắt đầu xây dựng thư viện tài liệu."
+              : access.isSystemAdmin
+                ? "Tạo tài liệu đầu tiên để bắt đầu xây dựng thư viện tài liệu."
+                : "Tạo bản nháp đầu tiên để bắt đầu xây dựng thư viện tài liệu."
           }
           {...(canCreate && !hasActiveDocumentFilters(filters)
             ? {
@@ -384,7 +392,8 @@ function DocumentsPage() {
                       setFormOpen(true);
                     }}
                   >
-                    <Plus className="size-icon-sm" aria-hidden="true" /> Tạo bản nháp
+                    <Plus className="size-icon-sm" aria-hidden="true" />{" "}
+                    {access.isSystemAdmin ? "Tạo tài liệu" : "Tạo bản nháp"}
                   </Button>
                 ),
               }
@@ -423,7 +432,8 @@ function DocumentsPage() {
                 setFormOpen(true);
               }}
             >
-              <Plus className="size-icon-sm" aria-hidden="true" /> Tạo bản nháp
+              <Plus className="size-icon-sm" aria-hidden="true" />{" "}
+              {access.isSystemAdmin ? "Tạo tài liệu" : "Tạo bản nháp"}
             </Button>
           ) : null
         }
@@ -503,6 +513,7 @@ function DocumentsPage() {
         projects={allowedProjects}
         people={people.data ?? []}
         allowSystemScope={access.isSystemAdmin}
+        publishOnCreate={access.isSystemAdmin}
         submitting={createMutation.isPending || updateMutation.isPending}
         serverError={formError}
         defaultOwnerId={access.userId}
