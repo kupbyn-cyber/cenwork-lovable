@@ -248,9 +248,9 @@ export interface DocumentScopeAccess {
 
 /** Team và Dự án người dùng được chọn khi tạo tài liệu (mirror can_create_document). */
 export async function fetchMyScopeAccess(userId: string): Promise<DocumentScopeAccess> {
-  const [profile, collaborators, leaderTeams, ownProjects] = await Promise.all([
+  // MEMBER-FIX-04: chỉ dùng Team chính và Team đang làm Leader (bỏ Team phối hợp).
+  const [profile, leaderTeams, ownProjects] = await Promise.all([
     supabase.from("profiles").select("primary_team_id").eq("id", userId).maybeSingle(),
-    supabase.from("team_collaborators").select("team_id").eq("user_id", userId),
     supabase.from("teams").select("id").eq("leader_id", userId),
     supabase.from("projects").select("id,owner_id,created_by").is("deleted_at", null),
   ]);
@@ -258,7 +258,6 @@ export async function fetchMyScopeAccess(userId: string): Promise<DocumentScopeA
   const teamIds = new Set<string>();
   const primary = (profile.data as { primary_team_id: string | null } | null)?.primary_team_id;
   if (primary) teamIds.add(primary);
-  for (const row of (collaborators.data ?? []) as { team_id: string }[]) teamIds.add(row.team_id);
   for (const row of (leaderTeams.data ?? []) as { id: string }[]) teamIds.add(row.id);
 
   const projectIds = new Set<string>();
