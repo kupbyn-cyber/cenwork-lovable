@@ -89,6 +89,8 @@ export interface DashReportStatus {
   submitted: number;
   on_time: number;
   late_or_missing: number;
+  /** Chưa nộp và đã qua hạn (không gồm báo cáo nộp muộn). */
+  missing: number;
   pending_review: number;
 }
 

@@ -36,7 +36,6 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { hanoiToday } from "@/lib/performance";
 import {
   CommentIndicator,
   DeadlineCountdown,
@@ -90,6 +89,7 @@ export const Route = createFileRoute("/_authenticated/tasks/")({
       team: str("team"),
       project: str("project"),
       priority: str("priority"),
+      kind: str("kind"),
       from: str("from"),
       to: str("to"),
       overdue: search["overdue"] === "1" || search["overdue"] === true ? "1" : undefined,
@@ -123,6 +123,9 @@ function TasksPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const drill = Route.useSearch();
+  /** Có tham số drill-down từ Dashboard hay không (quyết định có áp chế độ xem mặc định). */
+  const hasDrill = Object.values(drill).some((value) => value !== undefined);
+  const isOverdueDrill = drill.overdue === "1" || drill.kind === "overdue";
 
   const tasksResult = useQuery(tasksQuery());
   const projectsResult = useQuery(projectsQuery());
@@ -139,8 +142,9 @@ function TasksPage() {
     team: drill.team ? [drill.team] : [],
     project: drill.project ? [drill.project] : [],
     priority: drill.priority ? [drill.priority] : [],
-    deadlineFrom: drill.overdue ? "" : (drill.from ?? ""),
-    deadlineTo: drill.overdue ? (drill.to ?? hanoiToday()) : (drill.to ?? ""),
+    kind: (isOverdueDrill ? "overdue" : (drill.kind ?? "all")) as TaskFilterState["kind"],
+    deadlineFrom: isOverdueDrill ? "" : (drill.from ?? ""),
+    deadlineTo: isOverdueDrill ? "" : (drill.to ?? ""),
     mine: drill.mine === "1",
     needsMe: drill.needsMe === "1",
   }));
@@ -204,9 +208,11 @@ function TasksPage() {
   React.useEffect(() => {
     if (appliedDefaultRef.current || viewsResult.isLoading) return;
     appliedDefaultRef.current = true;
+    // Drill-down từ Dashboard phải giữ nguyên bộ lọc được truyền sang.
+    if (hasDrill) return;
     const preferred = savedViews.find((item) => item.isDefault);
     if (preferred) applyView(preferred.id);
-  }, [savedViews, viewsResult.isLoading, applyView]);
+  }, [savedViews, viewsResult.isLoading, applyView, hasDrill]);
 
   const queryClient = useQueryClient();
   const refresh = () => {

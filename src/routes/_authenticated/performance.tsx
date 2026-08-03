@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KpiRow } from "@/components/dashboard/dashboard-shell";
+import { KpiRow, PanelBoundary } from "@/components/dashboard/dashboard-shell";
 import {
   AttentionPanel,
   MembersPanel,
@@ -47,6 +47,20 @@ const ALL_TEAMS = "__all__";
 const PRESETS: DashPreset[] = ["today", "week", "month", "custom"];
 
 export const Route = createFileRoute("/_authenticated/performance")({
+  /** DASH-QA-01 — bộ lọc nằm trên URL để reload hoặc chia sẻ không mất trạng thái. */
+  validateSearch: (search: Record<string, unknown>) => {
+    const str = (key: string) =>
+      typeof search[key] === "string" && search[key] !== "" ? (search[key] as string) : undefined;
+    const preset = str("preset");
+    return {
+      preset: (["today", "week", "month", "custom"] as string[]).includes(preset ?? "")
+        ? (preset as DashPreset)
+        : undefined,
+      from: str("from"),
+      to: str("to"),
+      team: str("team"),
+    };
+  },
   head: () => ({
     meta: [
       { title: TITLE },
@@ -62,19 +76,32 @@ export const Route = createFileRoute("/_authenticated/performance")({
 
 function DashboardPage() {
   const fetchDashboard = useServerFn(getDashboard);
-  const [preset, setPreset] = React.useState<DashPreset>("week");
-  const initial = presetRange("week");
-  const [from, setFrom] = React.useState(initial.from);
-  const [to, setTo] = React.useState(initial.to);
-  const [teamId, setTeamId] = React.useState<string>(ALL_TEAMS);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
+
+  const preset: DashPreset = search.preset ?? "week";
+  const fallback = React.useMemo(
+    () => presetRange(preset === "custom" ? "week" : preset),
+    [preset],
+  );
+  const from = search.from ?? fallback.from;
+  const to = search.to ?? fallback.to;
+  const teamId = search.team ?? ALL_TEAMS;
+
+  const setSearch = React.useCallback(
+    (next: { preset?: DashPreset; from?: string; to?: string; team?: string | undefined }) => {
+      void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...next }), replace: true });
+    },
+    [navigate],
+  );
 
   function applyPreset(next: DashPreset) {
-    setPreset(next);
-    if (next !== "custom") {
-      const range = presetRange(next);
-      setFrom(range.from);
-      setTo(range.to);
+    if (next === "custom") {
+      setSearch({ preset: next, from, to });
+      return;
     }
+    const range = presetRange(next);
+    setSearch({ preset: next, from: range.from, to: range.to });
   }
 
   const query = useQuery({
@@ -136,7 +163,7 @@ function DashboardPage() {
                   max={to}
                   aria-label="Từ ngày"
                   className="w-40"
-                  onChange={(event) => setFrom(event.target.value || hanoiToday())}
+                  onChange={(event) => setSearch({ from: event.target.value || hanoiToday() })}
                 />
                 <span className="text-text-muted">→</span>
                 <Input
@@ -145,13 +172,16 @@ function DashboardPage() {
                   min={from}
                   aria-label="Đến ngày"
                   className="w-40"
-                  onChange={(event) => setTo(event.target.value || hanoiToday())}
+                  onChange={(event) => setSearch({ to: event.target.value || hanoiToday() })}
                 />
               </div>
             ) : null}
           </div>
           {data && data.scope === "org" && data.teams.length > 0 ? (
-            <Select value={teamId} onValueChange={setTeamId}>
+            <Select
+              value={teamId}
+              onValueChange={(value) => setSearch({ team: value === ALL_TEAMS ? undefined : value })}
+            >
               <SelectTrigger className="w-full lg:w-56" aria-label="Lọc theo Team">
                 <SelectValue placeholder="Tất cả Team" />
               </SelectTrigger>
@@ -180,35 +210,63 @@ function DashboardPage() {
 
       {data ? (
         <>
-          <TrendPanel
-            points={data.trend}
-            granularity={data.granularity}
-            title={
-              data.scope === "member" ? "Xu hướng công việc của bạn" : "Xu hướng hoàn thành và đúng hạn"
-            }
-          />
+          <PanelBoundary>
+            <TrendPanel
+              points={data.trend}
+              granularity={data.granularity}
+              title={
+                data.scope === "member"
+                  ? "Xu hướng công việc của bạn"
+                  : "Xu hướng hoàn thành và đúng hạn"
+              }
+            />
+          </PanelBoundary>
 
           {data.scope === "org" ? (
             <>
               <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.team_rows ? <TeamComparePanel rows={data.team_rows} from={from} to={to} /> : null}
-                {data.workload ? <WorkloadPanel slices={data.workload} /> : null}
+                {data.team_rows ? (
+                  <PanelBoundary>
+                    <TeamComparePanel rows={data.team_rows} from={from} to={to} />
+                  </PanelBoundary>
+                ) : null}
+                {data.workload ? (
+                  <PanelBoundary>
+                    <WorkloadPanel slices={data.workload} />
+                  </PanelBoundary>
+                ) : null}
               </div>
               <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.projects ? <ProjectsPanel projects={data.projects} /> : null}
-                {data.quality ? <QualityPanel quality={data.quality} /> : null}
+                {data.projects ? (
+                  <PanelBoundary>
+                    <ProjectsPanel projects={data.projects} />
+                  </PanelBoundary>
+                ) : null}
+                {data.quality ? (
+                  <PanelBoundary>
+                    <QualityPanel quality={data.quality} />
+                  </PanelBoundary>
+                ) : null}
               </div>
               {data.reports ? (
-                <ReportsPanel
-                  reports={data.reports}
-                  from={from}
-                  to={to}
-                  teamId={teamId === ALL_TEAMS ? null : teamId}
-                />
+                <PanelBoundary>
+                  <ReportsPanel
+                    reports={data.reports}
+                    from={from}
+                    to={to}
+                    teamId={teamId === ALL_TEAMS ? null : teamId}
+                  />
+                </PanelBoundary>
               ) : null}
               <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.ops_alerts ? <OpsAlertsPanel alerts={data.ops_alerts} /> : null}
-                <AttentionPanel items={data.attention} title="Công việc cần chú ý" />
+                {data.ops_alerts ? (
+                  <PanelBoundary>
+                    <OpsAlertsPanel alerts={data.ops_alerts} />
+                  </PanelBoundary>
+                ) : null}
+                <PanelBoundary>
+                  <AttentionPanel items={data.attention} title="Công việc cần chú ý" />
+                </PanelBoundary>
               </div>
             </>
           ) : null}
@@ -216,34 +274,62 @@ function DashboardPage() {
           {data.scope === "team" ? (
             <>
               <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.member_rows ? <MembersPanel rows={data.member_rows} /> : null}
-                {data.projects ? <TeamProjectsPanel projects={data.projects} /> : null}
-              </div>
-              <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.quality ? <QualityPanel quality={data.quality} /> : null}
-                {data.reports ? (
-                  <ReportsPanel
-                    reports={data.reports}
-                    from={from}
-                    to={to}
-                    teamId={data.selected_team_id}
-                  />
+                {data.member_rows ? (
+                  <PanelBoundary>
+                    <MembersPanel rows={data.member_rows} />
+                  </PanelBoundary>
+                ) : null}
+                {data.projects ? (
+                  <PanelBoundary>
+                    <TeamProjectsPanel projects={data.projects} />
+                  </PanelBoundary>
                 ) : null}
               </div>
-              <AttentionPanel items={data.attention} title="Công việc của Team cần chú ý" />
+              <div className="grid min-w-0 gap-3 xl:grid-cols-2">
+                {data.quality ? (
+                  <PanelBoundary>
+                    <QualityPanel quality={data.quality} />
+                  </PanelBoundary>
+                ) : null}
+                {data.reports ? (
+                  <PanelBoundary>
+                    <ReportsPanel
+                      reports={data.reports}
+                      from={from}
+                      to={to}
+                      teamId={data.selected_team_id}
+                    />
+                  </PanelBoundary>
+                ) : null}
+              </div>
+              <PanelBoundary>
+                <AttentionPanel items={data.attention} title="Công việc của Team cần chú ý" />
+              </PanelBoundary>
             </>
           ) : null}
 
           {data.scope === "member" ? (
             <>
               <div className="grid min-w-0 gap-3 xl:grid-cols-2">
-                {data.personal ? <PersonalProgressPanel personal={data.personal} /> : null}
                 {data.personal ? (
-                  <TeamAveragePanel average={data.team_average} personal={data.personal} />
+                  <PanelBoundary>
+                    <PersonalProgressPanel personal={data.personal} />
+                  </PanelBoundary>
+                ) : null}
+                {data.personal ? (
+                  <PanelBoundary>
+                    <TeamAveragePanel average={data.team_average} personal={data.personal} />
+                  </PanelBoundary>
                 ) : null}
               </div>
-              {data.quality ? <QualityPanel quality={data.quality} /> : null}
-              <AttentionPanel items={data.attention} title="Việc của bạn cần chú ý" />
+              {data.quality ? (
+                <PanelBoundary>
+                  <QualityPanel quality={data.quality} />
+                </PanelBoundary>
+              ) : null}
+              <PanelBoundary>
+                <AttentionPanel items={data.attention} title="Việc của bạn cần chú ý" />
+              </PanelBoundary>
             </>
           ) : null}
 

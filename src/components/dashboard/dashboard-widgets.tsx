@@ -409,13 +409,18 @@ export function ReportsPanel({
       }}
       empty={reports.required === 0 ? "Không có nghĩa vụ báo cáo nào trong kỳ." : null}
     >
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         <StatPill label="Đã nộp" value={String(reports.submitted)} />
         <StatPill label="Đúng hạn" value={String(reports.on_time)} tone="success" />
         <StatPill
-          label="Muộn hoặc chưa nộp"
-          value={String(reports.late_or_missing)}
-          tone={reports.late_or_missing > 0 ? "warning" : "default"}
+          label="Nộp muộn"
+          value={String(Math.max(0, reports.late_or_missing - reports.missing))}
+          tone={reports.late_or_missing - reports.missing > 0 ? "warning" : "default"}
+        />
+        <StatPill
+          label="Chưa nộp"
+          value={String(reports.missing)}
+          tone={reports.missing > 0 ? "danger" : "default"}
         />
         <StatPill label="Chờ duyệt" value={String(reports.pending_review)} />
       </div>

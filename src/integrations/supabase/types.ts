@@ -5451,7 +5451,7 @@ export type Database = {
         }[]
       }
       dashboard_task_review_stats: {
-        Args: { p_from: string; p_to: string; p_user?: string }
+        Args: { p_from: string; p_team?: string; p_to: string; p_user?: string }
         Returns: {
           changes_requested_count: number
           evaluated_tasks: number
