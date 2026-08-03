@@ -5633,10 +5633,15 @@ export type Database = {
           _user?: string
         }
         Returns: {
+          creativity_count: number
+          dedication_count: number
           display_name: string
+          effectiveness_count: number
           initiative_count: number
+          progress_count: number
           quality_count: number
           receiver_id: string
+          self_count: number
           speed_count: number
           support_count: number
           team_id: string
