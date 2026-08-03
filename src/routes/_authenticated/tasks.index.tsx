@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
@@ -60,7 +61,6 @@ import {
   type TaskRow,
 } from "@/lib/task-data";
 import {
-  ALL,
   COLUMN_LABEL,
   DEFAULT_COLUMNS,
   EMPTY_FILTERS,
@@ -147,23 +147,26 @@ function TasksPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-  const applyView = React.useCallback((viewId: string | null) => {
-    setActiveViewId(viewId);
-    setLimit(PAGE_SIZE);
-    if (!viewId) {
-      setFilters(EMPTY_FILTERS);
-      setSearchInput("");
-      setSort("created_desc");
-      setColumns(DEFAULT_COLUMNS);
-      return;
-    }
-    const target = savedViews.find((item) => item.id === viewId);
-    if (!target) return;
-    setFilters(target.filters);
-    setSearchInput(target.filters.search);
-    setSort(target.sort);
-    setColumns(target.columns);
-  }, [savedViews]);
+  const applyView = React.useCallback(
+    (viewId: string | null) => {
+      setActiveViewId(viewId);
+      setLimit(PAGE_SIZE);
+      if (!viewId) {
+        setFilters(EMPTY_FILTERS);
+        setSearchInput("");
+        setSort("created_desc");
+        setColumns(DEFAULT_COLUMNS);
+        return;
+      }
+      const target = savedViews.find((item) => item.id === viewId);
+      if (!target) return;
+      setFilters(target.filters);
+      setSearchInput(target.filters.search);
+      setSort(target.sort);
+      setColumns(target.columns);
+    },
+    [savedViews],
+  );
 
   /** Áp dụng chế độ xem mặc định cá nhân khi mở trang. */
   const appliedDefaultRef = React.useRef(false);
@@ -441,62 +444,40 @@ function TasksPage() {
           onChange={(event) => setSearchInput(event.target.value)}
           aria-label="Tìm theo tên công việc"
         />
-        <Select value={filters.status} onValueChange={(value) => patchFilters({ status: value })}>
-          <SelectTrigger aria-label="Lọc theo trạng thái">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {TASK_STATUS_ORDER.map((status) => (
-              <SelectItem key={status} value={status}>
-                {TASK_STATUS_LABEL[status]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
+        <MultiSelect
+          placeholder="Trạng thái"
+          ariaLabel="Lọc theo trạng thái"
+          value={filters.status}
+          onChange={(value) => patchFilters({ status: value })}
+          options={TASK_STATUS_ORDER.map((status) => ({
+            value: status,
+            label: TASK_STATUS_LABEL[status],
+          }))}
+        />
+        <MultiSelect
+          placeholder="Người phụ trách"
+          ariaLabel="Lọc theo người phụ trách"
           value={filters.assignee}
-          onValueChange={(value) => patchFilters({ assignee: value })}
-        >
-          <SelectTrigger aria-label="Lọc theo người phụ trách">
-            <SelectValue placeholder="Người phụ trách" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả người phụ trách</SelectItem>
-            {people.map((person) => (
-              <SelectItem key={person.id} value={person.id}>
-                {person.display_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filters.project} onValueChange={(value) => patchFilters({ project: value })}>
-          <SelectTrigger aria-label="Lọc theo dự án">
-            <SelectValue placeholder="Dự án" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả dự án</SelectItem>
-            <SelectItem value={NO_PROJECT}>Công việc độc lập</SelectItem>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filters.team} onValueChange={(value) => patchFilters({ team: value })}>
-          <SelectTrigger aria-label="Lọc theo Team">
-            <SelectValue placeholder="Team" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Team</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(value) => patchFilters({ assignee: value })}
+          options={people.map((person) => ({ value: person.id, label: person.display_name }))}
+        />
+        <MultiSelect
+          placeholder="Dự án"
+          ariaLabel="Lọc theo dự án"
+          value={filters.project}
+          onChange={(value) => patchFilters({ project: value })}
+          options={[
+            { value: NO_PROJECT, label: "Công việc độc lập" },
+            ...projects.map((project) => ({ value: project.id, label: project.name })),
+          ]}
+        />
+        <MultiSelect
+          placeholder="Team"
+          ariaLabel="Lọc theo Team"
+          value={filters.team}
+          onChange={(value) => patchFilters({ team: value })}
+          options={teams.map((team) => ({ value: team.id, label: team.name }))}
+        />
         <Select value={sort} onValueChange={(value) => setSort(value as TaskSortKey)}>
           <SelectTrigger aria-label="Sắp xếp">
             <SelectValue placeholder="Sắp xếp" />
@@ -601,7 +582,11 @@ function TasksPage() {
 
       {visibleRows.length < rows.length ? (
         <div className="flex justify-center">
-          <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLimit((value) => value + PAGE_SIZE)}
+          >
             Tải thêm ({rows.length - visibleRows.length} công việc)
           </Button>
         </div>

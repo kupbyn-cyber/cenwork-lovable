@@ -49,12 +49,7 @@ export const TASK_SORT_ORDER: TaskSortKey[] = [
 ];
 
 export type TaskKindFilter =
-  | "all"
-  | "project"
-  | "standalone"
-  | "with_deadline"
-  | "no_deadline"
-  | "overdue";
+  "all" | "project" | "standalone" | "with_deadline" | "no_deadline" | "overdue";
 
 export const TASK_KIND_LABEL: Record<TaskKindFilter, string> = {
   all: "Tất cả loại công việc",
@@ -67,11 +62,12 @@ export const TASK_KIND_LABEL: Record<TaskKindFilter, string> = {
 
 export interface TaskFilterState {
   search: string;
-  status: string;
-  assignee: string;
-  project: string;
-  team: string;
-  priority: string;
+  /** Đa chọn: rỗng nghĩa là không lọc theo trường này. OR trong cùng trường, AND giữa các trường. */
+  status: string[];
+  assignee: string[];
+  project: string[];
+  team: string[];
+  priority: string[];
   kind: TaskKindFilter;
   deadlineFrom: string;
   deadlineTo: string;
@@ -85,11 +81,11 @@ export interface TaskFilterState {
 
 export const EMPTY_FILTERS: TaskFilterState = {
   search: "",
-  status: ALL,
-  assignee: ALL,
-  project: ALL,
-  team: ALL,
-  priority: ALL,
+  status: [],
+  assignee: [],
+  project: [],
+  team: [],
+  priority: [],
   kind: "all",
   deadlineFrom: "",
   deadlineTo: "",
@@ -125,11 +121,11 @@ export const DEFAULT_COLUMNS: OptionalColumnId[] = [...OPTIONAL_COLUMNS];
 export function hasActiveFilters(filters: TaskFilterState) {
   return (
     filters.search.trim() !== "" ||
-    filters.status !== ALL ||
-    filters.assignee !== ALL ||
-    filters.project !== ALL ||
-    filters.team !== ALL ||
-    filters.priority !== ALL ||
+    filters.status.length > 0 ||
+    filters.assignee.length > 0 ||
+    filters.project.length > 0 ||
+    filters.team.length > 0 ||
+    filters.priority.length > 0 ||
     filters.kind !== "all" ||
     filters.deadlineFrom !== "" ||
     filters.deadlineTo !== "" ||
@@ -144,7 +140,7 @@ export function hasActiveFilters(filters: TaskFilterState) {
 
 export function countAdvancedFilters(filters: TaskFilterState) {
   let n = 0;
-  if (filters.priority !== ALL) n += 1;
+  if (filters.priority.length > 0) n += 1;
   if (filters.kind !== "all") n += 1;
   if (filters.deadlineFrom || filters.deadlineTo) n += 1;
   if (filters.createdFrom || filters.createdTo) n += 1;
@@ -185,18 +181,23 @@ export function filterTasks(
   return tasks.filter((task) => {
     if (isTaskArchived(task) !== (view === "archived")) return false;
     if (keyword && !task.name.toLowerCase().includes(keyword)) return false;
-    if (filters.status !== ALL && task.status !== filters.status) return false;
-    if (filters.priority !== ALL && task.priority !== filters.priority) return false;
-    if (filters.assignee !== ALL && task.assignee_id !== filters.assignee) return false;
-    if (filters.creator !== ALL && task.created_by !== filters.creator) return false;
-    if (filters.project === NO_PROJECT && task.project_id !== null) return false;
+    // OR trong cùng một trường, AND giữa các trường.
+    if (filters.status.length > 0 && !filters.status.includes(task.status)) return false;
+    if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) return false;
     if (
-      filters.project !== ALL &&
-      filters.project !== NO_PROJECT &&
-      task.project_id !== filters.project
+      filters.assignee.length > 0 &&
+      !(task.assignee_id && filters.assignee.includes(task.assignee_id))
     )
       return false;
-    if (filters.team !== ALL && task.team_id !== filters.team) return false;
+    if (filters.creator !== ALL && task.created_by !== filters.creator) return false;
+    if (filters.project.length > 0) {
+      const matched = task.project_id
+        ? filters.project.includes(task.project_id)
+        : filters.project.includes(NO_PROJECT);
+      if (!matched) return false;
+    }
+    if (filters.team.length > 0 && !(task.team_id && filters.team.includes(task.team_id)))
+      return false;
 
     switch (filters.kind) {
       case "project":
@@ -238,7 +239,8 @@ function time(value: string | null) {
 
 export function sortTasks(tasks: TaskRow[], sort: TaskSortKey): TaskRow[] {
   const list = [...tasks];
-  const createdDesc = (a: TaskRow, b: TaskRow) => (time(b.created_at) ?? 0) - (time(a.created_at) ?? 0);
+  const createdDesc = (a: TaskRow, b: TaskRow) =>
+    (time(b.created_at) ?? 0) - (time(a.created_at) ?? 0);
   switch (sort) {
     case "created_asc":
       return list.sort((a, b) => (time(a.created_at) ?? 0) - (time(b.created_at) ?? 0));
@@ -290,7 +292,27 @@ export interface SavedViewConfig {
 
 function parseFilters(value: unknown): TaskFilterState {
   const raw = (value ?? {}) as Partial<TaskFilterState>;
-  return { ...EMPTY_FILTERS, ...raw };
+  // Tương thích ngược: bộ lọc cũ lưu giá trị đơn (hoặc ALL/null) → chuyển thành mảng.
+  const record = (value ?? {}) as Record<string, unknown>;
+  return {
+    ...EMPTY_FILTERS,
+    ...raw,
+    status: toValueList(record["status"]),
+    assignee: toValueList(record["assignee"]),
+    project: toValueList(record["project"]),
+    team: toValueList(record["team"]),
+    priority: toValueList(record["priority"]),
+  };
+}
+
+function toValueList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item): item is string => typeof item === "string" && item !== "" && item !== ALL,
+    );
+  }
+  if (typeof value === "string" && value !== "" && value !== ALL) return [value];
+  return [];
 }
 
 function parseColumns(value: unknown): OptionalColumnId[] {

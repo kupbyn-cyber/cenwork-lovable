@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Select,
   SelectContent,
@@ -53,19 +54,16 @@ function Body({ filters, onChange, people }: TaskAdvancedFiltersProps) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label>Mức ưu tiên</Label>
-          <Select value={filters.priority} onValueChange={(value) => onChange({ priority: value })}>
-            <SelectTrigger aria-label="Lọc theo mức ưu tiên">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Tất cả mức ưu tiên</SelectItem>
-              {TASK_PRIORITY_ORDER.map((priority) => (
-                <SelectItem key={priority} value={priority}>
-                  {TASK_PRIORITY_LABEL[priority]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            placeholder="Mức ưu tiên"
+            ariaLabel="Lọc theo mức ưu tiên"
+            value={filters.priority}
+            onChange={(value) => onChange({ priority: value })}
+            options={TASK_PRIORITY_ORDER.map((priority) => ({
+              value: priority,
+              label: TASK_PRIORITY_LABEL[priority],
+            }))}
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Loại công việc</Label>
