@@ -73,9 +73,13 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
     mutationFn: (id: string) => withdrawTaskSubmission(id),
     onSuccess: () => {
       refresh();
-      cenToast.success("Đã thu hồi yêu cầu.");
+      cenToast.success("Đã thu hồi yêu cầu tạo công việc.");
     },
-    onError: (error: Error) => cenToast.error(error.message),
+    onError: (error: Error) => {
+      // Có thể Leader đã duyệt/xử lý song song → làm mới dữ liệu, không báo thành công giả.
+      refresh();
+      cenToast.error(error.message);
+    },
   });
 
   if (rows.length === 0) return null;
