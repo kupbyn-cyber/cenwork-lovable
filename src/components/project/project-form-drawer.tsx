@@ -57,7 +57,6 @@ interface FormState {
   startDate: string;
   deadline: string;
   teamIds: string[];
-  memberIds: string[];
   facilityIds: string[];
   responsibleTeamId: string;
 }
@@ -71,7 +70,6 @@ function initialState(project: ProjectRow | null): FormState {
     startDate: project?.start_date ?? "",
     deadline: project?.deadline ?? "",
     teamIds: project?.teamIds ?? [],
-    memberIds: project?.memberIds ?? [],
     facilityIds: project?.facilityIds ?? [],
     responsibleTeamId: project?.responsible_team_id ?? NO_TEAM,
   };
@@ -133,7 +131,6 @@ export function ProjectFormDrawer({
             startDate: state.startDate || null,
             deadline: state.deadline || null,
             teamIds: state.teamIds,
-            memberIds: state.memberIds,
             facilityIds: state.facilityIds,
             responsibleTeamId: state.responsibleTeamId === NO_TEAM ? null : state.responsibleTeamId,
             submit: true,
@@ -154,7 +151,6 @@ export function ProjectFormDrawer({
 
       if (fullEdit) {
         await syncProjectLinks("project_teams", project.id, project.teamIds, state.teamIds);
-        await syncProjectLinks("project_members", project.id, project.memberIds, state.memberIds);
         await syncProjectLinks(
           "project_facilities",
           project.id,
@@ -312,9 +308,9 @@ export function ProjectFormDrawer({
           <>
             <FormField
               id="project-owner"
-              label="Project Owner"
+              label="Chủ dự án"
               required
-              helperText="Chỉ chọn nhân sự đang hoạt động"
+              helperText="Chủ dự án được tham gia Dự án; quyền tạo Task vẫn theo vai trò hệ thống."
             >
               {(control) => (
                 <Select
@@ -322,7 +318,7 @@ export function ProjectFormDrawer({
                   onValueChange={(value) => setForm((prev) => ({ ...prev, ownerId: value }))}
                 >
                   <SelectTrigger id={control.id}>
-                    <SelectValue placeholder="Chọn Project Owner" />
+                    <SelectValue placeholder="Chọn Chủ dự án" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NO_OWNER}>Chưa chỉ định</SelectItem>
@@ -365,6 +361,10 @@ export function ProjectFormDrawer({
 
             <fieldset className="flex flex-col gap-2">
               <legend className="text-label font-medium text-text-secondary">Team tham gia</legend>
+              <p className="text-body-sm text-text-muted">
+                Các Team bổ sung ngoài Team phụ trách. Thành viên của Team phụ trách và các Team
+                tham gia sẽ tự động có quyền trong Dự án.
+              </p>
               <div className="flex flex-col gap-2 rounded-card border border-border-default p-3">
                 {teams.length === 0 ? (
                   <p className="text-body-sm text-text-muted">Chưa có Team nào.</p>
@@ -381,28 +381,6 @@ export function ProjectFormDrawer({
                     </label>
                   ))
                 )}
-              </div>
-            </fieldset>
-
-            <fieldset className="flex flex-col gap-2">
-              <legend className="text-label font-medium text-text-secondary">
-                Thành viên tham gia
-              </legend>
-              <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-card border border-border-default p-3">
-                {people.map((person) => (
-                  <label key={person.id} className="flex items-center gap-2 text-body-sm">
-                    <Checkbox
-                      checked={form.memberIds.includes(person.id)}
-                      onCheckedChange={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          memberIds: toggle(prev.memberIds, person.id),
-                        }))
-                      }
-                    />
-                    <span className="min-w-0 break-words">{person.display_name}</span>
-                  </label>
-                ))}
               </div>
             </fieldset>
 
