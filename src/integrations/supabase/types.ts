@@ -2758,6 +2758,9 @@ export type Database = {
           email: string
           id: string
           job_title: string | null
+          lock_reason: string | null
+          locked_at: string | null
+          locked_by: string | null
           must_change_password: boolean
           password_changed_at: string | null
           phone_number: string | null
@@ -2768,6 +2771,8 @@ export type Database = {
           telegram_test_status: string | null
           telegram_tested_at: string | null
           telegram_user_id: string | null
+          unlocked_at: string | null
+          unlocked_by: string | null
           updated_at: string
         }
         Insert: {
@@ -2778,6 +2783,9 @@ export type Database = {
           email: string
           id: string
           job_title?: string | null
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           must_change_password?: boolean
           password_changed_at?: string | null
           phone_number?: string | null
@@ -2788,6 +2796,8 @@ export type Database = {
           telegram_test_status?: string | null
           telegram_tested_at?: string | null
           telegram_user_id?: string | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -2798,6 +2808,9 @@ export type Database = {
           email?: string
           id?: string
           job_title?: string | null
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           must_change_password?: boolean
           password_changed_at?: string | null
           phone_number?: string | null
@@ -2808,14 +2821,30 @@ export type Database = {
           telegram_test_status?: string | null
           telegram_tested_at?: string | null
           telegram_user_id?: string | null
+          unlocked_at?: string | null
+          unlocked_by?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_primary_team_id_fkey"
             columns: ["primary_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_unlocked_by_fkey"
+            columns: ["unlocked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5350,6 +5379,26 @@ export type Database = {
       is_system_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_system_owner: { Args: { _user: string }; Returns: boolean }
       leader_team_id: { Args: { _user_id: string }; Returns: string }
+      member_archived_list: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+          job_title: string
+          lock_reason: string
+          locked_at: string
+          locked_by: string
+          locked_by_name: string
+          phone_number: string
+          role: string
+          team_id: string
+          team_name: string
+        }[]
+      }
+      member_lock: { Args: { _reason: string; _user: string }; Returns: Json }
+      member_lock_blockers: { Args: { _user: string }; Returns: Json }
+      member_unlock: { Args: { _user: string }; Returns: Json }
       mvp_cycle_status_of: {
         Args: { _cycle: string }
         Returns: Database["public"]["Enums"]["mvp_cycle_status"]

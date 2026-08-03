@@ -41,7 +41,7 @@ import {
   type AnnouncementRow,
   type InboxRow,
 } from "@/lib/announcement-data";
-import { membersQuery } from "@/lib/org-data";
+import { activeMembersQuery } from "@/lib/org-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
 import {
   markAllNotificationsRead,
@@ -97,7 +97,7 @@ function AnnouncementsPage() {
 
   const inbox = useQuery(inboxQuery(user?.id));
   const created = useQuery(myAnnouncementsQuery(user?.id));
-  const members = useQuery(membersQuery());
+  const members = useQuery(activeMembersQuery());
   const notifications = useQuery(notificationsQuery(user?.id, 100));
 
   function refreshNotifications() {

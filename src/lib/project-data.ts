@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
+import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 import {
   canCreateProjectTask,
   isTaskManuallyArchived,
@@ -108,8 +109,8 @@ function mapProject(raw: RawProject): ProjectRow {
     objective: raw["objective"] as string,
     description: (raw["description"] as string | null) ?? null,
     owner_id: (raw["owner_id"] as string | null) ?? null,
-    ownerName: owner?.display_name ?? null,
-    creatorName: creator?.display_name ?? null,
+    ownerName: maskName(owner?.display_name, raw["owner_id"] as string | null) ?? null,
+    creatorName: maskName(creator?.display_name) ?? null,
     creatorTeamId: creator?.primary_team_id ?? null,
     start_date: (raw["start_date"] as string | null) ?? null,
     deadline: (raw["deadline"] as string | null) ?? null,
@@ -133,6 +134,7 @@ function mapProject(raw: RawProject): ProjectRow {
 }
 
 export async function fetchProjects(): Promise<ProjectRow[]> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("projects")
     .select(SELECT)
@@ -143,6 +145,7 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
 }
 
 export async function fetchProject(id: string): Promise<ProjectRow | null> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("projects")
     .select(SELECT)
@@ -164,6 +167,7 @@ export const projectQuery = (id: string) =>
  * Task độc lập không được đếm; Task đã xóa mềm bị RLS loại khỏi kết quả.
  */
 export async function fetchProjectTaskCounts(): Promise<Record<string, number>> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("tasks")
     .select("id,project_id")
@@ -190,6 +194,7 @@ export interface PersonOption {
 }
 
 export async function fetchActivePeople(): Promise<PersonOption[]> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("profiles")
     .select("id,display_name,status")
@@ -397,6 +402,7 @@ export const APPROVAL_STAGE_LABEL: Record<string, string> = {
 };
 
 export async function fetchProjectApprovals(projectId: string): Promise<ProjectApprovalEntry[]> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("project_approvals")
     .select(
@@ -413,7 +419,7 @@ export async function fetchProjectApprovals(projectId: string): Promise<ProjectA
       round: (raw["round"] as number | null) ?? 1,
       stage: raw["stage"] as string,
       action: raw["action"] as string,
-      actorName: actor?.display_name ?? null,
+      actorName: maskName(actor?.display_name) ?? null,
       actor_role: (raw["actor_role"] as string | null) ?? null,
       from_status: (raw["from_status"] as ProjectStatus | null) ?? null,
       to_status: (raw["to_status"] as ProjectStatus | null) ?? null,
@@ -533,6 +539,7 @@ export interface ProjectHistoryEntry {
 }
 
 export async function fetchProjectHistory(projectId: string): Promise<ProjectHistoryEntry[]> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("audit_logs")
     .select("id,action,actor_email,created_at,before_data,after_data")
@@ -613,6 +620,7 @@ export function groupTasksByProject(tasks: TaskRow[]): Record<string, TaskRow[]>
  * Dùng cho tab Chờ duyệt / Bị từ chối, tránh N+1 theo từng dự án.
  */
 export async function fetchAllProjectApprovals(): Promise<Record<string, ProjectApprovalEntry[]>> {
+  await primeLockedIdentity();
   const { data, error } = await supabase
     .from("project_approvals")
     .select(
@@ -631,7 +639,7 @@ export async function fetchAllProjectApprovals(): Promise<Record<string, Project
       round: (raw["round"] as number | null) ?? 1,
       stage: raw["stage"] as string,
       action: raw["action"] as string,
-      actorName: actor?.display_name ?? null,
+      actorName: maskName(actor?.display_name) ?? null,
       actor_role: (raw["actor_role"] as string | null) ?? null,
       from_status: (raw["from_status"] as ProjectStatus | null) ?? null,
       to_status: (raw["to_status"] as ProjectStatus | null) ?? null,

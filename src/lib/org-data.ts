@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 
 /**
  * CEN 1.0 — M1.4 data layer
@@ -53,6 +54,8 @@ export interface MemberRow {
   avatar_path: string | null;
   role: AppRole | null;
   collaboratorTeamIds: string[];
+  locked_at?: string | null;
+  lock_reason?: string | null;
 }
 
 
@@ -82,11 +85,12 @@ export async function fetchFacilities(): Promise<FacilityRow[]> {
 }
 
 export async function fetchMembers(): Promise<MemberRow[]> {
+  await primeLockedIdentity();
   const profiles = unwrap(
     await supabase
       .from("profiles")
       .select(
-        "id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled,telegram_test_status,telegram_tested_at,telegram_test_error,phone_number,birthday,avatar_path",
+        "id,email,display_name,job_title,status,primary_team_id,telegram_user_id,telegram_enabled,telegram_test_status,telegram_tested_at,telegram_test_error,phone_number,birthday,avatar_path,locked_at,lock_reason",
       )
       .order("display_name"),
   ) as Omit<MemberRow, "role" | "collaboratorTeamIds">[];
@@ -107,6 +111,7 @@ export async function fetchMembers(): Promise<MemberRow[]> {
 
   return profiles.map((profile) => ({
     ...profile,
+    display_name: maskName(profile.display_name, profile.id) as string,
     role: roleByUser.get(profile.id) ?? null,
     collaboratorTeamIds: teamsByUser.get(profile.id) ?? [],
   }));
@@ -114,6 +119,13 @@ export async function fetchMembers(): Promise<MemberRow[]> {
 
 export const teamsQuery = () => queryOptions({ queryKey: ["teams"], queryFn: fetchTeams });
 export const membersQuery = () => queryOptions({ queryKey: ["members"], queryFn: fetchMembers });
+
+/** Chỉ tài khoản đang hoạt động — dùng cho mọi ô chọn người phụ trách / Leader / người nhận. */
+export const activeMembersQuery = () =>
+  queryOptions({
+    queryKey: ["members", "active"],
+    queryFn: async () => (await fetchMembers()).filter((member) => member.status === "active"),
+  });
 export const facilitiesQuery = () =>
   queryOptions({ queryKey: ["facilities"], queryFn: fetchFacilities });
 
