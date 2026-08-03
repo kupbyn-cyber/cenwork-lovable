@@ -359,21 +359,21 @@ function DutyPage() {
         </div>
       </div>
 
-      {catalog.data ? (
-        <DutyFormDrawer
+      <DutyFormDrawer
           open={formOpen}
           onOpenChange={(open) => {
             setFormOpen(open);
             if (!open) setEditing(null);
           }}
           assignment={editing}
-          catalog={catalog.data}
+          catalog={catalog.data ?? { areas: [], jobTypes: [], teams: [], providers: [] }}
+          catalogLoading={catalog.isLoading}
+          catalogError={catalog.error ? (catalog.error as Error).message : null}
           people={people}
           submitting={saveMutation.isPending}
           serverError={formError}
           onSubmit={(input) => saveMutation.mutate(input)}
-        />
-      ) : null}
+      />
 
       <ConfirmDialog
         open={Boolean(deleting)}
