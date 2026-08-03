@@ -5619,6 +5619,16 @@ export type Database = {
         Returns: Database["public"]["Enums"]["project_status"]
       }
       recognition_actor_active: { Args: { _user: string }; Returns: boolean }
+      recognition_directory: {
+        Args: never
+        Returns: {
+          avatar_path: string
+          display_name: string
+          id: string
+          job_title: string
+          primary_team_id: string
+        }[]
+      }
       recognition_quota_left: { Args: never; Returns: number }
       recognition_react: {
         Args: { _emoji: string; _recognition: string }
