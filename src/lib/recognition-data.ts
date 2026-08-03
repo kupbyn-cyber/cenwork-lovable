@@ -196,22 +196,11 @@ export const recognitionQuotaQuery = (userId: string | null | undefined) =>
  * Danh sách người có thể ghi nhận (kiểm tra lại bằng hàm database).
  * Bao gồm chính người dùng hiện tại — tự ghi nhận được phép.
  */
-export async function fetchRecognizableMembers(): Promise<RecognitionPerson[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id,display_name,avatar_path")
-    .eq("status", "active")
-    .is("locked_at", null)
-    .order("display_name");
+export async function fetchRecognizableMembers(): Promise<RecognitionDirectoryPerson[]> {
+  // Danh bạ do database trả về: mọi thành viên đang hoạt động, không kèm dữ liệu nhạy cảm.
+  const { data, error } = await supabase.rpc("recognition_directory");
   fail(error);
-  const people = (data ?? []) as RecognitionPerson[];
-  const checks = await Promise.all(
-    people.map(async (person) => {
-      const { data: allowed } = await supabase.rpc("can_recognize", { _target: person.id });
-      return allowed === true ? person : null;
-    }),
-  );
-  return checks.filter((person): person is RecognitionPerson => person !== null);
+  return (data ?? []) as RecognitionDirectoryPerson[];
 }
 
 export const recognizableMembersQuery = (userId: string | null | undefined) =>
