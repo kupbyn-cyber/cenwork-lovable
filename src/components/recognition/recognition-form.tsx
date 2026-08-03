@@ -30,6 +30,7 @@ import {
  * Danh sách người nhận và hạn mức đều lấy từ database; UI chỉ phản ánh kết quả đó.
  */
 export interface RecognitionFormModalProps {
+
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Người nhận gợi ý sẵn (ví dụ mở từ hồ sơ thành viên). */
