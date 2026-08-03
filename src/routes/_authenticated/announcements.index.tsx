@@ -60,6 +60,8 @@ import {
 import { AnnouncementDetailModal } from "@/components/announcement/announcement-detail-modal";
 
 const TITLE = "Thông báo nội bộ — CEN WORK";
+const TAB_PANEL_CLASS =
+  "mt-4 flex min-h-[260px] min-w-0 flex-col sm:min-h-[320px] lg:min-h-[420px]";
 const DESCRIPTION =
   "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
 
