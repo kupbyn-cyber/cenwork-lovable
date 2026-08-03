@@ -396,11 +396,8 @@ export async function withdrawTaskSubmission(taskId: string) {
 }
 
 export async function decideTaskApproval(taskId: string, approve: boolean, note?: string | null) {
-  const { error } = await supabase.rpc("task_approval_decide", {
-    _task: taskId,
-    _approve: approve,
-    _note: note ?? undefined,
-  });
+  const args = { _task: taskId, _approve: approve, ...(note ? { _note: note } : {}) };
+  const { error } = await supabase.rpc("task_approval_decide", args);
   if (error) throw new Error(error.message);
 }
 
