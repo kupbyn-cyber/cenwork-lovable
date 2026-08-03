@@ -98,7 +98,7 @@ export function CommentIndicator({
     >
       <MessageSquare className="size-4" />
       {unread > 0 ? (
-        <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-state-danger px-1 text-[10px] leading-4 font-semibold text-white">
+        <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-state-danger px-1 text-[10px] leading-4 font-semibold text-destructive-foreground">
           {formatUnreadBadge(unread)}
         </span>
       ) : null}
