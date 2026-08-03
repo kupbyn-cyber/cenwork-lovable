@@ -39,6 +39,9 @@ import { formatHanoiDateTime } from "@/lib/datetime";
 import { PERMISSIONS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
+const TAB_PANEL_CLASS =
+  "mt-4 flex min-h-[260px] min-w-0 flex-col sm:min-h-[320px] lg:min-h-[420px]";
+
 const TITLE = "Yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Tạo, theo dõi và xử lý các yêu cầu phê duyệt nội bộ trong CEN WORK.";
 
@@ -181,7 +184,11 @@ function ApprovalsPage() {
         />
       );
     if (items.length === 0)
-      return <EmptyState icon={ClipboardCheck} title="Chưa có yêu cầu" description={emptyText} />;
+      return (
+        <div className="flex flex-1 items-center justify-center">
+          <EmptyState icon={ClipboardCheck} title="Chưa có yêu cầu" description={emptyText} />
+        </div>
+      );
     return (
       <div className="flex min-w-0 flex-col gap-3">
         {items.map((item) => (
@@ -238,13 +245,13 @@ function ApprovalsPage() {
               <TabsTrigger value="history">Đã xử lý / Lịch sử</TabsTrigger>
               <TabsTrigger value="sent">Đã gửi</TabsTrigger>
             </TabsList>
-            <TabsContent value="inbox" className="mt-4">
+            <TabsContent value="inbox" className={TAB_PANEL_CLASS}>
               {renderList(inbox, "Yêu cầu cần bạn phê duyệt sẽ xuất hiện tại đây.")}
             </TabsContent>
-            <TabsContent value="history" className="mt-4">
+            <TabsContent value="history" className={TAB_PANEL_CLASS}>
               {renderList(history, "Yêu cầu bạn đã xử lý sẽ xuất hiện tại đây.")}
             </TabsContent>
-            <TabsContent value="sent" className="mt-4">
+            <TabsContent value="sent" className={TAB_PANEL_CLASS}>
               {renderList(sent, "Yêu cầu bạn đã gửi sẽ xuất hiện tại đây.")}
             </TabsContent>
           </Tabs>

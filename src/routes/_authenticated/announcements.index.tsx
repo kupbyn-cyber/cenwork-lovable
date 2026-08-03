@@ -60,6 +60,8 @@ import {
 import { AnnouncementDetailModal } from "@/components/announcement/announcement-detail-modal";
 
 const TITLE = "Thông báo nội bộ — CEN WORK";
+const TAB_PANEL_CLASS =
+  "mt-4 flex min-h-[260px] min-w-0 flex-col sm:min-h-[320px] lg:min-h-[420px]";
 const DESCRIPTION =
   "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
 
@@ -166,7 +168,7 @@ function AnnouncementsPage() {
     const loading =
       (inbox.isLoading && kind !== "system") || (notifications.isLoading && kind !== "internal");
     return (
-      <>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
         {kind !== "system" && inbox.isError ? (
           <ErrorState
             title="Không tải được thông báo nội bộ"
@@ -185,7 +187,9 @@ function AnnouncementsPage() {
         {loading ? (
           <SkeletonCard lines={3} />
         ) : items.length === 0 ? (
-          <EmptyState title="Chưa có thông báo" description={emptyText} />
+          <div className="flex flex-1 items-center justify-center">
+            <EmptyState title="Chưa có thông báo" description={emptyText} />
+          </div>
         ) : (
           <div className="flex min-w-0 flex-col gap-3">
             {items.map((item) =>
@@ -212,7 +216,7 @@ function AnnouncementsPage() {
             )}
           </div>
         )}
-      </>
+      </div>
     );
   }
 
@@ -343,15 +347,15 @@ function AnnouncementsPage() {
               <TabsTrigger value="created">Đã gửi</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="todo" className="mt-4">
+            <TabsContent value="todo" className={TAB_PANEL_CLASS}>
               {renderInbox(todoItems, "Bạn không còn thông báo nào cần xử lý.")}
             </TabsContent>
 
-            <TabsContent value="done" className="mt-4">
+            <TabsContent value="done" className={TAB_PANEL_CLASS}>
               {renderInbox(doneItems, "Thông báo bạn đã xử lý sẽ xuất hiện tại đây.")}
             </TabsContent>
 
-            <TabsContent value="created" className="mt-4">
+            <TabsContent value="created" className={TAB_PANEL_CLASS}>
               <DataTable<AnnouncementRow>
                 data={createdRows}
                 getRowId={(row) => row.id}
