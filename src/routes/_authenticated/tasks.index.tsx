@@ -36,6 +36,7 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { hanoiToday } from "@/lib/performance";
 import {
   CommentIndicator,
   DeadlineCountdown,
@@ -139,7 +140,7 @@ function TasksPage() {
     project: drill.project ? [drill.project] : [],
     priority: drill.priority ? [drill.priority] : [],
     deadlineFrom: drill.overdue ? "" : (drill.from ?? ""),
-    deadlineTo: drill.overdue ? (drill.to ?? new Date().toISOString().slice(0, 10)) : (drill.to ?? ""),
+    deadlineTo: drill.overdue ? (drill.to ?? hanoiToday()) : (drill.to ?? ""),
     mine: drill.mine === "1",
     needsMe: drill.needsMe === "1",
   }));
