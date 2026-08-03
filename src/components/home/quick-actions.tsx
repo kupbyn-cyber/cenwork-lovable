@@ -3,8 +3,10 @@ import { ClipboardList, FolderPlus, ListPlus, Megaphone, Sparkles, Users } from 
 import type { LinkProps } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
+import { Zap } from "lucide-react";
+
+import { DashboardCard } from "@/components/home/today-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { PERMISSIONS, type PermissionKey } from "@/lib/permissions";
 
@@ -70,20 +72,22 @@ export function QuickActions({ className }: { className?: string } = {}) {
   if (access.loading || actions.length === 0) return null;
 
   return (
-    <Card density="compact" className={className}>
-      <CardHeader>
-        <CardTitle>Hành động nhanh</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+    <DashboardCard size="compact" icon={Zap} title="Hành động nhanh" className={className}>
+      <div className="grid grid-cols-2 gap-3 max-[380px]:grid-cols-1">
         {actions.map((action) => (
-          <Button key={action.key} variant="secondary" size="sm" className="w-full justify-start" asChild>
+          <Button
+            key={action.key}
+            variant="secondary"
+            className="h-12 w-full justify-start gap-2 px-3 text-left [&_svg]:size-5"
+            asChild
+          >
             <Link to={action.to!}>
               <action.icon />
-              <span className="truncate">{action.label}</span>
+              <span className="min-w-0 truncate">{action.label}</span>
             </Link>
           </Button>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </DashboardCard>
   );
 }
