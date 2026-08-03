@@ -39,6 +39,9 @@ import { formatHanoiDateTime } from "@/lib/datetime";
 import { PERMISSIONS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
+const TAB_PANEL_CLASS =
+  "mt-4 flex min-h-[260px] min-w-0 flex-col sm:min-h-[320px] lg:min-h-[420px]";
+
 const TITLE = "Yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Tạo, theo dõi và xử lý các yêu cầu phê duyệt nội bộ trong CEN WORK.";
 
