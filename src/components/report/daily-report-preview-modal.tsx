@@ -32,6 +32,17 @@ import {
  * của chính họ, hiển thị bản xem trước để kiểm tra rồi mới gửi.
  * Không đổi trạng thái Task và không tạo Task mới.
  */
+
+/** Không hiển thị lỗi thô của database cho người dùng. */
+function friendlyReportError(error: Error): string {
+  const raw = error.message ?? "";
+  if (/duplicate key|đã gửi báo cáo/i.test(raw)) return "Bạn đã gửi báo cáo cho ngày này.";
+  if (/check constraint|violates|relation|SQLSTATE|permission denied|row-level security/i.test(raw)) {
+    return "Hệ thống đang gặp sự cố khi lưu báo cáo. Vui lòng thử lại sau ít phút.";
+  }
+  return raw || "Vui lòng thử lại.";
+}
+
 export interface DailyReportPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
