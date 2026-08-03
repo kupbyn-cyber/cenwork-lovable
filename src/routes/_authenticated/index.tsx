@@ -19,6 +19,7 @@ import {
 } from "@/components/home/today-widgets";
 import { TodayRangeProvider, useTodayRange } from "@/hooks/use-today-range";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useOpsAlerts } from "@/hooks/use-ops-alerts";
 import { useTodayHub } from "@/hooks/use-today-hub";
 import { useTodayInsights } from "@/hooks/use-today-insights";
 import { membersQuery } from "@/lib/org-data";
@@ -76,6 +77,7 @@ function DashboardBody() {
 
   const hub = useTodayHub();
   const insights = useTodayInsights();
+  const opsAlerts = useOpsAlerts(access.isSystemAdmin);
   const projectsResult = useQuery(projectsQuery());
   const tasksResult = useQuery(tasksQuery());
   const dailyResult = useQuery(dailyReportsQuery());
@@ -207,7 +209,7 @@ function DashboardBody() {
           </>
         ) : (
           <>
-            <SystemAlertsWidget system={insights.data?.system ?? null} />
+            <SystemAlertsWidget alerts={opsAlerts.data?.alerts ?? []} />
             <MarketingHealthWidget marketing={insights.data?.marketing ?? null} />
             <div className="min-w-0 md:col-span-2 xl:col-span-1">
               <ReportStatusWidget

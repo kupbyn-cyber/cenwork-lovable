@@ -16,7 +16,8 @@ import type { RecognitionRow } from "@/lib/recognition-data";
 import { RECOGNITION_CATEGORY_META } from "@/lib/recognition-data";
 import type { MarketingFocus } from "@/lib/today-insights";
 import { formatPercent } from "@/lib/today-insights";
-import type { SystemFocus, TeamFocus } from "@/lib/today-insights";
+import type { TeamFocus } from "@/lib/today-insights";
+import { OPS_ALERT_VISIBLE, type OpsAlert } from "@/lib/ops-alerts";
 import type { TodayMetrics } from "@/lib/today-metrics";
 import { RANGE_PHRASE, type TodayRange } from "@/lib/today-range";
 
@@ -177,13 +178,6 @@ export function ReportStatusWidget({
   );
 }
 
-interface Alert {
-  label: string;
-  value: number;
-  to: LinkProps["to"];
-  severity: number;
-}
-
 /** Sức khỏe Team ở góc nhìn toàn hệ thống (Admin/CMO). */
 export function MarketingHealthWidget({ marketing }: { marketing: MarketingFocus | null }) {
   return (
@@ -223,54 +217,56 @@ export function MarketingHealthWidget({ marketing }: { marketing: MarketingFocus
   );
 }
 
-export function SystemAlertsWidget({ system }: { system: SystemFocus | null }) {
-  const alerts: Alert[] = system
-    ? [
-        { label: "Tin nhắn gửi lỗi", value: system.outbox_failed, to: "/telegram", severity: 1 },
-        { label: "Telegram gửi lỗi", value: system.telegram_failed, to: "/telegram", severity: 2 },
-        {
-          label: "Thông báo quá hạn",
-          value: system.announcements_overdue,
-          to: "/announcements",
-          severity: 3,
-        },
-        {
-          label: "Thành viên chưa gắn Team",
-          value: system.members_without_team,
-          to: "/members",
-          severity: 4,
-        },
-        { label: "Tài khoản bị khóa", value: system.locked_accounts, to: "/members", severity: 5 },
-      ]
-        .filter((alert) => alert.value > 0)
-        .sort((a, b) => a.severity - b.severity)
-        .slice(0, 4)
-    : [];
+/**
+ * TODAY-ALERTS-01 — cảnh báo điều hành (Task/Dự án/Team/Nhân sự) cho Admin & CMO.
+ * Cảnh báo kỹ thuật (Telegram, outbox, tài khoản chưa gắn Team) giữ tại Cài đặt → Tình trạng hệ thống.
+ */
+export function SystemAlertsWidget({ alerts }: { alerts: OpsAlert[] }) {
+  const visible = alerts.slice(0, OPS_ALERT_VISIBLE);
+  const rest = alerts.length - visible.length;
 
   return (
     <DashboardCard
       size="compact"
       icon={AlertTriangle}
       title="Cảnh báo cần chú ý"
-      to="/settings"
-      actionLabel="Mở Cài đặt"
+      to="/performance"
+      actionLabel="Mở Hiệu suất"
       className="h-full"
     >
-      {alerts.length === 0 ? (
+      {visible.length === 0 ? (
         <p className="text-body text-text-secondary">
-          Không có cảnh báo cần chú ý. Hệ thống đang vận hành ổn định.
+          Không có cảnh báo cần chú ý. Công việc và nhân sự đang vận hành ổn định.
         </p>
       ) : (
-        alerts.map((alert) => (
-          <Link
-            key={alert.label}
-            to={alert.to!}
-            className="cen-transition flex min-w-0 items-center justify-between gap-2 rounded-card border border-border-default bg-surface px-3 py-2 hover:border-border-strong"
-          >
-            <span className="min-w-0 truncate text-body text-text-primary">{alert.label}</span>
-            <StatusBadge label={String(alert.value)} tone="error" />
-          </Link>
-        ))
+        <>
+          {visible.map((alert) => {
+            const linkProps = {
+              to: alert.to,
+              ...(alert.params ? { params: alert.params } : {}),
+            } as unknown as LinkProps;
+            return (
+              <Link
+                key={alert.id}
+                {...linkProps}
+                className="cen-transition flex min-w-0 items-start justify-between gap-2 rounded-card border border-border-default bg-surface px-3 py-2 hover:border-border-strong"
+              >
+                <span className="min-w-0 flex-1 text-body text-text-primary">
+                  <span className="font-medium">{alert.subject}</span> {alert.detail}
+                </span>
+                <span className="flex shrink-0 items-center gap-1">
+                  {alert.current ? <StatusBadge label="Hiện tại" tone="neutral" /> : null}
+                  {alert.magnitude > 0 ? (
+                    <StatusBadge label={String(alert.magnitude)} tone="error" />
+                  ) : null}
+                </span>
+              </Link>
+            );
+          })}
+          {rest > 0 ? (
+            <span className="text-helper text-text-muted">Còn {rest} cảnh báo khác</span>
+          ) : null}
+        </>
       )}
     </DashboardCard>
   );
