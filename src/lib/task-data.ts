@@ -320,6 +320,89 @@ export function canAssignToOthers(ctx: TaskAccessContext) {
   return privileged(ctx) || ctx.role === "leader";
 }
 
+/* ================= Luồng duyệt Task của Member ================= */
+
+/** Member phải gửi Leader duyệt thay vì tạo Task chính thức. */
+export function isMemberSubmissionFlow(ctx: TaskAccessContext) {
+  return ctx.role === "member";
+}
+
+export function isTaskAwaitingApproval(task: TaskRow) {
+  return task.approval_status !== "approved";
+}
+
+/** Duyệt: Admin/CMO, hoặc Leader của Team phụ trách mặc định của Dự án. */
+export function canApproveTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
+  if (!isTaskAwaitingApproval(task)) return false;
+  if (task.approval_status === "withdrawn") return false;
+  if (privileged(ctx)) return true;
+  return Boolean(
+    ctx.leaderTeamId && task.projectResponsibleTeamId === ctx.leaderTeamId,
+  );
+}
+
+export function isTaskSubmissionAuthor(task: TaskRow, ctx: TaskAccessContext) {
+  return Boolean(ctx.userId && task.created_by === ctx.userId);
+}
+
+export function canWithdrawTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
+  return (
+    isTaskSubmissionAuthor(task, ctx) &&
+    (task.approval_status === "pending" || task.approval_status === "changes_requested")
+  );
+}
+
+export function canResubmitTask(task: TaskRow, ctx: TaskAccessContext) {
+  return (
+    isTaskSubmissionAuthor(task, ctx) &&
+    (task.approval_status === "changes_requested" || task.approval_status === "withdrawn")
+  );
+}
+
+export interface TaskSubmissionInput {
+  projectId: string;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  deadline: string;
+  priority: TaskPriority;
+  participantIds: string[];
+}
+
+/** Gửi Leader duyệt — mọi ràng buộc phạm vi được chốt trong RPC phía database. */
+export async function submitTaskForApproval(input: TaskSubmissionInput) {
+  const { data, error } = await supabase.rpc("task_member_submit", {
+    _project: input.projectId,
+    _name: input.name,
+    _description: input.description,
+    _start_date: input.startDate,
+    _deadline: input.deadline,
+    _priority: input.priority,
+    _participants: input.participantIds,
+  });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+export async function resubmitTaskForApproval(taskId: string) {
+  const { error } = await supabase.rpc("task_member_resubmit", { _task: taskId });
+  if (error) throw new Error(error.message);
+}
+
+export async function withdrawTaskSubmission(taskId: string) {
+  const { error } = await supabase.rpc("task_member_withdraw", { _task: taskId });
+  if (error) throw new Error(error.message);
+}
+
+export async function decideTaskApproval(taskId: string, approve: boolean, note?: string | null) {
+  const { error } = await supabase.rpc("task_approval_decide", {
+    _task: taskId,
+    _approve: approve,
+    _note: note ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
 /* ================= Ghi dữ liệu ================= */
 
 function fail(error: { message: string } | null) {
