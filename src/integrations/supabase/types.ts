@@ -5536,6 +5536,8 @@ export type Database = {
       }
       team_summary_publish: { Args: { _summary: string }; Returns: undefined }
       team_summary_visible: { Args: { _summary: string }; Returns: boolean }
+      verify_admin_bootstrap: { Args: { _user: string }; Returns: Json }
+      verify_system_defaults: { Args: never; Returns: Json }
       write_audit: {
         Args: {
           _action: string
