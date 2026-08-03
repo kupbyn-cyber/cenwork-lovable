@@ -561,6 +561,8 @@ function TasksPage() {
           tasks={visibleRows}
           columns={columns}
           onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          unreadCount={unreadCount}
+          onOpenComments={openComments}
           renderActions={rowActions}
         />
       ) : (
