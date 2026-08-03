@@ -186,18 +186,23 @@ export function filterTasks(
   return tasks.filter((task) => {
     if (isTaskArchived(task) !== (view === "archived")) return false;
     if (keyword && !task.name.toLowerCase().includes(keyword)) return false;
-    if (filters.status !== ALL && task.status !== filters.status) return false;
-    if (filters.priority !== ALL && task.priority !== filters.priority) return false;
-    if (filters.assignee !== ALL && task.assignee_id !== filters.assignee) return false;
-    if (filters.creator !== ALL && task.created_by !== filters.creator) return false;
-    if (filters.project === NO_PROJECT && task.project_id !== null) return false;
+    // OR trong cùng một trường, AND giữa các trường.
+    if (filters.status.length > 0 && !filters.status.includes(task.status)) return false;
+    if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) return false;
     if (
-      filters.project !== ALL &&
-      filters.project !== NO_PROJECT &&
-      task.project_id !== filters.project
+      filters.assignee.length > 0 &&
+      !(task.assignee_id && filters.assignee.includes(task.assignee_id))
     )
       return false;
-    if (filters.team !== ALL && task.team_id !== filters.team) return false;
+    if (filters.creator !== ALL && task.created_by !== filters.creator) return false;
+    if (filters.project.length > 0) {
+      const matched = task.project_id
+        ? filters.project.includes(task.project_id)
+        : filters.project.includes(NO_PROJECT);
+      if (!matched) return false;
+    }
+    if (filters.team.length > 0 && !(task.team_id && filters.team.includes(task.team_id)))
+      return false;
 
     switch (filters.kind) {
       case "project":
