@@ -327,8 +327,6 @@ function Dashboard() {
         <QuickActions className="min-w-0 lg:flex-[1]" />
       </div>
 
-      <ReportSummaryCards />
-
       {canSubmitDaily && dailyResult.isError ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-state-danger/40 bg-surface-subtle p-3">
           <span className="text-body text-state-danger">
@@ -340,13 +338,11 @@ function Dashboard() {
         </div>
       ) : null}
 
-      <PendingAnnouncementsPanel />
-
-      {/* Hàng tổng quan: Việc của tôi + các card theo vai trò + Dự án/Tiến độ, tự dồn */}
-      <div className="flex min-w-0 flex-wrap items-start gap-4 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:basis-[min(100%,20rem)]">
+      {/* Hàng tổng quan: lưới 3 cột đều nhau cho các khối thống kê */}
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
         <RoleInsights flow />
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Dự án theo trạng thái</CardTitle>
           </CardHeader>
@@ -366,7 +362,7 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Tiến độ công việc</CardTitle>
           </CardHeader>
@@ -492,6 +488,10 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <ReportSummaryCards />
+
+      <PendingAnnouncementsPanel />
 
       {canSubmitDaily && access.userId ? (
         <DailyReportPreviewModal

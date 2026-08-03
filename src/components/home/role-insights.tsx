@@ -44,7 +44,7 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
 
   if (isError || !data) {
     return (
-      <Card className={flow ? "basis-full" : undefined}>
+      <Card className={flow ? "lg:col-span-3" : undefined}>
         <CardContent className="pt-(--card-pad)">
           <ErrorState
             variant="compact"
@@ -60,15 +60,17 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
     return (
       <>
         {data.failedSources.length > 0 ? (
-          <div className="basis-full rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger">
+          <div className="lg:col-span-3 rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger">
             Một số nguồn dữ liệu chưa tải được ({data.failedSources.join(", ")}). Số liệu bên dưới
             có thể thiếu.
           </div>
         ) : null}
         <MyFocusCard focus={data.me} />
         {data.team ? <TeamFocusCard focus={data.team} /> : null}
-        {data.marketing ? <MarketingFocusCard focus={data.marketing} /> : null}
-        {data.system ? <SystemFocusCard focus={data.system} /> : null}
+        {data.marketing ? (
+          <MarketingFocusCard focus={data.marketing} className="lg:col-span-2" />
+        ) : null}
+        {data.system ? <SystemFocusCard focus={data.system} className="lg:col-span-2" /> : null}
       </>
     );
   }
@@ -206,9 +208,9 @@ function TeamFocusCard({ focus }: { focus: TeamFocus }) {
   );
 }
 
-function MarketingFocusCard({ focus }: { focus: MarketingFocus }) {
+function MarketingFocusCard({ focus, className }: { focus: MarketingFocus; className?: string }) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex min-w-0 items-center gap-2">
           <Activity className="size-icon-sm text-state-danger" aria-hidden="true" />
@@ -265,7 +267,7 @@ function MarketingFocusCard({ focus }: { focus: MarketingFocus }) {
   );
 }
 
-function SystemFocusCard({ focus }: { focus: SystemFocus }) {
+function SystemFocusCard({ focus, className }: { focus: SystemFocus; className?: string }) {
   const items: { label: string; value: number; danger?: boolean }[] = [
     { label: "Tài khoản bị khóa", value: focus.locked_accounts },
     { label: "Chưa gắn Team", value: focus.members_without_team },
@@ -276,7 +278,7 @@ function SystemFocusCard({ focus }: { focus: SystemFocus }) {
     { label: "Thông báo quá hạn", value: focus.announcements_overdue, danger: true },
   ];
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex min-w-0 items-center gap-2">
           <ServerCog className="size-icon-sm text-text-muted" aria-hidden="true" />
