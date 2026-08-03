@@ -43,6 +43,7 @@ export async function snapshotCycleTasks(supabase: Db, cycleId: string) {
     .from("tasks")
     .select("id,assignee_id,priority,deadline,status")
     .eq("is_archived", false)
+    .eq("approval_status", "approved")
     .gte("deadline", from)
     .lte("deadline", to);
   if (taskError) throw new Error(taskError.message);

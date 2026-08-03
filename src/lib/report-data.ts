@@ -280,6 +280,7 @@ export async function fetchDailyTaskRefs(
       "id,name,status,priority,deadline,start_date,updated_at,assignee_id,is_archived,project:projects(name),task_participants(user_id)",
     )
     .eq("is_archived", false)
+    .eq("approval_status", "approved")
     .limit(500);
   if (error) throw new Error(error.message);
 
@@ -334,6 +335,7 @@ export async function fetchDailyResultLines(
     .from("tasks")
     .select("id,name,result_text,result_updated_at,updated_at,deadline")
     .eq("assignee_id", authorId)
+    .eq("approval_status", "approved")
     .eq("status", "done")
     .not("result_text", "is", null)
     .order("deadline", { ascending: true })
