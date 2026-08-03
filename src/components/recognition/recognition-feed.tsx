@@ -154,6 +154,8 @@ export function RecognitionFeed({ personId = null, pageSize = 20 }: RecognitionF
   });
 
   const rows = data ?? [];
+  const reactionsResult = useQuery(recognitionReactionsQuery(rows.map((row) => row.id)));
+  const reactions = reactionsResult.data ?? [];
 
   if (isLoading) return <SkeletonCard lines={4} />;
   if (isError) {
@@ -186,6 +188,7 @@ export function RecognitionFeed({ personId = null, pageSize = 20 }: RecognitionF
           key={row.id}
           row={row}
           userId={user?.id ?? null}
+          reactions={reactions}
           onRevoke={(id) => revokeMutation.mutate(id)}
           onReport={(target) => {
             setReporting(target);
