@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -394,7 +395,13 @@ function ProjectDetailPage() {
             <div className="sm:col-span-2">
               <InfoRow
                 label="Mô tả / kế hoạch"
-                value={detail.description?.trim() || "Chưa có mô tả."}
+                value={
+                  detail.description?.trim() ? (
+                    <LinkifiedText text={detail.description} />
+                  ) : (
+                    "Chưa có mô tả."
+                  )
+                }
               />
             </div>
             {progress !== null ? (
@@ -452,7 +459,10 @@ function ProjectDetailPage() {
             />
             {detail.last_decision_note ? (
               <div className="sm:col-span-2">
-                <InfoRow label="Ghi chú quyết định gần nhất" value={detail.last_decision_note} />
+                <InfoRow
+                  label="Ghi chú quyết định gần nhất"
+                  value={<LinkifiedText text={detail.last_decision_note} />}
+                />
               </div>
             ) : null}
           </CardContent>

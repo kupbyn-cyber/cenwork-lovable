@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { CalendarDays, Check, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -152,7 +153,9 @@ function DutyCard({ row, actions }: { row: DutyAssignmentRow; actions: DutyListA
         {row.note ? (
           <>
             <dt className="text-text-muted">Ghi chú</dt>
-            <dd className="min-w-0 break-words text-text-secondary">{row.note}</dd>
+            <dd className="min-w-0">
+              <LinkifiedText className="text-text-secondary" text={row.note} />
+            </dd>
           </>
         ) : null}
       </dl>

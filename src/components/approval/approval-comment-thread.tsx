@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -195,9 +196,11 @@ export function ApprovalCommentThread({ detail, canMention, canModerate }: Props
                   </div>
                 ) : (
                   <>
-                    <p className="whitespace-pre-wrap break-words text-body-sm text-text-secondary">
-                      {row.body}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      className="text-body-sm text-text-secondary"
+                      text={row.body}
+                    />
                     {mentioned.length > 0 ? (
                       <p className="text-body-xs text-text-muted">
                         Nhắc tên:{" "}

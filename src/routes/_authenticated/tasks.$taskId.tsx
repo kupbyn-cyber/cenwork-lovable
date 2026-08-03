@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -349,7 +350,7 @@ function TaskDetailPage() {
             />
             {task.description ? (
               <div className="sm:col-span-2">
-                <InfoRow label="Mô tả" value={task.description} />
+                <InfoRow label="Mô tả" value={<LinkifiedText text={task.description} />} />
               </div>
             ) : null}
             {progress !== null ? (
@@ -377,8 +378,8 @@ function TaskDetailPage() {
                 <InfoRow
                   label="Kết quả công việc"
                   value={
-                    <span className="whitespace-pre-wrap">
-                      {task.result_text}
+                    <span>
+                      <LinkifiedText text={task.result_text} />
                       <span className="mt-1 block text-caption text-text-muted">
                         Cập nhật bởi {task.resultUpdatedByName ?? "—"} ·{" "}
                         {formatDateTime(task.result_updated_at)}
@@ -426,9 +427,11 @@ function TaskDetailPage() {
               <ol className="flex flex-col gap-3">
                 {(resultsResult.data ?? []).map((entry, index) => (
                   <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
-                    <p className="text-body-sm whitespace-pre-wrap text-text-primary">
-                      {entry.result_text}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      className="text-body-sm text-text-primary"
+                      text={entry.result_text}
+                    />
                     <p className="text-caption text-text-muted">
                       {index === 0 ? "Kết quả hiện tại · " : ""}
                       {entry.authorName ?? "—"} · {formatDateTime(entry.created_at)}

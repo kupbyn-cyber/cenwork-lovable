@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 
@@ -149,9 +150,14 @@ function ApprovalDetailPage() {
               </dd>
             </div>
           </dl>
-          <div className="whitespace-pre-wrap break-words text-body text-text-secondary">
-            {request.content || "(Không có nội dung)"}
-          </div>
+          <LinkifiedText
+            as="div"
+            className="text-body text-text-secondary"
+            text={request.content}
+            fallback={
+              <div className="text-body text-text-secondary">(Không có nội dung)</div>
+            }
+          />
           <ApprovalActions detail={detail.data} userId={user?.id ?? null} sticky />
         </CardContent>
       </Card>
@@ -229,9 +235,11 @@ function ApprovalDetailPage() {
                     Gửi lúc {formatHanoiDateTime(version.submitted_at)} • Hạn{" "}
                     {formatHanoiDateTime(version.due_at)}
                   </p>
-                  <p className="whitespace-pre-wrap break-words text-helper text-text-secondary">
-                    {version.content}
-                  </p>
+                  <LinkifiedText
+                    as="p"
+                    className="text-helper text-text-secondary"
+                    text={version.content}
+                  />
                   <ul className="flex min-w-0 flex-col gap-1">
                     {versionDecisions.map((item) => (
                       <li key={item.id} className="break-words text-helper text-text-muted">

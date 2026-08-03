@@ -1,4 +1,5 @@
 import * as React from "react";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -341,7 +342,11 @@ function ReportDocPage() {
                     </span>
                   </p>
                   {row.body ? (
-                    <p className="whitespace-pre-wrap text-body-sm text-text-secondary">{row.body}</p>
+                    <LinkifiedText
+                      as="p"
+                      className="text-body-sm text-text-secondary"
+                      text={row.body}
+                    />
                   ) : null}
                 </li>
               ))}
