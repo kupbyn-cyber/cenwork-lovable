@@ -1,7 +1,7 @@
 import * as React from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, FileText, FolderKanban, ListChecks } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,20 +18,15 @@ import {
   TodayKpiRow,
   TodaySlot,
 } from "@/components/home/today-layout";
-import { ReportSummaryCards } from "@/components/home/report-summary-cards";
 
 import { PendingAnnouncementsPanel } from "@/components/announcement/pending-announcements-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useTodayHub } from "@/hooks/use-today-hub";
+import { useTodayInsights } from "@/hooks/use-today-insights";
 import { formatHanoiDate } from "@/lib/datetime";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 
-import {
-  PROJECT_STATUS_LABEL,
-  PROJECT_STATUS_TONE,
-  isProjectApproved,
-  projectsQuery,
-  type ProjectStatus,
-} from "@/lib/project-data";
+import { isProjectApproved, projectsQuery } from "@/lib/project-data";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_TONE,
@@ -41,15 +36,7 @@ import {
   weekStartOf,
   weeklyReportsQuery,
 } from "@/lib/report-data";
-import {
-  TASK_STATUS_LABEL,
-  TASK_STATUS_ORDER,
-  TASK_STATUS_TONE,
-  formatDateTime,
-  isTaskOverdue,
-  tasksQuery,
-  type TaskRow,
-} from "@/lib/task-data";
+import { isTaskOverdue, tasksQuery } from "@/lib/task-data";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
