@@ -154,6 +154,7 @@ function projectBucket(project: ProjectRow): ProjectView {
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const unreadCounts = useQuery(taskUnreadCountsQuery(access.userId));
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
