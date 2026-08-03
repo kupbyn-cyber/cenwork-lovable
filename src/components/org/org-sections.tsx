@@ -233,6 +233,7 @@ export function TeamsSection() {
                   {leaderOptions.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.display_name}
+                      {member.email ? ` — ${member.email}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
