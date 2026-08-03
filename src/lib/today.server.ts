@@ -222,6 +222,7 @@ export async function buildTodayHub(
         "id,name,status,deadline,priority,assignee_id,team_id,created_by,created_at,is_archived,task_participants(user_id)",
       )
       .is("deleted_at", null)
+      .eq("approval_status", "approved")
       .eq("is_archived", false)
       .neq("status", "done")
       .limit(500);

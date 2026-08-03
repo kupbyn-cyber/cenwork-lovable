@@ -177,6 +177,7 @@ export async function fetchProjectTaskCounts(): Promise<Record<string, number>> 
     .from("tasks")
     .select("id,project_id")
     .is("deleted_at", null)
+    .eq("approval_status", "approved")
     .not("project_id", "is", null);
   if (error) throw new Error(error.message);
   const counts: Record<string, number> = {};

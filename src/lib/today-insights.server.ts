@@ -102,6 +102,7 @@ export async function buildTodayInsights(
       .from("tasks")
       .select("id,name,team_id,assignee_id,status,deadline,completed_at")
       .eq("is_archived", false)
+      .eq("approval_status", "approved")
       .is("deleted_at", null)
       .limit(2000);
     check(error);

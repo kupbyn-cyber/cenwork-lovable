@@ -224,6 +224,7 @@ export async function buildPerformanceDashboard(
         .select("id, project_id, assignee_id, team_id, status, deadline, created_at, completed_at")
         .is("deleted_at", null)
         .is("manually_archived_at", null)
+        .eq("approval_status", "approved")
         .eq("is_archived", false)
         .in("assignee_id", personIds)
         .lt("created_at", period.endISO)
