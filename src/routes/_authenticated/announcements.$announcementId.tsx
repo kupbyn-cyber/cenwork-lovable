@@ -94,7 +94,9 @@ function AnnouncementDetailPage() {
 
   React.useEffect(() => {
     if (!myRecipient) return;
-    void markOpened(myRecipient).then(refresh).catch(() => undefined);
+    void markOpened(myRecipient)
+      .then(refresh)
+      .catch(() => undefined);
     // chỉ ghi nhận mở lần đầu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myRecipient?.id]);
@@ -109,7 +111,10 @@ function AnnouncementDetailPage() {
     const reachedEnd = node.scrollTop + node.clientHeight >= node.scrollHeight - 8;
     if (!reachedEnd) return;
     setReadToEnd(true);
-    if (myRecipient) void markReadCompleted(myRecipient).then(refresh).catch(() => undefined);
+    if (myRecipient)
+      void markReadCompleted(myRecipient)
+        .then(refresh)
+        .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myRecipient, readToEnd]);
 
@@ -119,7 +124,10 @@ function AnnouncementDetailPage() {
     if (!node || readToEnd) return;
     if (node.scrollHeight <= node.clientHeight + 8) {
       setReadToEnd(true);
-      if (myRecipient) void markReadCompleted(myRecipient).then(refresh).catch(() => undefined);
+      if (myRecipient)
+        void markReadCompleted(myRecipient)
+          .then(refresh)
+          .catch(() => undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [announcement.data?.body, myRecipient?.id, readToEnd]);
@@ -132,8 +140,7 @@ function AnnouncementDetailPage() {
       acknowledgeWithAnswers(
         announcementId,
         questions.map(
-          (question) =>
-            drafts[question.id] ?? { questionId: question.id, optionIds: [], text: "" },
+          (question) => drafts[question.id] ?? { questionId: question.id, optionIds: [], text: "" },
         ),
       ),
     onSuccess: () => {
@@ -159,9 +166,7 @@ function AnnouncementDetailPage() {
 
   const row = announcement.data;
   if (!row) {
-    return (
-      <ErrorState title="Không tìm thấy thông báo" description="Thông báo không tồn tại." />
-    );
+    return <ErrorState title="Không tìm thấy thông báo" description="Thông báo không tồn tại." />;
   }
 
   const myStatus = myRecipient ? effectiveRecipientStatus(myRecipient) : null;
@@ -230,7 +235,6 @@ function AnnouncementDetailPage() {
           {canModerate ? <TabsTrigger value="progress">Tiến độ</TabsTrigger> : null}
           <TabsTrigger value="history">Phiên bản</TabsTrigger>
         </TabsList>
-
 
         <TabsContent value="content">
           <Card>

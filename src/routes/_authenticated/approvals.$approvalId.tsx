@@ -25,7 +25,6 @@ import {
 } from "@/lib/approval-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
 
-
 const TITLE = "Chi tiết yêu cầu phê duyệt — CEN WORK";
 const DESCRIPTION = "Xem tiến độ, quyết định và lịch sử phiên bản của yêu cầu phê duyệt.";
 
@@ -48,7 +47,6 @@ function ApprovalDetailPage() {
   const { user } = useAuth();
   const { isAdmin, isCmo } = useOrgAccess();
   const detail = useQuery(approvalDetailQuery(approvalId));
-
 
   const back = (
     <Button asChild variant="secondary" size="sm">
@@ -113,7 +111,6 @@ function ApprovalDetailPage() {
   const isApprover = decisions.some((item) => item.approver_id === user?.id);
   const canMention = isSender || isApprover;
 
-
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader title={request.title} description={`Người gửi: ${senderName}`} actions={back}>
@@ -153,9 +150,7 @@ function ApprovalDetailPage() {
             as="div"
             className="text-body text-text-secondary"
             text={request.content}
-            fallback={
-              <div className="text-body text-text-secondary">(Không có nội dung)</div>
-            }
+            fallback={<div className="text-body text-text-secondary">(Không có nội dung)</div>}
           />
           <ApprovalActions detail={detail.data} userId={user?.id ?? null} sticky />
         </CardContent>
@@ -184,8 +179,6 @@ function ApprovalDetailPage() {
           />
         </CardContent>
       </Card>
-
-
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-3">
