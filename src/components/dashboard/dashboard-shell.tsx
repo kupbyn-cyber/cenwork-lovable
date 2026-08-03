@@ -97,7 +97,7 @@ export function KpiCard({ kpi }: { kpi: DashKpi }) {
       label={`Mở danh sách theo ${kpi.label}`}
       className="block h-full min-w-0 rounded-card transition-colors hover:border-border-strong focus-visible:outline-2"
     >
-      <Card className="h-full min-w-0 hover:bg-surface-hover">{body}</Card>
+      <Card className="h-full min-w-0 hover:bg-surface-subtle">{body}</Card>
     </DrillLink>
   );
 }
@@ -200,7 +200,7 @@ export function StatPill({
 export function RateBar({ value }: { value: number | null }) {
   const pct = value === null ? 0 : Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-subtle">
       <div className="h-full rounded-full bg-brand-primary" style={{ width: `${pct}%` }} />
     </div>
   );
