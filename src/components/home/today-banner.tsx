@@ -71,7 +71,7 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
           {TODAY_RANGES.map((option: TodayRange) => (
             <Button
               key={option}
-              size="default"
+              size="md"
               variant={option === range ? "primary" : "ghost"}
               aria-pressed={option === range}
               className={cn(
