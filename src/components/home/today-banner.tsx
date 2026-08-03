@@ -61,7 +61,7 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
             <Button
               key={option}
               size="sm"
-              variant={option === range ? "default" : "ghost"}
+              variant={option === range ? "primary" : "ghost"}
               aria-pressed={option === range}
               className={cn("min-w-[76px]")}
               onClick={() => setRange(option)}
