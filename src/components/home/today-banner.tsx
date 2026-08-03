@@ -64,7 +64,7 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
         </div>
 
         <div
-          className="flex shrink-0 flex-wrap gap-1 self-start rounded-control border border-border-default bg-surface-subtle p-1 shadow-level-2 lg:self-center"
+          className="flex shrink-0 flex-wrap gap-1 self-start rounded-card border border-border-default bg-background p-1.5 shadow-level-2 lg:mt-auto lg:self-end"
           role="group"
           aria-label="Phạm vi thời gian"
         >
