@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecognitionFeed } from "@/components/recognition/recognition-feed";
 import { RecognitionFormModal } from "@/components/recognition/recognition-form";
 import { RecognitionStatsPanel } from "@/components/recognition/recognition-stats-panel";
+import { RecognitionTeamPulseCard } from "@/components/recognition/recognition-team-pulse-card";
 
 import { useAuth } from "@/hooks/use-auth";
 import { RECOGNITION_DAILY_LIMIT, recognitionQuotaQuery } from "@/lib/recognition-data";
@@ -57,6 +58,8 @@ function RecognitionsPage() {
           </Button>
         }
       />
+
+      <RecognitionTeamPulseCard />
 
       <Tabs defaultValue="all" className="min-w-0">
         <TabsList>
