@@ -2,13 +2,10 @@ import * as React from "react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { DeadlineCountdown, PriorityLabel } from "@/components/task/task-cell-bits";
 import {
-  TASK_PRIORITY_LABEL,
-  TASK_PRIORITY_TONE,
   TASK_STATUS_LABEL,
   TASK_STATUS_TONE,
-  formatDateTime,
-  isTaskOverdue,
   type TaskRow,
 } from "@/lib/task-data";
 import type { OptionalColumnId } from "@/lib/task-view-data";
@@ -54,16 +51,6 @@ export function TaskCardList({ tasks, columns, onOpen, renderActions }: TaskCard
             <div onClick={(event) => event.stopPropagation()}>{renderActions(task)}</div>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-text-secondary">
-            {show("assignee") ? <span>{task.assigneeName ?? "—"}</span> : null}
-            {show("team") && task.teamName ? <span>{task.teamName}</span> : null}
-            {show("deadline") ? (
-              <span className={isTaskOverdue(task) ? "text-state-danger" : undefined}>
-                {formatDateTime(task.deadline)}
-              </span>
-            ) : null}
-          </div>
-
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {show("status") ? (
               <StatusBadge
@@ -71,12 +58,13 @@ export function TaskCardList({ tasks, columns, onOpen, renderActions }: TaskCard
                 tone={TASK_STATUS_TONE[task.status]}
               />
             ) : null}
-            {show("priority") ? (
-              <StatusBadge
-                label={TASK_PRIORITY_LABEL[task.priority]}
-                tone={TASK_PRIORITY_TONE[task.priority]}
-              />
-            ) : null}
+            <DeadlineCountdown task={task} className="inline-block w-auto" />
+            {show("priority") ? <PriorityLabel priority={task.priority} /> : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-text-secondary">
+            <span className="truncate">{task.assigneeName ?? "—"}</span>
+            {show("team") && task.teamName ? <span className="truncate">{task.teamName}</span> : null}
           </div>
         </li>
       ))}
