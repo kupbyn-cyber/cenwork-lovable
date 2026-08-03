@@ -326,11 +326,7 @@ function MembersPage() {
       cell: (row: MemberRow) => (
         <TableCellStack
           primary={teamName(row.primary_team_id)}
-          secondary={
-            row.collaboratorTeamIds.length > 0
-              ? `Phối hợp: ${row.collaboratorTeamIds.map(teamName).join(", ")}`
-              : "Không có Team phối hợp"
-          }
+          secondary={row.email || "—"}
         />
       ),
     },
