@@ -45,6 +45,8 @@ export interface DocumentFormDrawerProps {
   serverError?: string | null;
   onSubmit: (input: DocumentDraftInput) => void;
   defaultOwnerId: string | null;
+  /** DOC-RULE-08B — Admin/CMO tạo là phát hành luôn. */
+  publishOnCreate?: boolean;
 }
 
 interface FormState {
@@ -97,6 +99,7 @@ export function DocumentFormDrawer({
   serverError,
   onSubmit,
   defaultOwnerId,
+  publishOnCreate = false,
 }: DocumentFormDrawerProps) {
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
@@ -230,8 +233,18 @@ export function DocumentFormDrawer({
       dirty={dirty}
       busy={submitting}
       onOpenChange={submitting ? () => undefined : onOpenChange}
-      title={document ? "Sửa bản nháp tài liệu" : "Tạo bản nháp tài liệu"}
-      description="Phiên bản đầu tiên luôn là v1 ở trạng thái nháp. Tên hiển thị do hệ thống tự tạo."
+      title={
+        document
+          ? "Sửa bản nháp tài liệu"
+          : publishOnCreate
+            ? "Tạo tài liệu"
+            : "Tạo bản nháp tài liệu"
+      }
+      description={
+        publishOnCreate && !document
+          ? "Tài liệu sẽ được phát hành ngay khi tạo. Tên hiển thị do hệ thống tự tạo."
+          : "Phiên bản đầu tiên luôn là v1 ở trạng thái nháp. Tên hiển thị do hệ thống tự tạo."
+      }
       footer={
         <>
           <Button
@@ -243,7 +256,7 @@ export function DocumentFormDrawer({
             Hủy
           </Button>
           <Button type="submit" form="document-form" loading={submitting} disabled={submitting}>
-            {document ? "Lưu bản nháp" : "Tạo bản nháp"}
+            {document ? "Lưu bản nháp" : publishOnCreate ? "Tạo tài liệu" : "Tạo bản nháp"}
           </Button>
         </>
       }
