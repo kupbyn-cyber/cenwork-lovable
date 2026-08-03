@@ -91,8 +91,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "CEN WORK — Marketing Command Center" },
       { property: "og:description", content: "CEN WORK là hệ thống Marketing Command Center giúp Team Tự Do phối hợp rõ ràng, vận hành kỷ luật và ra quyết định nhanh hơn." },
       { name: "twitter:description", content: "CEN WORK là hệ thống Marketing Command Center giúp Team Tự Do phối hợp rõ ràng, vận hành kỷ luật và ra quyết định nhanh hơn." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ddff4671-603a-4f94-98aa-c60fff2cafe9" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ddff4671-603a-4f94-98aa-c60fff2cafe9" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8867c357-a23a-47c4-b859-d86fa492285b/id-preview-feae9a42--642a45b4-5a1c-4d98-8277-299d322537d0.lovable.app-1785736366555.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8867c357-a23a-47c4-b859-d86fa492285b/id-preview-feae9a42--642a45b4-5a1c-4d98-8277-299d322537d0.lovable.app-1785736366555.png" },
     ],
     links: [
       {
