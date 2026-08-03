@@ -291,6 +291,12 @@ function TasksPage() {
 
   const show = (id: OptionalColumnId) => columns.includes(id);
 
+  const unreadCount = (taskId: string) => unreadResult.data?.[taskId] ?? 0;
+
+  /** Mở chi tiết Task và cuộn tới khu vực Bình luận. */
+  const openComments = (taskId: string) =>
+    void navigate({ to: "/tasks/$taskId", params: { taskId }, hash: "task-comments" });
+
   const col = (width: string) => ({ className: `${width} px-3`, headerClassName: `${width} px-3` });
 
   const tableColumns = [
