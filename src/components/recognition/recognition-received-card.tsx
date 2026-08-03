@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Quote, Sparkles } from "lucide-react";
+import { Award, Clock3, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatHanoiDateTime } from "@/lib/datetime";
@@ -12,11 +12,11 @@ import {
 } from "@/lib/recognition-data";
 
 /**
- * RECOG-FIX-05 — Banner "Bạn vừa được ghi nhận" trên Trang chủ.
- * Chỉ kiểm tra khi tải lại Trang chủ (không Realtime), hiện đúng một banner,
- * bấm "Cảm ơn" đánh dấu đã xem và không gửi thông báo ngược cho người gửi.
+ * RECOG-UI-08 — Banner "Bạn vừa được ghi nhận" trên Trang chủ.
+ * 3 vùng: trái (thông tin) — giữa (quote lớn, điểm nhấn) — phải (hành động).
+ * Chỉ kiểm tra khi tải lại Trang chủ (không Realtime), bấm "Cảm ơn" đánh dấu đã xem.
  */
-const BANNER_PREVIEW_LENGTH = 160;
+const BANNER_PREVIEW_LENGTH = 150;
 
 function previewLine(message: string): string {
   const text = message.trim();
@@ -46,58 +46,74 @@ export function RecognitionReceivedCard({ userId }: { userId: string | null }) {
 
   const single = rows.length === 1 ? rows[0] : null;
   const meta = single ? RECOGNITION_CATEGORY_META[single.category] : null;
+  const quote = single
+    ? previewLine(single.message)
+    : `Đồng đội vừa dành cho bạn ${rows.length} lời ghi nhận.`;
 
   return (
     <section
       role="status"
       aria-live="polite"
       aria-label="Ghi nhận đồng đội mới"
-      className="motion-safe:animate-fade-in min-w-0 rounded-card border border-state-warning/40 bg-gradient-to-r from-brand-subtle via-surface-subtle to-surface-default p-4 shadow-md"
+      className="cen-recog-in cen-recog-surface relative min-w-0 overflow-hidden rounded-card border border-state-warning/35 shadow-md ring-1 ring-inset ring-state-warning/10"
     >
-      <div className="grid min-w-0 grid-cols-1 items-center gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto]">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-state-warning/40 bg-state-warning-surface">
-            <Sparkles className="size-icon-sm text-state-warning" aria-hidden="true" />
+      <div className="relative z-10 grid min-w-0 grid-cols-1 items-center gap-4 px-4 py-4 sm:px-6 lg:min-h-[7rem] lg:grid-cols-[minmax(0,24%)_minmax(0,1fr)_minmax(0,20%)] lg:gap-6">
+        {/* A — Vùng trái: thông tin */}
+        <div className="order-2 flex min-w-0 items-start gap-3 lg:order-none">
+          <span className="cen-recog-pulse mt-0.5 hidden size-9 shrink-0 items-center justify-center rounded-full border border-state-warning/40 bg-state-warning-surface sm:flex">
+            <Award className="size-icon-sm text-state-warning" aria-hidden="true" />
           </span>
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="min-w-0 text-body font-semibold text-text-primary">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-caption font-medium uppercase tracking-wide text-state-warning/80">
+              Ghi nhận đồng đội
+            </span>
+            <p className="min-w-0 text-body-sm font-semibold text-text-primary">
               {single ? "Bạn vừa được ghi nhận" : `Bạn có ${rows.length} ghi nhận mới`}
             </p>
             {single ? (
               <>
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="min-w-0 truncate text-body-sm font-medium text-text-primary">
+                <p className="min-w-0 truncate text-body-sm text-text-secondary">
+                  Từ{" "}
+                  <span className="font-medium text-text-primary">
                     {single.sender_name ?? "Đồng đội"}
                   </span>
-                  {meta ? (
-                    <span className={`rounded-full border px-2 py-0.5 text-caption ${meta.tone}`}>
-                      {meta.emoji} {meta.label}
-                    </span>
-                  ) : null}
-                </div>
-                <span className="text-helper text-text-muted">
-                  {formatHanoiDateTime(single.created_at)}
+                </p>
+                <span className="flex min-w-0 items-center gap-1 text-helper text-text-muted">
+                  <Clock3 className="size-3 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{formatHanoiDateTime(single.created_at)}</span>
                 </span>
+                {meta ? (
+                  <span
+                    className={`mt-1 w-fit rounded-full border px-2 py-0.5 text-caption ${meta.tone}`}
+                  >
+                    {meta.emoji} {meta.label}
+                  </span>
+                ) : null}
               </>
             ) : null}
           </div>
         </div>
 
-        <blockquote className="relative min-w-0 rounded-card border border-state-warning/25 bg-surface-subtle/60 px-4 py-3 text-center shadow-sm">
-          <Quote className="mx-auto mb-1 size-icon-sm text-state-warning/70" aria-hidden="true" />
-          <p className="line-clamp-2 min-w-0 break-words text-body font-medium italic leading-relaxed text-text-primary sm:text-heading-sm">
-            {single
-              ? `“${previewLine(single.message)}”`
-              : "Đồng đội vừa dành cho bạn những lời ghi nhận."}
+        {/* B — Vùng giữa: quote lớn, điểm nhấn */}
+        <blockquote className="order-1 flex min-w-0 flex-col items-center justify-center gap-1 text-center lg:order-none">
+          <Sparkles
+            className="cen-recog-pulse hidden size-icon-sm text-state-warning/80 sm:block"
+            aria-hidden="true"
+          />
+          <p className="line-clamp-2 min-w-0 break-words text-body font-semibold leading-snug text-state-warning sm:text-[1.25rem] lg:text-[1.4rem]">
+            <span aria-hidden="true">“</span>
+            {quote}
+            <span aria-hidden="true">”</span>
           </p>
         </blockquote>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
-          <Button variant="secondary" size="sm" asChild onClick={close}>
-            <Link to="/recognitions">Xem ghi nhận</Link>
-          </Button>
+        {/* C — Vùng phải: hành động */}
+        <div className="order-3 flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap lg:order-none lg:flex-col lg:items-stretch lg:justify-center">
           <Button type="button" size="sm" onClick={close} disabled={markSeen.isPending}>
             Cảm ơn
+          </Button>
+          <Button variant="secondary" size="sm" asChild onClick={close}>
+            <Link to="/recognitions">Xem ghi nhận</Link>
           </Button>
         </div>
       </div>
