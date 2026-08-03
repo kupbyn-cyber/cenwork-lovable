@@ -148,23 +148,26 @@ function TasksPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-  const applyView = React.useCallback((viewId: string | null) => {
-    setActiveViewId(viewId);
-    setLimit(PAGE_SIZE);
-    if (!viewId) {
-      setFilters(EMPTY_FILTERS);
-      setSearchInput("");
-      setSort("created_desc");
-      setColumns(DEFAULT_COLUMNS);
-      return;
-    }
-    const target = savedViews.find((item) => item.id === viewId);
-    if (!target) return;
-    setFilters(target.filters);
-    setSearchInput(target.filters.search);
-    setSort(target.sort);
-    setColumns(target.columns);
-  }, [savedViews]);
+  const applyView = React.useCallback(
+    (viewId: string | null) => {
+      setActiveViewId(viewId);
+      setLimit(PAGE_SIZE);
+      if (!viewId) {
+        setFilters(EMPTY_FILTERS);
+        setSearchInput("");
+        setSort("created_desc");
+        setColumns(DEFAULT_COLUMNS);
+        return;
+      }
+      const target = savedViews.find((item) => item.id === viewId);
+      if (!target) return;
+      setFilters(target.filters);
+      setSearchInput(target.filters.search);
+      setSort(target.sort);
+      setColumns(target.columns);
+    },
+    [savedViews],
+  );
 
   /** Áp dụng chế độ xem mặc định cá nhân khi mở trang. */
   const appliedDefaultRef = React.useRef(false);
@@ -580,7 +583,11 @@ function TasksPage() {
 
       {visibleRows.length < rows.length ? (
         <div className="flex justify-center">
-          <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLimit((value) => value + PAGE_SIZE)}
+          >
             Tải thêm ({rows.length - visibleRows.length} công việc)
           </Button>
         </div>

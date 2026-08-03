@@ -49,12 +49,7 @@ export const TASK_SORT_ORDER: TaskSortKey[] = [
 ];
 
 export type TaskKindFilter =
-  | "all"
-  | "project"
-  | "standalone"
-  | "with_deadline"
-  | "no_deadline"
-  | "overdue";
+  "all" | "project" | "standalone" | "with_deadline" | "no_deadline" | "overdue";
 
 export const TASK_KIND_LABEL: Record<TaskKindFilter, string> = {
   all: "Tất cả loại công việc",
@@ -244,7 +239,8 @@ function time(value: string | null) {
 
 export function sortTasks(tasks: TaskRow[], sort: TaskSortKey): TaskRow[] {
   const list = [...tasks];
-  const createdDesc = (a: TaskRow, b: TaskRow) => (time(b.created_at) ?? 0) - (time(a.created_at) ?? 0);
+  const createdDesc = (a: TaskRow, b: TaskRow) =>
+    (time(b.created_at) ?? 0) - (time(a.created_at) ?? 0);
   switch (sort) {
     case "created_asc":
       return list.sort((a, b) => (time(a.created_at) ?? 0) - (time(b.created_at) ?? 0));
@@ -311,7 +307,9 @@ function parseFilters(value: unknown): TaskFilterState {
 
 function toValueList(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string" && item !== "" && item !== ALL);
+    return value.filter(
+      (item): item is string => typeof item === "string" && item !== "" && item !== ALL,
+    );
   }
   if (typeof value === "string" && value !== "" && value !== ALL) return [value];
   return [];
