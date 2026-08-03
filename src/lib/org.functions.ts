@@ -22,6 +22,14 @@ const createMemberSchema = z.object({
   primaryTeamId: z.string().uuid().nullable(),
   collaboratorTeamIds: z.array(z.string().uuid()).max(20).default([]),
   initialPassword: z.string().min(8).max(72),
+  // Telegram User ID không bắt buộc; telegram_enabled do server quyết định.
+  telegramUserId: z
+    .string()
+    .trim()
+    .max(32)
+    .nullable()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
   // Bắt buộc: số điện thoại và ngày sinh (ngày sinh không được ở tương lai).
   phoneNumber: z
     .string()
