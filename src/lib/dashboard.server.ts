@@ -606,6 +606,7 @@ export async function buildDashboard(
       const reasons: string[] = [];
       if (attentionTeamIds.has(team.id)) reasons.push("Có cảnh báo điều hành");
       if (m.overdue_now > 0) reasons.push(`${m.overdue_now} Task đang quá hạn`);
+      const needsAttention = reasons.length > 0;
       return {
         team_id: team.id,
         team_name: team.name,
@@ -616,10 +617,12 @@ export async function buildDashboard(
         on_time_rate: m.on_time_rate,
         overdue_rate: ratio(m.overdue_now, m.open_tasks),
         changes_requested: changes,
-        needs_attention: attentionTeamIds.has(team.id),
+        needs_attention: needsAttention,
         attention_reasons: reasons,
       } satisfies DashTeamRow;
     });
+    // KPI "Team cần chú ý" phải đếm đúng số dòng được đánh dấu trong bảng so sánh.
+    attentionTeamIds = new Set(teamRows.filter((row) => row.needs_attention).map((r) => r.team_id));
     const totalOpen = teamRows.reduce((sum, row) => sum + row.open_tasks, 0);
     workload = teamRows.map((row) => ({
       team_id: row.team_id,
