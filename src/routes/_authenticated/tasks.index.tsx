@@ -139,7 +139,7 @@ function TasksPage() {
     project: drill.project ? [drill.project] : [],
     priority: drill.priority ? [drill.priority] : [],
     deadlineFrom: drill.overdue ? "" : (drill.from ?? ""),
-    deadlineTo: drill.overdue ? (drill.to ?? hanoiTodayISO()) : (drill.to ?? ""),
+    deadlineTo: drill.overdue ? (drill.to ?? new Date().toISOString().slice(0, 10)) : (drill.to ?? ""),
     mine: drill.mine === "1",
     needsMe: drill.needsMe === "1",
   }));

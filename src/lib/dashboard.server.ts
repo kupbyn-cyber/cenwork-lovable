@@ -335,7 +335,7 @@ export async function buildDashboard(
       const { data, error } = await supabase.rpc("dashboard_task_review_stats", {
         p_from: period.from,
         p_to: period.to,
-        p_user: scope === "member" ? viewerId : null,
+        ...(scope === "member" ? { p_user: viewerId } : {}),
       });
       if (error) throw new Error(error.message);
       const row = (Array.isArray(data) ? data[0] : data) as
