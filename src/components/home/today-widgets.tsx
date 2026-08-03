@@ -14,6 +14,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { RecognitionRow } from "@/lib/recognition-data";
 import { RECOGNITION_CATEGORY_META } from "@/lib/recognition-data";
+import type { MarketingFocus } from "@/lib/today-insights";
+import { formatPercent } from "@/lib/today-insights";
 import type { SystemFocus, TeamFocus } from "@/lib/today-insights";
 import type { TodayMetrics } from "@/lib/today-metrics";
 import { RANGE_PHRASE, type TodayRange } from "@/lib/today-range";
