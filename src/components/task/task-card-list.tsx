@@ -2,7 +2,11 @@ import * as React from "react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { DeadlineCountdown, PriorityLabel } from "@/components/task/task-cell-bits";
+import {
+  CommentIndicator,
+  DeadlineCountdown,
+  PriorityLabel,
+} from "@/components/task/task-cell-bits";
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_TONE,
@@ -18,10 +22,19 @@ export interface TaskCardListProps {
   tasks: TaskRow[];
   columns: OptionalColumnId[];
   onOpen: (task: TaskRow) => void;
+  unreadCount: (taskId: string) => number;
+  onOpenComments: (taskId: string) => void;
   renderActions: (task: TaskRow) => React.ReactNode;
 }
 
-export function TaskCardList({ tasks, columns, onOpen, renderActions }: TaskCardListProps) {
+export function TaskCardList({
+  tasks,
+  columns,
+  onOpen,
+  unreadCount,
+  onOpenComments,
+  renderActions,
+}: TaskCardListProps) {
   const show = (id: OptionalColumnId) => columns.includes(id);
 
   return (
@@ -48,7 +61,13 @@ export function TaskCardList({ tasks, columns, onOpen, renderActions }: TaskCard
                 </p>
               ) : null}
             </button>
-            <div onClick={(event) => event.stopPropagation()}>{renderActions(task)}</div>
+            <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+              <CommentIndicator
+                unread={unreadCount(task.id)}
+                onOpen={() => onOpenComments(task.id)}
+              />
+              {renderActions(task)}
+            </div>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
