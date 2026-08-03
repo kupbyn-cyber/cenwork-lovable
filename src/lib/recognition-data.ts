@@ -107,6 +107,12 @@ export interface RecognitionPerson {
   avatar_path: string | null;
 }
 
+/** Người nhận trong bộ chọn — chỉ các trường nhận diện cơ bản. */
+export interface RecognitionDirectoryPerson extends RecognitionPerson {
+  job_title: string | null;
+  primary_team_id: string | null;
+}
+
 export interface RecognitionRow {
   id: string;
   sender_id: string;
