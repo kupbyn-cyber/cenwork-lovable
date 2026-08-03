@@ -116,7 +116,10 @@ export const COLUMN_LABEL: Record<OptionalColumnId, string> = {
   status: "Trạng thái",
 };
 
-export const DEFAULT_COLUMNS: OptionalColumnId[] = [...OPTIONAL_COLUMNS];
+/** Mặc định ẩn cột Ưu tiên (vẫn giữ dữ liệu, bộ lọc và bật lại trong "Cột hiển thị"). */
+export const DEFAULT_COLUMNS: OptionalColumnId[] = OPTIONAL_COLUMNS.filter(
+  (id) => id !== "priority",
+);
 
 export function hasActiveFilters(filters: TaskFilterState) {
   return (
