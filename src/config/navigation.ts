@@ -11,7 +11,6 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
-  Bell,
   Megaphone,
   Send,
   Sparkles,
@@ -22,7 +21,6 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-
 
 /**
  * CEN 1.0 — Navigation config (M1.2)
@@ -121,12 +119,6 @@ export const navGroups: NavGroup[] = [
         to: "/recognitions",
         icon: Sparkles,
       },
-      {
-        key: "notifications",
-        label: "Thông báo",
-        to: "/notifications",
-        icon: Bell,
-      },
     ],
   },
   {
@@ -196,7 +188,6 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
-
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   const to = String(item.to ?? "/");

@@ -5,6 +5,7 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import { AnnouncementBody } from "@/components/announcement/announcement-body";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -32,6 +33,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** Thu gọn bớt metadata khi hiển thị trong Dashboard. */
   compact?: boolean;
+  /** Hiện nhãn "Nội bộ" khi đứng chung danh sách với thông báo hệ thống. */
+  showSourceBadge?: boolean;
 }
 
 function preview(body: string) {
@@ -39,7 +42,14 @@ function preview(body: string) {
   return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 }
 
-export function AnnouncementAckCard({ row, senderName, open, onOpenChange, compact }: Props) {
+export function AnnouncementAckCard({
+  row,
+  senderName,
+  open,
+  onOpenChange,
+  compact,
+  showSourceBadge,
+}: Props) {
   const status = effectiveRecipientStatus(row);
   const done = row.status === "completed" || row.status === "exempt";
   const active = isAnnouncementActive(row.announcement);
@@ -76,6 +86,13 @@ export function AnnouncementAckCard({ row, senderName, open, onOpenChange, compa
       <CardContent className="flex min-w-0 flex-col gap-3 pt-(--card-pad)">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
+            {showSourceBadge ? (
+              <span className="flex">
+                <Badge size="sm" variant="outline">
+                  Nội bộ
+                </Badge>
+              </span>
+            ) : null}
             <span className="min-w-0 break-words text-body font-semibold text-text-primary">
               {row.announcement.title || "(Chưa có tiêu đề)"}
             </span>
