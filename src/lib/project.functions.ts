@@ -20,7 +20,6 @@ const createProjectSchema = z.object({
   startDate: z.string().date().nullable(),
   deadline: z.string().date().nullable(),
   teamIds: z.array(z.string().uuid()).max(50).default([]),
-  memberIds: z.array(z.string().uuid()).max(200).default([]),
   facilityIds: z.array(z.string().uuid()).max(50).default([]),
   responsibleTeamId: z.string().uuid().nullable().default(null),
   /** true = gửi duyệt ngay sau khi tạo; false = lưu bản nháp. */
@@ -66,12 +65,8 @@ export const createProject = createServerFn({ method: "POST" })
         .insert(data.teamIds.map((teamId) => ({ project_id: projectId, team_id: teamId })));
       check(teamError);
     }
-    if (data.memberIds.length > 0) {
-      const { error: memberError } = await context.supabase
-        .from("project_members")
-        .insert(data.memberIds.map((userId) => ({ project_id: projectId, user_id: userId })));
-      check(memberError);
-    }
+    // Không còn ghi project_members: phạm vi Dự án được tính động từ
+    // Chủ dự án + Team phụ trách + Team tham gia (public.is_in_project_scope).
     if (data.facilityIds.length > 0) {
       const { error: facilityError } = await context.supabase.from("project_facilities").insert(
         data.facilityIds.map((facilityId) => ({
