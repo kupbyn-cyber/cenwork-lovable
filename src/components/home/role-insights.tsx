@@ -2,8 +2,8 @@ import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { Activity, ServerCog, Sparkles, Users } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardCard, todaySpan, type TodaySize } from "@/components/home/today-layout";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonCard } from "@/components/ui/skeleton";
@@ -29,8 +29,12 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
     if (flow) {
       return (
         <>
-          <SkeletonCard lines={4} />
-          <SkeletonCard lines={4} />
+          <div className={todaySpan("compact")}>
+            <SkeletonCard lines={4} />
+          </div>
+          <div className={todaySpan("wide")}>
+            <SkeletonCard lines={4} />
+          </div>
         </>
       );
     }
@@ -44,7 +48,7 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
 
   if (isError || !data) {
     return (
-      <Card className={flow ? "lg:col-span-3" : undefined}>
+      <Card className={flow ? todaySpan("full") : undefined}>
         <CardContent className="pt-(--card-pad)">
           <ErrorState
             variant="compact"
@@ -60,17 +64,15 @@ export function RoleInsights({ flow = false }: { flow?: boolean } = {}) {
     return (
       <>
         {data.failedSources.length > 0 ? (
-          <div className="lg:col-span-3 rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger">
+          <div className="col-span-full rounded-card border border-state-danger/40 bg-surface-subtle px-3 py-2 text-helper text-state-danger">
             Một số nguồn dữ liệu chưa tải được ({data.failedSources.join(", ")}). Số liệu bên dưới
             có thể thiếu.
           </div>
         ) : null}
         <MyFocusCard focus={data.me} />
-        {data.team ? <TeamFocusCard focus={data.team} /> : null}
-        {data.marketing ? (
-          <MarketingFocusCard focus={data.marketing} className="lg:col-span-2" />
-        ) : null}
-        {data.system ? <SystemFocusCard focus={data.system} className="lg:col-span-2" /> : null}
+        {data.team ? <TeamFocusCard focus={data.team} size="wide" /> : null}
+        {data.marketing ? <MarketingFocusCard focus={data.marketing} size="wide" /> : null}
+        {data.system ? <SystemFocusCard focus={data.system} size="wide" /> : null}
       </>
     );
   }

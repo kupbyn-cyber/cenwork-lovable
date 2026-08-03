@@ -1,9 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, FolderPlus, ListPlus, Megaphone, Sparkles, Users } from "lucide-react";
+import { ClipboardList, FolderPlus, ListPlus, Megaphone, Sparkles, Users, Zap } from "lucide-react";
 import type { LinkProps } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-
-import { Zap } from "lucide-react";
 
 import { DashboardCard } from "@/components/home/today-layout";
 import { Button } from "@/components/ui/button";
