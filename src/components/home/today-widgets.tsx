@@ -184,6 +184,45 @@ interface Alert {
   severity: number;
 }
 
+/** Sức khỏe Team ở góc nhìn toàn hệ thống (Admin/CMO). */
+export function MarketingHealthWidget({ marketing }: { marketing: MarketingFocus | null }) {
+  return (
+    <DashboardCard
+      size="compact"
+      icon={Users}
+      title="Sức khỏe Team"
+      to="/organization"
+      className="h-full"
+    >
+      {marketing ? (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Tổng số Team" value={marketing.total_teams} />
+            <Stat
+              label="Team cần chú ý"
+              value={marketing.teams_attention.length}
+              danger={marketing.teams_attention.length > 0}
+            />
+            <Stat
+              label="Việc quá hạn"
+              value={marketing.overdue_tasks}
+              danger={marketing.overdue_tasks > 0}
+            />
+            <Stat label="Tỷ lệ báo cáo ngày" value={formatPercent(marketing.daily_report_rate)} />
+          </div>
+          {marketing.teams_attention.length > 0 ? (
+            <span className="min-w-0 truncate text-helper text-text-muted">
+              Cần chú ý: {marketing.teams_attention.slice(0, 3).map((t) => t.team_name).join(", ")}
+            </span>
+          ) : null}
+        </>
+      ) : (
+        <EmptyState variant="compact" title="Chưa có dữ liệu Team" />
+      )}
+    </DashboardCard>
+  );
+}
+
 export function SystemAlertsWidget({ system }: { system: SystemFocus | null }) {
   const alerts: Alert[] = system
     ? [
