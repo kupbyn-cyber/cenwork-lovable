@@ -5488,6 +5488,10 @@ export type Database = {
       document_is_published: { Args: { _document: string }; Returns: boolean }
       document_link_identity: { Args: { _url: string }; Returns: string }
       document_pick_admin: { Args: { _exclude: string[] }; Returns: string }
+      document_publish_now: {
+        Args: { _document: string }
+        Returns: Database["public"]["Enums"]["document_version_status"]
+      }
       document_reject: {
         Args: { _document: string; _reason: string }
         Returns: undefined

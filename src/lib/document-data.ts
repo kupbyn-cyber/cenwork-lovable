@@ -502,6 +502,14 @@ export async function submitDocument(documentId: string): Promise<void> {
   if (error) throw approvalError(error.message);
 }
 
+/** DOC-RULE-08B — Admin/CMO phát hành ngay tài liệu vừa tạo (không cần bước tự duyệt). */
+export async function publishDocumentNow(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc("document_publish_now" as never, {
+    _document: documentId,
+  } as never);
+  if (error) throw approvalError((error as { message: string }).message);
+}
+
 export async function withdrawDocument(documentId: string): Promise<void> {
   const { error } = await supabase.rpc("document_withdraw", { _document: documentId });
   if (error) throw approvalError(error.message);
