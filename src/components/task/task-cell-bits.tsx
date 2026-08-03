@@ -1,6 +1,8 @@
 import * as React from "react";
+import { MessageSquare } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatUnreadBadge } from "@/lib/task-comment-data";
 import {
   TASK_PRIORITY_LABEL,
   taskDeadlineCountdown,
@@ -65,5 +67,41 @@ export function PriorityLabel({ priority }: { priority: TaskPriority }) {
       ) : null}
       {TASK_PRIORITY_LABEL[priority]}
     </span>
+  );
+}
+
+/**
+ * Icon bình luận + badge chưa đọc (tính riêng theo người dùng).
+ * Bấm vào sẽ mở chi tiết Task tại khu vực Bình luận.
+ */
+export function CommentIndicator({
+  unread,
+  onOpen,
+  className,
+}: {
+  unread: number;
+  onOpen: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={unread > 0 ? `${unread} bình luận chưa đọc` : "Mở bình luận"}
+      className={cn(
+        "relative inline-flex size-6 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-muted hover:text-text-primary",
+        className,
+      )}
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+    >
+      <MessageSquare className="size-4" />
+      {unread > 0 ? (
+        <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-state-danger px-1 text-[10px] leading-4 font-semibold text-white">
+          {formatUnreadBadge(unread)}
+        </span>
+      ) : null}
+    </button>
   );
 }
