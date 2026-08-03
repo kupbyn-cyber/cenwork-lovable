@@ -2,7 +2,6 @@ import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormModal } from "@/components/ui/form-modal";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ import { isSystemAdminRole, roleRequiresTeam } from "@/lib/permissions";
 import {
   JOB_TITLES,
   ROLE_LABEL,
-  replaceCollaboratorTeams,
   updateMemberProfile,
   validateContactFields,
   type AppRole,
@@ -47,7 +45,6 @@ interface FormState {
   jobTitle: string;
   role: AppRole;
   primaryTeamId: string;
-  collaboratorTeamIds: string[];
   password: string;
   phoneNumber: string;
   birthday: string;
@@ -61,7 +58,6 @@ function initialState(member: MemberRow | null): FormState {
     jobTitle: member?.job_title ?? "",
     role: member?.role ?? "member",
     primaryTeamId: member?.primary_team_id ?? NO_TEAM,
-    collaboratorTeamIds: member?.collaboratorTeamIds ?? [],
     password: "",
     phoneNumber: member?.phone_number ?? "",
     birthday: member?.birthday ?? "",
@@ -94,7 +90,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
   const mutation = useMutation({
     mutationFn: async (values: FormState) => {
       const primaryTeamId = values.primaryTeamId === NO_TEAM ? null : values.primaryTeamId;
-      const collaborators = values.collaboratorTeamIds.filter((id) => id !== primaryTeamId);
 
       if (isCreate) {
         await createMemberAccount({
@@ -104,7 +99,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             jobTitle: values.jobTitle.trim() || null,
             role: values.role,
             primaryTeamId,
-            collaboratorTeamIds: collaborators,
             initialPassword: values.password,
             phoneNumber: values.phoneNumber.trim(),
             birthday: values.birthday,
@@ -127,7 +121,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
       if (canEditRoleTeam && values.role !== member.role) {
         await setMemberRole({ data: { userId: member.id, role: values.role } });
       }
-      await replaceCollaboratorTeams(member.id, collaborators);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["members"] });
@@ -400,7 +393,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
                 setForm((s) => ({
                   ...s,
                   primaryTeamId: value,
-                  collaboratorTeamIds: s.collaboratorTeamIds.filter((id) => id !== value),
                 }))
               }
             >
@@ -421,43 +413,6 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
             </Select>
           )}
         </FormField>
-
-        <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="text-label font-medium text-text-secondary">Team phối hợp</legend>
-          <p className="text-helper text-text-muted">
-            Có thể chọn nhiều Team, không gồm Team chính.
-          </p>
-          {teams.length === 0 ? (
-            <p className="text-helper text-text-muted">Chưa có Team nào trong hệ thống.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {teams
-                .filter((team) => team.id !== form.primaryTeamId)
-                .map((team) => {
-                  const checked = form.collaboratorTeamIds.includes(team.id);
-                  return (
-                    <label
-                      key={team.id}
-                      className="flex min-w-0 items-center gap-2.5 text-label text-text-primary"
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(value) =>
-                          setForm((s) => ({
-                            ...s,
-                            collaboratorTeamIds: value
-                              ? [...s.collaboratorTeamIds, team.id]
-                              : s.collaboratorTeamIds.filter((id) => id !== team.id),
-                          }))
-                        }
-                      />
-                      <span className="min-w-0 truncate">{team.name}</span>
-                    </label>
-                  );
-                })}
-            </div>
-          )}
-        </fieldset>
 
         {formError ? (
           <p
