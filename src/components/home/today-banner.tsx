@@ -32,11 +32,19 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
     <section className="cen-hero-surface cen-hairlines rounded-container border border-border-default px-5 py-6 shadow-level-2 sm:px-7 sm:py-7">
       <div className="relative z-[1] flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-2">
-          <h1 className="min-w-0 text-2xl font-semibold leading-tight tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
-            {hanoiGreeting()},{" "}
-            <span className="bg-gradient-to-r from-brand-primary via-accent-yellow to-accent-orange bg-clip-text text-transparent">
-              {name}
+          <div className="flex min-w-0 items-center gap-2">
+            <img
+              src="/brand/logo-mark.svg"
+              alt="CEN WORK"
+              className="size-6 shrink-0"
+              loading="lazy"
+            />
+            <span className="text-caption font-semibold tracking-[0.28em] text-accent-yellow uppercase">
+              Marketing Command Center
             </span>
+          </div>
+          <h1 className="min-w-0 text-2xl font-bold leading-tight tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
+            {hanoiGreeting()}, {name}
           </h1>
           <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-helper text-text-secondary">
             <span>{hanoiLongDate()}</span>
@@ -56,17 +64,20 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
         </div>
 
         <div
-          className="flex shrink-0 flex-wrap gap-1 rounded-control border border-border-default bg-surface-subtle p-1"
+          className="flex shrink-0 flex-wrap gap-1 self-start rounded-control border border-border-default bg-surface-subtle p-1 shadow-level-2 lg:self-center"
           role="group"
           aria-label="Phạm vi thời gian"
         >
           {TODAY_RANGES.map((option: TodayRange) => (
             <Button
               key={option}
-              size="sm"
+              size="md"
               variant={option === range ? "primary" : "ghost"}
               aria-pressed={option === range}
-              className={cn("min-w-[76px]")}
+              className={cn(
+                "min-w-[104px] font-semibold",
+                option === range ? "shadow-level-2" : "text-text-secondary",
+              )}
               onClick={() => setRange(option)}
             >
               {RANGE_LABEL[option]}
