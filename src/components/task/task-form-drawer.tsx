@@ -272,11 +272,13 @@ export function TaskFormDrawer({
       size="xl"
       open={open}
       onOpenChange={mutation.isPending ? () => undefined : onOpenChange}
-      title={isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"}
+      title={memberFlow ? "Gửi công việc chờ duyệt" : isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"}
       description={
-        canScope
-          ? "Công việc có thể thuộc một dự án hoặc đứng độc lập."
-          : "Bạn là người phụ trách: chỉ cập nhật được nội dung và tiến độ."
+        memberFlow
+          ? "Công việc sẽ được gửi tới Leader của Team phụ trách dự án để phê duyệt."
+          : canScope
+            ? "Công việc có thể thuộc một dự án hoặc đứng độc lập."
+            : "Bạn là người phụ trách: chỉ cập nhật được nội dung và tiến độ."
       }
       footer={
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -289,7 +291,7 @@ export function TaskFormDrawer({
             Hủy
           </Button>
           <Button type="submit" form="task-form" loading={mutation.isPending}>
-            {isCreate ? "Tạo công việc" : "Lưu thay đổi"}
+            {memberFlow ? "Gửi Leader duyệt" : isCreate ? "Tạo công việc" : "Lưu thay đổi"}
           </Button>
         </div>
       }
@@ -324,7 +326,43 @@ export function TaskFormDrawer({
           )}
         </FormField>
 
-        {canScope ? (
+        {memberFlow ? (
+          <>
+            <FormField
+              id="task-project"
+              label="Dự án"
+              required
+              error={errors.projectId}
+              helperText={
+                missingTeam
+                  ? "Dự án chưa có Team phụ trách. Vui lòng liên hệ Admin/CMO để cập nhật."
+                  : (noLeaderHint ?? "Chỉ hiển thị dự án bạn đang tham gia.")
+              }
+            >
+              {(control) => (
+                <Select
+                  value={form.projectId}
+                  onValueChange={(value) => setForm({ ...form, projectId: value })}
+                  disabled={Boolean(lockedProjectId)}
+                >
+                  <SelectTrigger {...control} aria-label="Dự án">
+                    <SelectValue placeholder="Chọn dự án" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectableProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
+            <p className="text-body-sm text-text-secondary">
+              Người phụ trách: <span className="font-medium text-text-primary">{selfName}</span>
+            </p>
+          </>
+        ) : canScope ? (
           <FormField
             id="task-project"
             label="Dự án"
@@ -356,7 +394,7 @@ export function TaskFormDrawer({
           </FormField>
         ) : null}
 
-        {canScope ? (
+        {canScope && !memberFlow ? (
           <FormField
             id="task-assignee"
             label="Người phụ trách"
@@ -385,7 +423,7 @@ export function TaskFormDrawer({
           </FormField>
         ) : null}
 
-        {canScope ? (
+        {canScope && !memberFlow ? (
           <FormField id="task-team" label="Team phụ trách">
             {(control) => (
               <Select
@@ -460,6 +498,7 @@ export function TaskFormDrawer({
               </Select>
             )}
           </FormField>
+          {memberFlow ? null : (
           <FormField id="task-status" label="Trạng thái">
             {(control) => (
               <Select
@@ -479,6 +518,7 @@ export function TaskFormDrawer({
               </Select>
             )}
           </FormField>
+          )}
         </div>
 
         {canScope ? (
@@ -489,10 +529,10 @@ export function TaskFormDrawer({
           >
             {() => (
               <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
-                {people.length === 0 ? (
+                {participantPool.length === 0 ? (
                   <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
                 ) : (
-                  people
+                  participantPool
                     .filter((person) => person.id !== form.assigneeId)
                     .map((person) => (
                       <label key={person.id} className="flex items-center gap-2 text-body-sm">
