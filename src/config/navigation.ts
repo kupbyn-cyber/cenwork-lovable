@@ -22,7 +22,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-
 /**
  * CEN 1.0 — Navigation config (M1.2)
  * Nguồn duy nhất cho Sidebar + Mobile Drawer.
@@ -189,7 +188,6 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
-
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   const to = String(item.to ?? "/");
