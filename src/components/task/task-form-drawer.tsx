@@ -127,6 +127,7 @@ export function TaskFormDrawer({
   const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  const nameWarning = getTaskNameWarning(form.name);
 
   React.useEffect(() => {
     if (open) {
