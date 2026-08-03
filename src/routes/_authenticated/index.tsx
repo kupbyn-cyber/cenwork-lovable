@@ -8,6 +8,7 @@ import { QuickActions } from "@/components/home/quick-actions";
 import { TodayBanner } from "@/components/home/today-banner";
 import { buildKpis, TodayKpiRow } from "@/components/home/today-kpis";
 import {
+  MarketingHealthWidget,
   MyWorkWidget,
   PersonalProgressWidget,
   RecognitionWidget,
@@ -205,7 +206,7 @@ function DashboardBody() {
         ) : (
           <>
             <SystemAlertsWidget system={insights.data?.system ?? null} />
-            <TeamHealthWidget team={insights.data?.team ?? null} />
+            <MarketingHealthWidget marketing={insights.data?.marketing ?? null} />
             <div className="min-w-0 md:col-span-2 xl:col-span-1">
               <ReportStatusWidget
                 pendingDaily={pendingDaily}
