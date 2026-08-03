@@ -15,6 +15,8 @@ export interface BootstrapState {
 export interface AuthAdapter {
   /** Trạng thái để quyết định setup_required. */
   readBootstrapState(): Promise<BootstrapState>;
+  /** Bổ sung dữ liệu hệ thống bắt buộc còn thiếu (idempotent). */
+  ensureSystemDefaults(): Promise<void>;
   /** Tạo user ở tầng Auth (chưa có quyền gì). */
   createBootstrapUser(input: {
     email: string;
@@ -93,6 +95,38 @@ export function createSupabaseAuthAdapter(): AuthAdapter {
     },
 
     async createBootstrapUser({ email, password, displayName }) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { display_name: displayName },
+      });
+      if (error || !data.user) {
+        throw new Error(
+          error?.message.includes("already")
+            ? "Email này đã tồn tại trong hệ thống."
+            : "Không tạo được tài khoản quản trị.",
+        );
+      }
+      return { userId: data.user.id };
+    },
+
+    /**
+     * Database mới sau Remix có thể thiếu permission_catalog / role_permission_config /
+     * app_settings. Hàm DB `ensure_system_defaults` chỉ bổ sung phần thiếu, không ghi đè.
+     */
+    async ensureSystemDefaults() {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.rpc("ensure_system_defaults");
+      if (error) throw new Error("Không khởi tạo được dữ liệu hệ thống mặc định.");
+    },
+
+    async _unusedCreateBootstrapUser({ email, password, displayName }: {
+      email: string;
+      password: string;
+      displayName: string;
+    }) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
