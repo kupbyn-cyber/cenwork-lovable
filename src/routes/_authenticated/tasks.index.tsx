@@ -27,6 +27,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
 import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { TaskApprovalPanel } from "@/components/task/task-approval-panel";
 import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
 import { TaskCardList } from "@/components/task/task-card-list";
 import { TaskSavedViews } from "@/components/task/task-saved-views";
@@ -430,6 +431,8 @@ function TasksPage() {
         onSelect={applyView}
         currentConfig={currentConfig}
       />
+
+      <TaskApprovalPanel ctx={ctx} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Input
