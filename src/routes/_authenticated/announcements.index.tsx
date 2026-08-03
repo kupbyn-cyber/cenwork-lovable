@@ -254,8 +254,13 @@ function AnnouncementsPage() {
 
       <Card>
         <CardContent className="flex min-w-0 flex-col gap-4">
-          {tab !== "created" ? (
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div
+            className={
+              "flex min-w-0 flex-wrap items-center gap-2" +
+              (tab === "created" ? " pointer-events-none opacity-50" : "")
+            }
+            aria-hidden={tab === "created"}
+          >
               {(
                 [
                   ["all", "Tất cả"],
@@ -269,6 +274,8 @@ function AnnouncementsPage() {
                   size="sm"
                   variant={kind === value ? "primary" : "secondary"}
                   aria-pressed={kind === value}
+                  disabled={tab === "created"}
+                  tabIndex={tab === "created" ? -1 : undefined}
                   onClick={() => setKind(value)}
                 >
                   {label}
@@ -280,15 +287,15 @@ function AnnouncementsPage() {
                 size="sm"
                 variant="ghost"
                 className="ms-auto"
-                disabled={systemUnread === 0 || markAll.isPending}
+                disabled={tab === "created" || systemUnread === 0 || markAll.isPending}
+                tabIndex={tab === "created" ? -1 : undefined}
                 loading={markAll.isPending}
                 onClick={() => markAll.mutate()}
               >
                 <CheckCheck />
                 Đánh dấu thông báo hệ thống đã đọc tất cả
               </Button>
-            </div>
-          ) : null}
+          </div>
 
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
             <Input
