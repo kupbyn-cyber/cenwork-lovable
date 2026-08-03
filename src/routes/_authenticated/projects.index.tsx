@@ -581,7 +581,7 @@ function ProjectsPage() {
         </div>
       </div>
       <div>
-        <div className="text-caption text-text-muted">Project Owner</div>
+        <div className="text-caption text-text-muted">Chủ dự án</div>
         <div className="truncate text-text-primary">{project.ownerName ?? "Chưa chỉ định"}</div>
       </div>
       <div>
@@ -756,8 +756,8 @@ function ProjectsPage() {
           </SelectContent>
         </Select>
         <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-          <SelectTrigger aria-label="Lọc theo Project Owner">
-            <SelectValue placeholder="Project Owner" />
+          <SelectTrigger aria-label="Lọc theo Chủ dự án">
+            <SelectValue placeholder="Chủ dự án" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Tất cả Owner</SelectItem>
