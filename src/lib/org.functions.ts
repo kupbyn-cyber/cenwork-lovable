@@ -82,6 +82,8 @@ export const createMemberAccount = createServerFn({ method: "POST" })
       .eq("id", userId);
     if (profileError) throw new Error("Không lưu được hồ sơ thành viên.");
 
+    // Mỗi user chỉ có đúng một system role: thay thế thay vì chèn thêm.
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: userId, role: data.role });
