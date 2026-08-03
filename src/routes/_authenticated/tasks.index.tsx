@@ -36,15 +36,13 @@ import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
 import type { RowAction } from "@/components/common/row-actions-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { DeadlineCountdown, PriorityLabel } from "@/components/task/task-cell-bits";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
-  TASK_PRIORITY_LABEL,
-  TASK_PRIORITY_TONE,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   TASK_STATUS_TONE,
@@ -53,9 +51,7 @@ import {
   canManuallyArchiveTask,
   canRequestTaskDeadline,
   canRestoreTask,
-  formatDateTime,
   isTaskArchived,
-  isTaskOverdue,
   tasksQuery,
   type TaskAccessContext,
   type TaskRow,
