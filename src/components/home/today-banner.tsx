@@ -33,7 +33,7 @@ export function TodayBanner({ name, prompt }: { name: string; prompt: string }) 
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-1">
           <h1 className="min-w-0 truncate text-h2 font-semibold text-text-primary">
-            {hanoiGreeting()}, {name} 👋
+            {hanoiGreeting()}, {name}
           </h1>
           <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-helper text-text-secondary">
             <span>{hanoiLongDate()}</span>
