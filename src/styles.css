@@ -496,3 +496,59 @@ html[data-motion="off"] :is(.cen-press, .cen-press-subtle, .cen-hover-lift) {
     animation: none !important;
   }
 }
+
+/* ---- RECOG-UI-08: banner Ghi nhận đồng đội (dark + gold honor) ---- */
+@utility cen-recog-surface {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, oklch(0.26 0.045 162) 0%, oklch(0.19 0.018 165) 34%, oklch(0.18 0.012 165) 50%, oklch(0.19 0.018 165) 66%, oklch(0.26 0.045 162) 100%);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(42% 130% at 50% 60%, oklch(0.8464 0.1585 88.5 / 14%), transparent 72%),
+      radial-gradient(30% 110% at 6% 20%, oklch(0.5 0.11 158.3 / 26%), transparent 74%),
+      radial-gradient(30% 110% at 94% 20%, oklch(0.5 0.11 158.3 / 22%), transparent 74%);
+  }
+}
+
+@keyframes cen-recog-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cen-recog-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@utility cen-recog-in {
+  animation: cen-recog-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility cen-recog-pulse {
+  animation: cen-recog-pulse 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cen-recog-in,
+  .cen-recog-pulse {
+    animation: none !important;
+  }
+}
