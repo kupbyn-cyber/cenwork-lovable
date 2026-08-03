@@ -44,6 +44,9 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
     void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
+    void queryClient.invalidateQueries({ queryKey: ["today-insights"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
   const decide = useMutation({
