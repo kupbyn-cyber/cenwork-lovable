@@ -108,6 +108,8 @@ function DutyPage() {
   const [areaFilter, setAreaFilter] = React.useState<string>(ALL);
   const [teamFilter, setTeamFilter] = React.useState<string>(ALL);
   const [statusFilter, setStatusFilter] = React.useState<string>(ALL);
+  // DUTY-LIST-UX-01: mặc định ưu tiên hôm nay và các lịch gần nhất.
+  const [view, setView] = React.useState<"upcoming" | "completed" | "all">("upcoming");
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<DutyAssignmentRow | null>(null);
@@ -184,15 +186,18 @@ function DutyPage() {
 
   const filtered = React.useMemo(() => {
     const rows = assignments.data ?? [];
+    const today = toISO(new Date());
     return rows.filter((row) => {
       if (areaFilter !== ALL && row.area_id !== areaFilter) return false;
       if (teamFilter !== ALL && row.duty_team_id !== teamFilter) return false;
       if (statusFilter !== ALL && effectiveDutyStatus(row) !== (statusFilter as DutyStatus)) {
         return false;
       }
+      if (view === "upcoming" && (row.duty_date < today || row.status === "completed")) return false;
+      if (view === "completed" && row.status !== "completed") return false;
       return true;
     });
-  }, [assignments.data, areaFilter, teamFilter, statusFilter]);
+  }, [assignments.data, areaFilter, teamFilter, statusFilter, view]);
 
   const today = todayISO();
   const myRows = mine.data ?? [];
@@ -241,6 +246,14 @@ function DutyPage() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
+              <TabsList>
+                <TabsTrigger value="upcoming">Hôm nay &amp; sắp tới</TabsTrigger>
+                <TabsTrigger value="completed">Đã hoàn thành</TabsTrigger>
+                <TabsTrigger value="all">Tất cả</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <Tabs
               value={mode}
               onValueChange={(v) => {
