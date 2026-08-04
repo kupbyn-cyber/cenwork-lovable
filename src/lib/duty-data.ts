@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 
 /**
  * CEN DUTY-02 — Lớp dữ liệu Lịch trực nhật.
@@ -24,6 +25,15 @@ export interface DutyCatalogItem {
   name: string;
   description?: string | null;
 }
+
+/** Người phụ trách hiển thị trong lịch trực. */
+export interface DutyPerson {
+  id: string;
+  name: string;
+}
+
+/** DUTY-LIST-UX-01 — không để trống tên khi hồ sơ đã bị khóa/không còn hoạt động. */
+export const DUTY_UNKNOWN_PERSON = "Thành viên không còn hoạt động";
 
 export interface DutyRuleRow {
   id: string;
@@ -58,6 +68,8 @@ export interface DutyAssignmentRow {
   provider: { id: string; name: string } | null;
   memberIds: string[];
   memberNames: string[];
+  /** Danh sách người phụ trách đã chuẩn hóa tên (không bao giờ rỗng tên). */
+  people: DutyPerson[];
 }
 
 const SELECT_COLUMNS =
@@ -194,13 +206,28 @@ async function attachMembers(rows: DutyAssignmentRow[]): Promise<DutyAssignmentR
       ),
   ) as { assignment_id: string; user_id: string }[];
 
-  const userIds = Array.from(new Set(members.map((m) => m.user_id)));
-  const profiles = userIds.length
-    ? ((unwrap(
-        await supabase.from("profiles").select("id,display_name").in("id", userIds),
-      ) as { id: string; display_name: string }[]) ?? [])
-    : [];
-  const nameById = new Map(profiles.map((p) => [p.id, p.display_name]));
+  // Bảng `profiles` bị RLS giới hạn theo phạm vi quản lý nên người khác Team sẽ mất tên.
+  // Dùng danh bạ nội bộ (SECURITY DEFINER) để mọi user_id đã phân công đều có tên.
+  await primeLockedIdentity();
+  const directory = unwrap(await supabase.rpc("member_directory")) as {
+    id: string;
+    display_name: string | null;
+  }[];
+  const nameById = new Map(directory.map((p) => [p.id, p.display_name ?? ""]));
+  for (const row of rows) {
+    if (row.assignee_id && row.assignee?.display_name && !nameById.has(row.assignee_id)) {
+      nameById.set(row.assignee_id, row.assignee.display_name);
+    }
+    if (row.completed_by && row.completed_person?.display_name && !nameById.has(row.completed_by)) {
+      nameById.set(row.completed_by, row.completed_person.display_name);
+    }
+  }
+
+  const resolveName = (id: string): string => {
+    const raw = nameById.get(id);
+    if (!raw || !raw.trim()) return DUTY_UNKNOWN_PERSON;
+    return (maskName(raw, id) as string) || DUTY_UNKNOWN_PERSON;
+  };
 
   const byAssignment = new Map<string, string[]>();
   for (const m of members) {
@@ -208,13 +235,16 @@ async function attachMembers(rows: DutyAssignmentRow[]): Promise<DutyAssignmentR
   }
 
   return rows.map((row) => {
-    const memberIds = byAssignment.get(row.id) ?? (row.assignee_id ? [row.assignee_id] : []);
+    const stored = byAssignment.get(row.id) ?? [];
+    const memberIds = Array.from(
+      new Set(stored.length > 0 ? stored : row.assignee_id ? [row.assignee_id] : []),
+    );
+    const people = memberIds.map((id) => ({ id, name: resolveName(id) }));
     return {
       ...row,
       memberIds,
-      memberNames: memberIds.map(
-        (id) => nameById.get(id) ?? (id === row.assignee_id ? (row.assignee?.display_name ?? "") : ""),
-      ),
+      memberNames: people.map((p) => p.name),
+      people,
     };
   });
 }
