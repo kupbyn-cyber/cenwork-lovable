@@ -10,19 +10,25 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { ReviewActions } from "@/components/report/review-actions";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
 import { membersQuery } from "@/lib/org-data";
 import { TASK_STATUS_LABEL, TASK_STATUS_TONE, formatDateTime } from "@/lib/task-data";
 import {
   canReviewDaily,
   canReviewWeekly,
+  canTakeoverReview,
   dailyReportQuery,
   dailyTaskRefsQuery,
   formatWeekLabel,
+  isReviewOverdue,
   reportHistoryQuery,
   reportStatusView,
+  resolveDailyReviewerId,
+  resolveWeeklyReviewerId,
   reviewDailyReport,
   reviewWeeklyReport,
+  takeoverReportReview,
   weeklyReportQuery,
 } from "@/lib/report-data";
 
@@ -54,6 +60,9 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
   const access = useOrgAccess();
   const isMobile = useIsMobile();
   const membersResult = useQuery(membersQuery());
+  const directory = useReviewerDirectory();
+  const queryClient = useQueryClient();
+  const [takingOver, setTakingOver] = React.useState(false);
 
   const daily = useQuery({
     ...dailyReportQuery(reportId ?? ""),
@@ -83,14 +92,22 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
     role: access.role,
     leaderTeamId: access.leaderTeamId,
   };
-  const author = (membersResult.data ?? []).find(
-    (member) => member.id === (dailyRow?.author_id ?? ""),
-  );
   const reviewable = dailyRow
-    ? canReviewDaily(dailyRow, ctx, author?.role === "leader")
+    ? canReviewDaily(dailyRow, ctx, directory)
     : weeklyRow
-      ? canReviewWeekly(weeklyRow, ctx)
+      ? canReviewWeekly(weeklyRow, ctx, directory)
       : false;
+
+  const reviewerId = dailyRow
+    ? resolveDailyReviewerId(dailyRow, directory)
+    : weeklyRow
+      ? resolveWeeklyReviewerId(weeklyRow, directory)
+      : null;
+  const reviewerName =
+    (membersResult.data ?? []).find((member) => member.id === reviewerId)?.display_name ?? null;
+  const row = dailyRow ?? weeklyRow;
+  const overdue = row ? isReviewOverdue(row) : false;
+  const takeover = row ? canTakeoverReview(row, ctx, reviewable) : false;
 
   const status = dailyRow?.status ?? weeklyRow?.status ?? null;
   const view = status ? reportStatusView(status, reviewable) : null;
@@ -113,6 +130,22 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
           ["report-history", "weekly_report", reportId],
         ];
   }, [kind, reportId]);
+
+  async function handleTakeover() {
+    if (!reportId) return;
+    setTakingOver(true);
+    try {
+      await takeoverReportReview(kind, reportId, "Admin tiếp quản duyệt");
+      await Promise.all(
+        invalidateKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+      cenToast.success("Bạn đã tiếp quản việc duyệt báo cáo này.");
+    } catch (error) {
+      cenToast.error(error instanceof Error ? error.message : "Không tiếp quản được báo cáo.");
+    } finally {
+      setTakingOver(false);
+    }
+  }
 
   return (
     <DrawerPanel
@@ -145,6 +178,8 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {view ? <StatusBadge label={view.label} tone={view.tone} /> : null}
+            {reviewable ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
+            {overdue ? <StatusBadge label="Quá hạn" tone="danger" /> : null}
             <span className="text-helper text-text-muted">
               Gửi:{" "}
               {(dailyRow ?? weeklyRow)?.submitted_at
@@ -170,7 +205,10 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
                     : "—"
               }
             />
-            <Field title="Người duyệt" value={(dailyRow ?? weeklyRow)?.reviewerName ?? null} />
+            <Field
+              title="Người duyệt hiện tại"
+              value={(dailyRow ?? weeklyRow)?.reviewerName ?? reviewerName}
+            />
           </div>
 
           {dailyRow ? (
@@ -232,6 +270,22 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
                 }}
                 invalidateKeys={invalidateKeys}
               />
+            </div>
+          ) : takeover && reportId ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-border-default p-3">
+              <p className="text-label font-semibold text-text-primary">Quyền quản trị</p>
+              <p className="text-helper text-text-muted">
+                Báo cáo này đang chờ {reviewerName ?? "người duyệt được phân công"} xử lý. Bạn có thể
+                tiếp quản việc duyệt; hệ thống lưu lại người tiếp quản và thời điểm.
+              </p>
+              <Button
+                variant="secondary"
+                className="self-start"
+                disabled={takingOver}
+                onClick={() => void handleTakeover()}
+              >
+                Tiếp quản duyệt
+              </Button>
             </div>
           ) : null}
 
