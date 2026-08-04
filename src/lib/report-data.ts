@@ -400,6 +400,7 @@ export interface ReviewerDirectoryMember {
   role: AppRoleKey | null;
   status: string;
   primary_team_id: string | null;
+  display_name?: string | null;
 }
 
 export interface ReviewerDirectoryTeam {
@@ -441,11 +442,30 @@ export function resolveDailyReviewerId(
     const teamId = report.team_id ?? author?.primary_team_id ?? null;
     const leaderId = teamId ? (dir.teams.find((t) => t.id === teamId)?.leader_id ?? null) : null;
     if (leaderId && leaderId !== report.author_id && isActive(dir, leaderId)) return leaderId;
+    return null;
   }
   const cmo = activeWithRole(dir, "cmo");
   if (cmo && cmo !== report.author_id) return cmo;
-  const admin = activeWithRole(dir, "admin");
-  return admin && admin !== report.author_id ? admin : null;
+  return null;
+}
+
+/**
+ * REPORT-DAILY-LIST-01 — tên người duyệt hiển thị ngoài danh sách.
+ * Không bao giờ để trống khi báo cáo đang cần duyệt: thiếu người duyệt thì báo rõ.
+ */
+export function dailyReviewerView(
+  report: DailyReportRow,
+  dir: ReviewerDirectory,
+): { name: string | null; missing: boolean } {
+  const reviewerId = resolveDailyReviewerId(report, dir);
+  if (!reviewerId) {
+    return { name: null, missing: report.status === "submitted" };
+  }
+  const name =
+    report.reviewerName ??
+    maskName(dir.members.find((m) => m.id === reviewerId)?.display_name ?? null) ??
+    null;
+  return { name, missing: !name && report.status === "submitted" };
 }
 
 export function resolveWeeklyReviewerId(
