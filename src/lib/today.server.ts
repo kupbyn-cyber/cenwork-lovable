@@ -219,7 +219,7 @@ export async function buildTodayHub(
     const { data, error } = await supabase
       .from("tasks")
       .select(
-        "id,name,status,deadline,priority,assignee_id,team_id,created_by,created_at,is_archived,task_participants(user_id)",
+        "id,name,status,deadline,priority,assignee_id,team_id,created_by,created_at,is_archived",
       )
       .is("deleted_at", null)
       .eq("approval_status", "approved")
@@ -299,12 +299,12 @@ export async function buildTodayHub(
     check(error);
     for (const project of data ?? []) {
       const stage = project.status === "leader_review" ? "leader" : "cmo";
-      const canDecide = privileged
-        ? true
-        : stage === "leader" &&
-          leaderTeamId !== null &&
-          project.responsible_team_id === leaderTeamId &&
-          project.created_by !== userId;
+      // Chỉ người duyệt đang đến lượt: CMO/Admin ở bước CMO, Leader phụ trách ở bước Leader.
+      const canDecide =
+        project.created_by !== userId &&
+        (stage === "cmo"
+          ? privileged
+          : leaderTeamId !== null && project.responsible_team_id === leaderTeamId);
       if (!canDecide) continue;
       rows.push(
         item({
