@@ -15,7 +15,6 @@ import { ReviewActions } from "@/components/report/review-actions";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
-import { membersQuery } from "@/lib/org-data";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_TONE,
@@ -69,7 +68,6 @@ function DailyReportDetail() {
   const [editOpen, setEditOpen] = React.useState(false);
 
   const reportResult = useQuery(dailyReportQuery(reportId));
-  const membersResult = useQuery(membersQuery());
   const historyResult = useQuery(reportHistoryQuery("daily_report", reportId));
   const report = reportResult.data ?? null;
   const taskRefs = useQuery(
