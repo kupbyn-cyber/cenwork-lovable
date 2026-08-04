@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AnnouncementActions } from "@/components/announcement/announcement-actions";
 import { AnnouncementBody } from "@/components/announcement/announcement-body";
 import { AnnouncementProgress } from "@/components/announcement/announcement-progress";
+import { AnnouncementStatusPanel } from "@/components/announcement/announcement-status-panel";
 import { CommentThread } from "@/components/announcement/comment-thread";
 import { SurveyForm } from "@/components/announcement/survey-form";
 import { SurveyResults } from "@/components/announcement/survey-results";
@@ -233,6 +234,7 @@ function AnnouncementDetailPage() {
           {questions.length > 0 ? <TabsTrigger value="survey">Khảo sát</TabsTrigger> : null}
           <TabsTrigger value="comments">Bình luận</TabsTrigger>
           {canModerate ? <TabsTrigger value="progress">Tiến độ</TabsTrigger> : null}
+          {canModerate ? <TabsTrigger value="status">Trạng thái</TabsTrigger> : null}
           <TabsTrigger value="history">Phiên bản</TabsTrigger>
         </TabsList>
 
@@ -346,6 +348,20 @@ function AnnouncementDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {canModerate ? (
+          <TabsContent value="status">
+            <Card>
+              <CardContent className="flex min-w-0 flex-col gap-4">
+                <SectionHeader
+                  title="Trạng thái người nhận"
+                  description="Ai đã đọc, ai chưa đọc, ai đã xác nhận và thời điểm thực hiện."
+                />
+                <AnnouncementStatusPanel announcementId={announcementId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
 
         {canModerate ? (
           <TabsContent value="progress">
