@@ -481,10 +481,14 @@ export async function fetchWeeklySnapshot(
   const tasks = ((tasksRes.data ?? []) as unknown as RawWeeklyTask[]).filter(
     (row) => row.approval_status === "approved",
   );
+  const changesRequestedCount = ((tasksRes.data ?? []) as unknown as RawWeeklyTask[]).filter(
+    (row) => row.approval_status === "changes_requested" && !row.is_archived,
+  ).length;
 
   const completedTasks: WeeklyTaskItem[] = [];
   const attentionTasks: WeeklyTaskItem[] = [];
   const counts = { completed: 0, onTime: 0, overdue: 0, open: 0, review: 0, changesRequested: 0 };
+  counts.changesRequested = changesRequestedCount;
   const perPerson = new Map<string, WeeklyPersonItem>();
   function person(id: string): WeeklyPersonItem {
     let entry = perPerson.get(id);
