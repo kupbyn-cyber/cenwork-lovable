@@ -268,9 +268,9 @@ export function DutyAssignmentList({
   }
 
   return (
-    <div className="min-w-0">
-      {/* Mobile & tablet: card, không cuộn ngang */}
-      <div className="flex flex-col gap-4 lg:hidden">
+    <div className="@container min-w-0">
+      {/* Cột hẹp (mobile, tablet, panel bên): card, không cuộn ngang */}
+      <div className="flex flex-col gap-4 @3xl:hidden">
         {groups.map((group) => (
           <section key={group.date} className="min-w-0">
             <h3 className="mb-2 text-caption font-semibold text-text-muted uppercase">
@@ -285,8 +285,8 @@ export function DutyAssignmentList({
         ))}
       </div>
 
-      {/* Desktop: bảng nhóm theo ngày */}
-      <div className="hidden min-w-0 lg:block">
+      {/* Cột rộng: bảng nhóm theo ngày */}
+      <div className="hidden min-w-0 @3xl:block">
         <table className="w-full table-fixed border-collapse">
           <thead>
             <tr className="text-caption text-text-muted uppercase">
