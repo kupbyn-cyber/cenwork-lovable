@@ -35,6 +35,21 @@ export const REPORT_STATUS_TONE: Record<ReportStatus, StatusTone> = {
   approved: "success",
 };
 
+/**
+ * REPORT-REVIEW-UI-01 — nhãn trạng thái hiển thị ngoài danh sách.
+ * Báo cáo đã vào luồng duyệt hiển thị "Chờ duyệt" thay cho "Đã gửi";
+ * nếu đang chờ chính người dùng hiện tại duyệt thì nhấn mạnh hơn.
+ */
+export function reportStatusView(
+  status: ReportStatus,
+  awaitingMe = false,
+): { label: string; tone: StatusTone } {
+  if (status === "submitted") {
+    return { label: "Chờ duyệt", tone: awaitingMe ? "warning" : "progress" };
+  }
+  return { label: REPORT_STATUS_LABEL[status], tone: REPORT_STATUS_TONE[status] };
+}
+
 /* ================= Ngày và tuần theo giờ Hà Nội ================= */
 
 const dayFormatter = new Intl.DateTimeFormat("en-CA", {
