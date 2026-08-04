@@ -38,6 +38,7 @@ import {
   canReviewDaily,
   canReviewWeekly,
   dailyReportsQuery,
+  dailyReviewerView,
   formatWeekLabel,
   hanoiToday,
   isReviewOverdue,
@@ -87,6 +88,9 @@ function ReportsPage() {
   const [authorFilter, setAuthorFilter] = React.useState(ALL);
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
+  // REPORT-DAILY-LIST-01 — tab "Báo cáo ngày" mặc định chỉ hôm nay (giờ Hà Nội).
+  const [dailyDate, setDailyDate] = React.useState(() => hanoiToday());
+  const [dailyShowHistory, setDailyShowHistory] = React.useState(false);
   const [dailyOpen, setDailyOpen] = React.useState(false);
   const [weeklyOpen, setWeeklyOpen] = React.useState(false);
   const [detail, setDetail] = React.useState<{ kind: "daily" | "weekly"; id: string } | null>(null);
@@ -121,6 +125,11 @@ function ReportsPage() {
     });
   }, [dailyResult.data, statusFilter, teamFilter, authorFilter, fromDate, toDate]);
 
+  const dailyTabRows = React.useMemo(
+    () => (dailyShowHistory ? dailyRows : dailyRows.filter((row) => row.report_date === dailyDate)),
+    [dailyRows, dailyShowHistory, dailyDate],
+  );
+
   const weeklyRows = React.useMemo(() => {
     return (weeklyResult.data ?? []).filter((row) => {
       if (statusFilter !== ALL && row.status !== statusFilter) return false;
@@ -152,51 +161,51 @@ function ReportsPage() {
 
   const dailyColumns = [
     {
-      id: "status",
-      header: "Trạng thái",
-      className: "min-w-[150px]",
-      cell: (row: DailyReportRow) => {
-        const view = reportStatusView(row.status, awaitsMeDaily(row));
-        return (
-          <div className="flex flex-wrap items-center gap-1">
-            <StatusBadge label={view.label} tone={view.tone} />
-            {awaitsMeDaily(row) ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
-            {isReviewOverdue(row) ? <StatusBadge label="Quá hạn" tone="error" /> : null}
-          </div>
-        );
-      },
-    },
-    {
       id: "author",
       header: "Người gửi",
-      className: "min-w-[150px]",
+      className: "min-w-[170px]",
       cell: (row: DailyReportRow) => (
-        <span className="text-text-secondary">{row.authorName ?? "—"}</span>
-      ),
-    },
-    {
-      id: "date",
-      header: "Ngày / Team",
-      className: "min-w-[130px]",
-      cell: (row: DailyReportRow) => (
-        <TableCellStack primary={formatHanoiDate(row.report_date)} secondary={row.teamName ?? "—"} />
-      ),
-    },
-    {
-      id: "results",
-      header: "Kết quả",
-      className: "min-w-[220px]",
-      cell: (row: DailyReportRow) => (
-        <span className="line-clamp-2 text-text-secondary">{row.results ?? "—"}</span>
+        <TableCellStack
+          primary={row.authorName ?? "—"}
+          secondary={`${row.teamName ?? "Chưa có Team"} · ${formatHanoiDate(row.report_date)}`}
+        />
       ),
     },
     {
       id: "reviewer",
       header: "Người duyệt",
-      className: "min-w-[150px]",
+      className: "min-w-[160px]",
+      cell: (row: DailyReportRow) => {
+        const view = dailyReviewerView(row, directory);
+        if (view.name) return <span className="text-text-secondary">{view.name}</span>;
+        if (view.missing) return <StatusBadge label="Thiếu người duyệt" tone="error" />;
+        return <span className="text-text-muted">Chưa cần duyệt</span>;
+      },
+    },
+    {
+      id: "results",
+      header: "Kết quả",
+      className: "min-w-[260px]",
       cell: (row: DailyReportRow) => (
-        <span className="text-text-secondary">{row.reviewerName ?? "—"}</span>
+        <span className="line-clamp-2 max-w-[420px] text-text-secondary">{row.results ?? "—"}</span>
       ),
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      className: "min-w-[160px]",
+      cell: (row: DailyReportRow) => {
+        const view = reportStatusView(row.status, awaitsMeDaily(row));
+        const reviewer = dailyReviewerView(row, directory);
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            <StatusBadge label={view.label} tone={view.tone} />
+            {awaitsMeDaily(row) ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
+            {reviewer.missing ? <StatusBadge label="Thiếu người duyệt" tone="error" /> : null}
+            {isReviewOverdue(row) ? <StatusBadge label="Quá hạn" tone="error" /> : null}
+          </div>
+        );
+      },
     },
   ];
 
