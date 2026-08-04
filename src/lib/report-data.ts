@@ -482,11 +482,12 @@ export async function takeoverReportReview(
   id: string,
   reason: string | null,
 ) {
-  const { error } = await supabase.rpc("report_review_takeover", {
-    _kind: kind,
-    _id: id,
-    _reason: reason ?? undefined,
-  });
+  const args: { _kind: string; _id: string; _reason?: string } = { _kind: kind, _id: id };
+  if (reason) args._reason = reason;
+  const { error } = await supabase.rpc(
+    "report_review_takeover",
+    args as { _kind: string; _id: string; _reason: string },
+  );
   fail(error);
 }
 
