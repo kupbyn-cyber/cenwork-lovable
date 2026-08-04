@@ -393,8 +393,6 @@ export interface ReportAccessContext {
   leaderTeamId: string | null;
 }
 
-const privileged = (ctx: ReportAccessContext) => ctx.role === "admin" || ctx.role === "cmo";
-
 /* ========== REPORT-REVIEW-UI-01 — xác định người duyệt thật sự ========== */
 
 export interface ReviewerDirectoryMember {
@@ -487,7 +485,7 @@ export async function takeoverReportReview(
   const { error } = await supabase.rpc("report_review_takeover", {
     _kind: kind,
     _id: id,
-    _reason: reason,
+    _reason: reason ?? undefined,
   });
   fail(error);
 }
@@ -533,11 +531,7 @@ export function canEditWeekly(report: WeeklyReportRow, ctx: ReportAccessContext)
   );
 }
 
-export function canReviewWeekly(report: WeeklyReportRow, ctx: ReportAccessContext) {
-  return privileged(ctx) && report.status === "submitted";
-}
-
-export function canReviewWeeklyBy(
+export function canReviewWeekly(
   report: WeeklyReportRow,
   ctx: ReportAccessContext,
   dir: ReviewerDirectory,
