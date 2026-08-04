@@ -164,13 +164,9 @@ function DutyCard({ row, actions }: { row: DutyAssignmentRow; actions: DutyListA
   return (
     <li className="flex min-w-0 flex-col gap-2.5 rounded-control border border-border-default bg-background-elevated p-3">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-        <p className="min-w-0 truncate text-label font-semibold text-text-primary">
-          {formatDutyDate(row.duty_date)}
-        </p>
+        <PersonChips people={peopleOf(row)} />
         <StatusBadge label={DUTY_STATUS_LABEL[status]} tone={dutyStatusTone(status)} />
       </div>
-
-      <PersonChips people={peopleOf(row)} />
 
       <div className="flex min-w-0 flex-col gap-1">
         <p className="min-w-0 text-body font-semibold break-words text-text-primary">
