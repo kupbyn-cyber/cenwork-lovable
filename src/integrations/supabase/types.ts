@@ -5153,6 +5153,7 @@ export type Database = {
           review_note: string | null
           reviewed_at: string | null
           reviewer_id: string | null
+          snapshot: Json | null
           status: Database["public"]["Enums"]["report_status"]
           submitted_at: string | null
           team_id: string
@@ -5170,6 +5171,7 @@ export type Database = {
           review_note?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
+          snapshot?: Json | null
           status?: Database["public"]["Enums"]["report_status"]
           submitted_at?: string | null
           team_id: string
@@ -5187,6 +5189,7 @@ export type Database = {
           review_note?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
+          snapshot?: Json | null
           status?: Database["public"]["Enums"]["report_status"]
           submitted_at?: string | null
           team_id?: string

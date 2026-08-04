@@ -25,6 +25,8 @@ import {
   canReviewWeekly,
   dailyReportsQuery,
   formatWeekLabel,
+  formatWeekTitle,
+  weeklyReportTitle,
   reportHistoryQuery,
   reviewWeeklyReport,
   weeklyReportQuery,
@@ -118,8 +120,8 @@ function WeeklyReportDetail() {
       </Button>
 
       <PageHeader
-        title={`Báo cáo tuần ${formatWeekLabel(report.week_start)}`}
-        description={`${report.teamName ?? "—"} · Leader: ${report.leaderName ?? "—"}`}
+        title={weeklyReportTitle(report.week_start, report.teamName)}
+        description={`${formatWeekTitle(report.week_start)} · Leader: ${report.leaderName ?? "—"}`}
         actions={
           editable ? (
             <Button onClick={() => setEditOpen(true)}>
@@ -227,6 +229,7 @@ function WeeklyReportDetail() {
           onOpenChange={setEditOpen}
           report={report}
           teamId={report.team_id}
+          teamName={report.teamName}
           leaderId={report.leader_id}
         />
       ) : null}
