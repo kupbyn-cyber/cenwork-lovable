@@ -219,7 +219,7 @@ export async function buildTodayHub(
     const { data, error } = await supabase
       .from("tasks")
       .select(
-        "id,name,status,deadline,priority,assignee_id,team_id,created_by,created_at,is_archived,task_participants(user_id)",
+        "id,name,status,deadline,priority,assignee_id,team_id,created_by,created_at,is_archived",
       )
       .is("deleted_at", null)
       .eq("approval_status", "approved")
@@ -228,9 +228,9 @@ export async function buildTodayHub(
       .limit(500);
     check(error);
     for (const task of data ?? []) {
-      const participants = (task.task_participants ?? []) as { user_id: string }[];
-      const mine =
-        task.assignee_id === userId || participants.some((row) => row.user_id === userId);
+      // TODAY-ACTION-SCOPE-01: chỉ người phụ trách mới có hành động cụ thể.
+      // Người tham gia/phối hợp hoặc quyền xem toàn hệ thống không đưa Task vào đây.
+      const mine = task.assignee_id === userId;
       const deadlineMs = new Date(task.deadline).getTime();
       const route = `/tasks/${task.id}`;
 
@@ -245,7 +245,7 @@ export async function buildTodayHub(
             deadline: task.deadline,
             createdAt: task.created_at,
             route,
-            quickAction: task.assignee_id === userId ? "complete_task" : "open",
+            quickAction: "complete_task",
           }),
         );
       } else if (mine && task.deadline <= soonIso && task.deadline >= nowIso) {
@@ -259,16 +259,16 @@ export async function buildTodayHub(
             deadline: task.deadline,
             createdAt: task.created_at,
             route,
-            quickAction: task.assignee_id === userId ? "complete_task" : "open",
+            quickAction: "complete_task",
           }),
         );
       }
 
+      // Chỉ người kiểm tra đích danh: người tạo Task hoặc Leader của Team phụ trách.
       const canReview =
         task.status === "review" &&
         task.assignee_id !== userId &&
-        (privileged ||
-          task.created_by === userId ||
+        (task.created_by === userId ||
           (leaderTeamId !== null && task.team_id === leaderTeamId));
       if (canReview) {
         rows.push(
@@ -277,7 +277,7 @@ export async function buildTodayHub(
             objectId: task.id,
             title: task.name,
             summary: "Công việc đang chờ bạn kiểm tra.",
-            reason: "awaiting_my_approval",
+            reason: "awaiting_my_review",
             deadline: task.deadline,
             createdAt: task.created_at,
             route,
@@ -299,12 +299,12 @@ export async function buildTodayHub(
     check(error);
     for (const project of data ?? []) {
       const stage = project.status === "leader_review" ? "leader" : "cmo";
-      const canDecide = privileged
-        ? true
-        : stage === "leader" &&
-          leaderTeamId !== null &&
-          project.responsible_team_id === leaderTeamId &&
-          project.created_by !== userId;
+      // Chỉ người duyệt đang đến lượt: CMO/Admin ở bước CMO, Leader phụ trách ở bước Leader.
+      const canDecide =
+        project.created_by !== userId &&
+        (stage === "cmo"
+          ? privileged
+          : leaderTeamId !== null && project.responsible_team_id === leaderTeamId);
       if (!canDecide) continue;
       rows.push(
         item({
