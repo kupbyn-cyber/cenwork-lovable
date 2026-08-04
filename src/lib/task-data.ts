@@ -107,11 +107,16 @@ export interface TaskRow {
   approval_note: string | null;
   participantIds: string[];
   participantNames: string[];
+  /** TASK-RULE-XX — hủy công việc: chỉ xem chi tiết và lịch sử sau khi hủy. */
+  cancelled_at: string | null;
+  cancelled_by: string | null;
+  cancel_reason: string | null;
 }
 
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
   is_archived,completed_at,manually_archived_at,manually_archived_by,
+  cancelled_at,cancelled_by,cancel_reason,
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
@@ -182,6 +187,9 @@ function mapTask(raw: RawTask): TaskRow {
     approval_note: (raw["approval_note"] as string | null) ?? null,
     participantIds: participants.map((p) => p.user_id),
     participantNames: participants.map((p) => maskName(p.profiles?.display_name, p.user_id) ?? "—"),
+    cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
+    cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
+    cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
   };
 }
 
@@ -191,7 +199,8 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
-    .eq("approval_status", "approved")
+    // Task đã hủy vẫn phải đọc được để hiển thị trong Lưu trữ, kể cả khi chưa từng được duyệt.
+    .or("approval_status.eq.approved,cancelled_at.not.is.null")
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapTask(row as RawTask));
@@ -207,6 +216,7 @@ export async function fetchTaskApprovals(): Promise<TaskRow[]> {
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
+    .is("cancelled_at", null)
     .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
