@@ -219,6 +219,18 @@ function TaskDetailPage() {
 
   const progress = taskTimeProgress(task);
   const editable = canEditTask(task, ctx);
+  const comments = commentsResult.data ?? [];
+  const lastCommentAuthorId = comments.length > 0 ? comments[comments.length - 1]!.author_id : null;
+  const nextActions = taskNextActions({
+    task,
+    ctx,
+    pendingDeadlineRequest: Boolean(pendingRequest),
+    canApproveDeadline: canApproveTaskDeadline(task, ctx),
+    lastCommentAuthorId,
+  });
+  const relatedProject = (projectsResult.data ?? []).find((item) => item.id === task.project_id);
+  const historyRows = historyResult.data ?? [];
+  const visibleHistory = historyExpanded ? historyRows : historyRows.slice(0, HISTORY_PREVIEW);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
