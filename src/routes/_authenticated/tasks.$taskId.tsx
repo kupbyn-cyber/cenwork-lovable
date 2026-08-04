@@ -365,8 +365,12 @@ function TaskDetailPage() {
         <TaskProjectCard
           projectId={task.project_id}
           projectName={task.projectName}
-          statusLabel={relatedProject ? PROJECT_STATUS_LABEL[relatedProject.status] : undefined}
-          statusTone={relatedProject ? PROJECT_STATUS_TONE[relatedProject.status] : undefined}
+          {...(relatedProject
+            ? {
+                statusLabel: PROJECT_STATUS_LABEL[relatedProject.status],
+                statusTone: PROJECT_STATUS_TONE[relatedProject.status],
+              }
+            : {})}
         />
 
         <Card className="lg:col-span-3">
