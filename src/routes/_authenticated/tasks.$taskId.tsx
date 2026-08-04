@@ -18,7 +18,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TaskCommentThread } from "@/components/task/task-comment-thread";
+import {
+  CollapsibleList,
+  TaskFactsCard,
+  TaskNextActionsCard,
+  TaskObjectiveCard,
+  TaskOverviewCard,
+  TaskProjectCard,
+} from "@/components/task/task-detail-blocks";
+import { taskNextActions } from "@/lib/task-next-actions";
+import { taskCommentsQuery } from "@/lib/task-comment-data";
+import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE } from "@/lib/project-data";
 import { cenToast } from "@/components/ui/toast";
 import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
 import {
@@ -106,6 +116,8 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+const HISTORY_PREVIEW = 5;
+
 function TaskDetailPage() {
   const { taskId } = Route.useParams();
   const access = useOrgAccess();
@@ -136,6 +148,8 @@ function TaskDetailPage() {
 
   const requestsResult = useQuery(deadlineRequestsQuery("task", taskId));
   const pendingRequest = findPending(requestsResult.data, "task", taskId);
+  const commentsResult = useQuery(taskCommentsQuery(taskId));
+  const [historyExpanded, setHistoryExpanded] = React.useState(false);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
@@ -205,6 +219,18 @@ function TaskDetailPage() {
 
   const progress = taskTimeProgress(task);
   const editable = canEditTask(task, ctx);
+  const comments = commentsResult.data ?? [];
+  const lastCommentAuthorId = comments.length > 0 ? comments[comments.length - 1]!.author_id : null;
+  const nextActions = taskNextActions({
+    task,
+    ctx,
+    pendingDeadlineRequest: Boolean(pendingRequest),
+    canApproveDeadline: canApproveTaskDeadline(task, ctx),
+    lastCommentAuthorId,
+  });
+  const relatedProject = (projectsResult.data ?? []).find((item) => item.id === task.project_id);
+  const historyRows = historyResult.data ?? [];
+  const visibleHistory = historyExpanded ? historyRows : historyRows.slice(0, HISTORY_PREVIEW);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -314,69 +340,44 @@ function TaskDetailPage() {
         }
       />
 
+      <TaskNextActionsCard actions={nextActions} />
+
+      <TaskOverviewCard
+        task={task}
+        progress={progress}
+        statusSlot={
+          <span
+            key={`status-${flashKey("status")}`}
+            className={cn("inline-flex w-fit rounded-badge", isFlashing("status") && "cen-flash")}
+          >
+            <StatusBadge label={taskStatusView(task).label} tone={taskStatusView(task).tone} />
+          </span>
+        }
+      />
+
+      <TaskObjectiveCard description={task.description} />
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Thông tin công việc</CardTitle>
+        <div className="lg:col-span-2">
+          <TaskFactsCard task={task} />
+        </div>
+
+        <TaskProjectCard
+          projectId={task.project_id}
+          projectName={task.projectName}
+          {...(relatedProject
+            ? {
+                statusLabel: PROJECT_STATUS_LABEL[relatedProject.status],
+                statusTone: PROJECT_STATUS_TONE[relatedProject.status],
+              }
+            : {})}
+        />
+
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-body font-semibold">Trạng thái bổ sung</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <InfoRow
-              label="Trạng thái"
-              value={
-                <span
-                  key={`status-${flashKey("status")}`}
-                  className={cn(
-                    "inline-flex rounded-badge",
-                    isFlashing("status") && "cen-flash",
-                  )}
-                >
-                  <StatusBadge
-                    label={taskStatusView(task).label}
-                    tone={taskStatusView(task).tone}
-                  />
-                </span>
-              }
-            />
-            <InfoRow
-              label="Mức ưu tiên"
-              value={
-                <StatusBadge
-                  label={TASK_PRIORITY_LABEL[task.priority]}
-                  tone={TASK_PRIORITY_TONE[task.priority]}
-                />
-              }
-            />
-            <InfoRow label="Người phụ trách" value={task.assigneeName ?? "—"} />
-            <InfoRow label="Team phụ trách" value={task.teamName ?? "—"} />
-            <InfoRow label="Ngày bắt đầu" value={formatDate(task.start_date)} />
-            <InfoRow
-              label="Deadline"
-              value={
-                <span className={isTaskOverdue(task) ? "text-state-danger" : undefined}>
-                  {formatDateTime(task.deadline)}
-                  {isTaskOverdue(task) ? " · Quá hạn" : ""}
-                </span>
-              }
-            />
-            <InfoRow label="Người tạo" value={task.creatorName ?? "—"} />
-            <InfoRow
-              label="Người tham gia"
-              value={task.participantNames.length > 0 ? task.participantNames.join(", ") : "—"}
-            />
-            {task.description ? (
-              <div className="sm:col-span-2">
-                <InfoRow label="Mô tả" value={<LinkifiedText text={task.description} />} />
-              </div>
-            ) : null}
-            {progress !== null ? (
-              <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <span className="text-caption uppercase tracking-wide text-text-muted">
-                  Tiến độ thời gian
-                </span>
-                <Progress value={progress} />
-                <span className="text-caption text-text-muted">{progress}%</span>
-              </div>
-            ) : null}
             {task.completed_at ? (
               <InfoRow
                 label="Thời điểm hoàn thành"
@@ -430,7 +431,15 @@ function TaskDetailPage() {
                 />
               </div>
             ) : null}
-
+            {!task.completed_at &&
+            !task.result_text &&
+            !pendingRequest &&
+            !isTaskManuallyArchived(task) &&
+            !isTaskCancelled(task) ? (
+              <p className="text-body-sm text-text-muted sm:col-span-2">
+                Chưa có ghi nhận bổ sung nào.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -480,26 +489,35 @@ function TaskDetailPage() {
                 title="Không tải được lịch sử"
                 onRetry={() => void historyResult.refetch()}
               />
-            ) : (historyResult.data ?? []).length === 0 ? (
+            ) : historyRows.length === 0 ? (
               <p className="text-body-sm text-text-muted">Chưa có thay đổi nào được ghi nhận.</p>
             ) : (
-              <ol className="flex flex-col gap-3">
-                {(historyResult.data ?? []).map((entry) => (
-                  <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
-                    <p className="text-body-sm text-text-primary">
-                      {auditActionLabel(entry.action)}
-                    </p>
-                    <p className="text-caption text-text-muted">
-                      {entry.actor_email ?? "—"} · {formatAuditTime(entry.created_at)}
-                    </p>
-                  </li>
-                ))}
-              </ol>
+              <CollapsibleList
+                total={historyRows.length}
+                initial={HISTORY_PREVIEW}
+                expanded={historyExpanded}
+                onToggle={() => setHistoryExpanded((value) => !value)}
+              >
+                <ol className="flex flex-col gap-3">
+                  {visibleHistory.map((entry) => (
+                    <li key={entry.id} className="min-w-0 border-l-2 border-border-default pl-3">
+                      <p className="text-body-sm text-text-primary">
+                        {auditActionLabel(entry.action)}
+                      </p>
+                      <p className="text-caption text-text-muted">
+                        {entry.actor_email ?? "—"} · {formatAuditTime(entry.created_at)}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </CollapsibleList>
             )}
           </CardContent>
         </Card>
 
-        <TaskCommentThread taskId={task.id} />
+        <div className="lg:col-span-3">
+          <TaskCommentThread taskId={task.id} />
+        </div>
       </div>
 
       {access.userId ? (
