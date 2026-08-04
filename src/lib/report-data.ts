@@ -530,16 +530,29 @@ export function resolveDailyReviewerId(
   dir: ReviewerDirectory,
 ): string | null {
   if (report.reviewer_id) return report.reviewer_id;
-  const author = dir.members.find((m) => m.id === report.author_id) ?? null;
+  return resolveDailyReviewerForAuthor(report.author_id, report.team_id, dir);
+}
+
+/**
+ * Người duyệt dự kiến của một báo cáo ngày chưa tồn tại (dùng để chặn gửi khi thiếu).
+ * Member → Leader Team chính; Leader → CMO; Admin chỉ dự phòng khi không có CMO hợp lệ.
+ */
+export function resolveDailyReviewerForAuthor(
+  authorId: string,
+  teamId: string | null,
+  dir: ReviewerDirectory,
+): string | null {
+  const author = dir.members.find((m) => m.id === authorId) ?? null;
   if (author?.role !== "leader") {
-    const teamId = report.team_id ?? author?.primary_team_id ?? null;
-    const leaderId = teamId ? (dir.teams.find((t) => t.id === teamId)?.leader_id ?? null) : null;
-    if (leaderId && leaderId !== report.author_id && isActive(dir, leaderId)) return leaderId;
+    const team = teamId ?? author?.primary_team_id ?? null;
+    const leaderId = team ? (dir.teams.find((t) => t.id === team)?.leader_id ?? null) : null;
+    if (leaderId && leaderId !== authorId && isActive(dir, leaderId)) return leaderId;
     return null;
   }
   const cmo = activeWithRole(dir, "cmo");
-  if (cmo && cmo !== report.author_id) return cmo;
-  return null;
+  if (cmo && cmo !== authorId) return cmo;
+  const admin = activeWithRole(dir, "admin");
+  return admin && admin !== authorId ? admin : null;
 }
 
 /**
