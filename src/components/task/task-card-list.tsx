@@ -7,11 +7,7 @@ import {
   DeadlineCountdown,
   PriorityLabel,
 } from "@/components/task/task-cell-bits";
-import {
-  TASK_STATUS_LABEL,
-  TASK_STATUS_TONE,
-  type TaskRow,
-} from "@/lib/task-data";
+import { taskStatusView, type TaskRow } from "@/lib/task-data";
 import type { OptionalColumnId } from "@/lib/task-view-data";
 
 /**
@@ -73,8 +69,8 @@ export function TaskCardList({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {show("status") ? (
               <StatusBadge
-                label={TASK_STATUS_LABEL[task.status]}
-                tone={TASK_STATUS_TONE[task.status]}
+                label={taskStatusView(task).label}
+                tone={taskStatusView(task).tone}
               />
             ) : null}
             <DeadlineCountdown task={task} className="inline-block w-auto" />

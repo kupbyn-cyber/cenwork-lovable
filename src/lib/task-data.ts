@@ -107,11 +107,16 @@ export interface TaskRow {
   approval_note: string | null;
   participantIds: string[];
   participantNames: string[];
+  /** TASK-RULE-XX — hủy công việc: chỉ xem chi tiết và lịch sử sau khi hủy. */
+  cancelled_at: string | null;
+  cancelled_by: string | null;
+  cancel_reason: string | null;
 }
 
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
   is_archived,completed_at,manually_archived_at,manually_archived_by,
+  cancelled_at,cancelled_by,cancel_reason,
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
@@ -182,6 +187,9 @@ function mapTask(raw: RawTask): TaskRow {
     approval_note: (raw["approval_note"] as string | null) ?? null,
     participantIds: participants.map((p) => p.user_id),
     participantNames: participants.map((p) => maskName(p.profiles?.display_name, p.user_id) ?? "—"),
+    cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
+    cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
+    cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
   };
 }
 
@@ -191,7 +199,8 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
-    .eq("approval_status", "approved")
+    // Task đã hủy vẫn phải đọc được để hiển thị trong Lưu trữ, kể cả khi chưa từng được duyệt.
+    .or("approval_status.eq.approved,cancelled_at.not.is.null")
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapTask(row as RawTask));
@@ -207,6 +216,7 @@ export async function fetchTaskApprovals(): Promise<TaskRow[]> {
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
+    .is("cancelled_at", null)
     .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -260,6 +270,7 @@ export function isTaskAssignee(task: TaskRow, ctx: TaskAccessContext) {
 }
 
 export function canEditTask(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
   if (task.is_archived) return privileged(ctx);
   return canManageTask(task, ctx) || isTaskAssignee(task, ctx);
 }
@@ -277,6 +288,43 @@ export function canManuallyArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
   return privileged(ctx) && !isTaskManuallyArchived(task);
 }
 
+/* ---- TASK-RULE-XX — Hủy công việc ---- */
+
+export function isTaskCancelled(task: TaskRow) {
+  return task.cancelled_at !== null;
+}
+
+/** Nhãn trạng thái hiển thị: Task đã hủy luôn hiện "Đã hủy". */
+export function taskStatusView(task: TaskRow): { label: string; tone: StatusTone } {
+  if (isTaskCancelled(task)) return { label: "Đã hủy", tone: "error" };
+  return { label: TASK_STATUS_LABEL[task.status], tone: TASK_STATUS_TONE[task.status] };
+}
+
+/**
+ * Chỉ ẩn/hiện nút; quyền thật do RPC `task_cancel` kiểm tra ở database.
+ * Admin/CMO hủy mọi Task; Leader hủy trong phạm vi quản lý; người tạo hủy khi chưa bắt đầu.
+ */
+export function canCancelTask(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
+  if (task.status === "done") return false;
+  if (isTaskManuallyArchived(task)) return false;
+  if (privileged(ctx)) return true;
+  if (ctx.leaderTeamId) {
+    if (task.team_id === ctx.leaderTeamId) return true;
+    if (task.assigneeTeamId === ctx.leaderTeamId) return true;
+    if (task.projectResponsibleTeamId === ctx.leaderTeamId) return true;
+  }
+  if (ctx.userId && task.created_by === ctx.userId && task.status === "not_started") return true;
+  return false;
+}
+
+export async function cancelTask(taskId: string, reason: string) {
+  const text = reason.trim();
+  if (!text) throw new Error("Cần nhập lý do hủy.");
+  const { error } = await supabase.rpc("task_cancel", { _task: taskId, _reason: text });
+  if (error) throw new Error(error.message);
+}
+
 /** Chỉ dữ liệu lưu trữ thủ công mới được khôi phục; dữ liệu hoàn thành thì không. */
 export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
   return privileged(ctx) && isTaskManuallyArchived(task);
@@ -289,6 +337,7 @@ export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
 export function isTaskArchived(task: TaskRow) {
   return (
     task.status === "done" ||
+    isTaskCancelled(task) ||
     isTaskManuallyArchived(task) ||
     task.projectManuallyArchivedAt !== null
   );
@@ -340,6 +389,7 @@ export function isTaskAwaitingApproval(task: TaskRow) {
 
 /** Duyệt: Admin/CMO, hoặc Leader của Team phụ trách mặc định của Dự án. */
 export function canApproveTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
   if (!isTaskAwaitingApproval(task)) return false;
   if (task.approval_status === "withdrawn") return false;
   if (privileged(ctx)) return true;
@@ -354,13 +404,18 @@ export function isTaskSubmissionAuthor(task: TaskRow, ctx: TaskAccessContext) {
 
 export function canWithdrawTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
   return (
+    !isTaskCancelled(task) &&
     isTaskSubmissionAuthor(task, ctx) &&
     (task.approval_status === "pending" || task.approval_status === "changes_requested")
   );
 }
 
 export function canResubmitTask(task: TaskRow, ctx: TaskAccessContext) {
-  return isTaskSubmissionAuthor(task, ctx) && task.approval_status === "changes_requested";
+  return (
+    !isTaskCancelled(task) &&
+    isTaskSubmissionAuthor(task, ctx) &&
+    task.approval_status === "changes_requested"
+  );
 }
 
 export interface TaskSubmissionInput {
@@ -560,7 +615,7 @@ export function formatDateTime(value: string | null) {
 }
 
 export function isTaskOverdue(task: TaskRow) {
-  if (task.status === "done" || task.is_archived) return false;
+  if (task.status === "done" || task.is_archived || isTaskCancelled(task)) return false;
   return isPastInstant(task.deadline);
 }
 

@@ -4559,6 +4559,9 @@ export type Database = {
           approval_round: number
           approval_status: Database["public"]["Enums"]["task_approval_status"]
           assignee_id: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -4589,6 +4592,9 @@ export type Database = {
           approval_round?: number
           approval_status?: Database["public"]["Enums"]["task_approval_status"]
           assignee_id: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -4619,6 +4625,9 @@ export type Database = {
           approval_round?: number
           approval_status?: Database["public"]["Enums"]["task_approval_status"]
           assignee_id?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
@@ -5867,6 +5876,10 @@ export type Database = {
         Returns: undefined
       }
       task_approval_events_since: { Args: never; Returns: string }
+      task_cancel: {
+        Args: { _reason: string; _task: string }
+        Returns: undefined
+      }
       task_comments_mark_read: { Args: { _task: string }; Returns: undefined }
       task_log_approval_event: {
         Args: {
