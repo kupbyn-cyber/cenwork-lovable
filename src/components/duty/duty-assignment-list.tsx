@@ -1,31 +1,27 @@
 import * as React from "react";
 import { LinkifiedText } from "@/components/ui/linkified-text";
-import { CalendarDays, Check, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { CalendarDays, Check, Clock, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   DUTY_STATUS_LABEL,
+  DUTY_UNKNOWN_PERSON,
   dutyAreaLabel,
   dutyJobLabel,
   dutyStatusTone,
   effectiveDutyStatus,
   type DutyAssignmentRow,
+  type DutyPerson,
 } from "@/lib/duty-data";
 import { formatHanoiDateTime } from "@/lib/datetime";
 
 /**
- * CEN DUTY-02 — Danh sách phân công trực nhật.
- * Desktop: bảng gọn. Mobile: card, không cuộn ngang toàn trang.
+ * CEN DUTY-02 / DUTY-LIST-UX-01 — Danh sách phân công trực nhật.
+ * Ưu tiên thị giác: người phụ trách → nhiệm vụ → khu vực → ngày giờ → trạng thái.
+ * Desktop: bảng nhóm theo ngày. Mobile/tablet: card, không cuộn ngang.
  */
 export interface DutyListActions {
   canManage: boolean;
@@ -48,10 +44,50 @@ function hhmm(value: string | null | undefined): string {
   return (value ?? "").slice(0, 5);
 }
 
-function peopleLabel(row: DutyAssignmentRow): string {
-  const names = row.memberNames.filter(Boolean);
-  if (names.length > 0) return names.join(", ");
-  return row.assignee?.display_name ?? "—";
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const last = parts[parts.length - 1] ?? "";
+  const first = parts.length > 1 ? (parts[parts.length - 2] ?? "") : "";
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || "?";
+}
+
+/** Người phụ trách: luôn có tên, không bao giờ để trống. */
+function peopleOf(row: DutyAssignmentRow): DutyPerson[] {
+  if (row.people && row.people.length > 0) return row.people;
+  if (row.memberIds.length > 0) {
+    return row.memberIds.map((id, index) => ({
+      id,
+      name: row.memberNames[index]?.trim() || DUTY_UNKNOWN_PERSON,
+    }));
+  }
+  if (row.assignee_id) {
+    return [{ id: row.assignee_id, name: row.assignee?.display_name || DUTY_UNKNOWN_PERSON }];
+  }
+  return [];
+}
+
+function PersonChips({ people, size = "sm" }: { people: DutyPerson[]; size?: "xs" | "sm" }) {
+  if (people.length === 0) {
+    return <span className="text-caption text-text-muted">Chưa phân công nhân sự</span>;
+  }
+  return (
+    <ul className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      {people.map((person) => (
+        <li
+          key={person.id}
+          className="flex min-w-0 items-center gap-1.5 rounded-full bg-surface-subtle py-0.5 pr-2.5 pl-0.5"
+        >
+          <Avatar size={size === "xs" ? "xs" : "sm"} className="shrink-0">
+            <AvatarFallback>{initials(person.name)}</AvatarFallback>
+          </Avatar>
+          <span className="min-w-0 truncate text-label font-medium text-text-primary">
+            {person.name}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /** Chỉ dịch vụ ngoài, không có nhân sự nội bộ → không bắt buộc hoàn thành. */
@@ -73,7 +109,7 @@ function RowActions({ row, actions }: { row: DutyAssignmentRow; actions: DutyLis
   const busy = actions.busyId === row.id;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
       {toggleable ? (
         status === "completed" ? (
           <Button
@@ -114,56 +150,97 @@ function RowActions({ row, actions }: { row: DutyAssignmentRow; actions: DutyLis
   );
 }
 
+function TimeLine({ row }: { row: DutyAssignmentRow }) {
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-caption text-text-muted">
+      <Clock className="size-3.5 shrink-0" aria-hidden />
+      {hhmm(row.start_time)}–{hhmm(row.end_time)} · Hạn {hhmm(row.due_time)}
+    </span>
+  );
+}
+
 function DutyCard({ row, actions }: { row: DutyAssignmentRow; actions: DutyListActions }) {
   const status = effectiveDutyStatus(row);
   return (
-    <li className="flex min-w-0 flex-col gap-2 rounded-control border border-border-default bg-background-elevated p-3">
+    <li className="flex min-w-0 flex-col gap-2.5 rounded-control border border-border-default bg-background-elevated p-3">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-label font-semibold text-text-primary">
-            {formatDutyDate(row.duty_date)}
-          </p>
-          <p className="text-caption text-text-muted">
-            {hhmm(row.start_time)}–{hhmm(row.end_time)} · Hạn {hhmm(row.due_time)}
-          </p>
-        </div>
+        <PersonChips people={peopleOf(row)} />
         <StatusBadge label={DUTY_STATUS_LABEL[status]} tone={dutyStatusTone(status)} />
       </div>
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-caption">
-        <dt className="text-text-muted">Khu vực</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{dutyAreaLabel(row)}</dd>
-        <dt className="text-text-muted">Nhiệm vụ</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{dutyJobLabel(row)}</dd>
-        <dt className="text-text-muted">Team</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{row.duty_team?.name ?? "—"}</dd>
-        <dt className="text-text-muted">Phụ trách</dt>
-        <dd className="min-w-0 break-words text-text-secondary">{peopleLabel(row)}</dd>
+
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className="min-w-0 text-body font-semibold break-words text-text-primary">
+          {dutyJobLabel(row)}
+        </p>
+        <p className="min-w-0 text-caption break-words text-text-secondary">
+          Khu vực: {dutyAreaLabel(row)}
+        </p>
+        {row.duty_team?.name ? (
+          <p className="text-caption text-text-muted">Team: {row.duty_team.name}</p>
+        ) : null}
         {row.provider ? (
-          <>
-            <dt className="text-text-muted">Dịch vụ ngoài</dt>
-            <dd className="min-w-0 break-words text-text-secondary">{row.provider.name}</dd>
-          </>
+          <p className="text-caption text-text-muted">Dịch vụ ngoài: {row.provider.name}</p>
         ) : null}
+        <TimeLine row={row} />
         {row.completed_at ? (
-          <>
-            <dt className="text-text-muted">Hoàn thành</dt>
-            <dd className="min-w-0 break-words text-text-secondary">
-              {row.completed_person?.display_name ?? "—"} · {formatHanoiDateTime(row.completed_at)}
-            </dd>
-          </>
+          <p className="text-caption text-text-muted">
+            Hoàn thành: {row.completed_person?.display_name ?? "—"} ·{" "}
+            {formatHanoiDateTime(row.completed_at)}
+          </p>
         ) : null}
-        {row.note ? (
-          <>
-            <dt className="text-text-muted">Ghi chú</dt>
-            <dd className="min-w-0">
-              <LinkifiedText className="text-text-secondary" text={row.note} />
-            </dd>
-          </>
-        ) : null}
-      </dl>
+        {row.note ? <LinkifiedText className="text-caption text-text-secondary" text={row.note} /> : null}
+      </div>
+
       <RowActions row={row} actions={actions} />
     </li>
   );
+}
+
+function DutyTableRow({ row, actions }: { row: DutyAssignmentRow; actions: DutyListActions }) {
+  const status = effectiveDutyStatus(row);
+  return (
+    <tr className="border-t border-border-default align-top">
+      <td className="w-[30%] min-w-0 px-3 py-3">
+        <PersonChips people={peopleOf(row)} />
+        {row.provider ? (
+          <p className="mt-1 text-caption text-text-muted">Dịch vụ ngoài: {row.provider.name}</p>
+        ) : null}
+      </td>
+      <td className="w-[24%] px-3 py-3">
+        <p className="text-label font-medium break-words text-text-primary">{dutyJobLabel(row)}</p>
+        {row.duty_team?.name ? (
+          <p className="text-caption text-text-muted">Team: {row.duty_team.name}</p>
+        ) : null}
+      </td>
+      <td className="w-[22%] px-3 py-3 text-label break-words text-text-secondary">
+        {dutyAreaLabel(row)}
+      </td>
+      <td className="px-3 py-3">
+        <TimeLine row={row} />
+        {row.completed_at ? (
+          <p className="text-caption text-text-muted">
+            {row.completed_person?.display_name ?? "—"} · {formatHanoiDateTime(row.completed_at)}
+          </p>
+        ) : null}
+      </td>
+      <td className="px-3 py-3">
+        <StatusBadge label={DUTY_STATUS_LABEL[status]} tone={dutyStatusTone(status)} />
+      </td>
+      <td className="px-3 py-3 text-right">
+        <RowActions row={row} actions={actions} />
+      </td>
+    </tr>
+  );
+}
+
+function groupByDate(rows: DutyAssignmentRow[]): { date: string; items: DutyAssignmentRow[] }[] {
+  const map = new Map<string, DutyAssignmentRow[]>();
+  for (const row of rows) {
+    map.set(row.duty_date, [...(map.get(row.duty_date) ?? []), row]);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, items]) => ({ date, items }));
 }
 
 export function DutyAssignmentList({
@@ -177,6 +254,8 @@ export function DutyAssignmentList({
   emptyTitle?: string;
   emptyDescription?: string;
 }) {
+  const groups = React.useMemo(() => groupByDate(rows), [rows]);
+
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -189,54 +268,52 @@ export function DutyAssignmentList({
   }
 
   return (
-    <div className="min-w-0">
-      <ul className="flex flex-col gap-3 md:hidden">
-        {rows.map((row) => (
-          <DutyCard key={row.id} row={row} actions={actions} />
+    <div className="@container min-w-0">
+      {/* Cột hẹp (mobile, tablet, panel bên): card, không cuộn ngang */}
+      <div className="flex flex-col gap-4 @3xl:hidden">
+        {groups.map((group) => (
+          <section key={group.date} className="min-w-0">
+            <h3 className="mb-2 text-caption font-semibold text-text-muted uppercase">
+              {formatDutyDate(group.date)}
+            </h3>
+            <ul className="flex flex-col gap-3">
+              {group.items.map((row) => (
+                <DutyCard key={row.id} row={row} actions={actions} />
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
 
-      <div className="hidden min-w-0 overflow-x-auto md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ngày</TableHead>
-              <TableHead>Khu vực</TableHead>
-              <TableHead>Nhiệm vụ</TableHead>
-              <TableHead>Team</TableHead>
-              <TableHead>Phụ trách</TableHead>
-              <TableHead>Dịch vụ ngoài</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Hành động</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => {
-              const status = effectiveDutyStatus(row);
-              return (
-                <TableRow key={row.id}>
-                  <TableCell className="whitespace-nowrap">
-                    <span className="block text-text-primary">{formatDutyDate(row.duty_date)}</span>
-                    <span className="block text-caption text-text-muted">
-                      {hhmm(row.start_time)}–{hhmm(row.end_time)} · Hạn {hhmm(row.due_time)}
-                    </span>
-                  </TableCell>
-                  <TableCell>{dutyAreaLabel(row)}</TableCell>
-                  <TableCell>{dutyJobLabel(row)}</TableCell>
-                  <TableCell>{row.duty_team?.name ?? "—"}</TableCell>
-                  <TableCell>{peopleLabel(row)}</TableCell>
-                  <TableCell>{row.provider?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    <StatusBadge label={DUTY_STATUS_LABEL[status]} tone={dutyStatusTone(status)} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <RowActions row={row} actions={actions} />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      {/* Cột rộng: bảng nhóm theo ngày */}
+      <div className="hidden min-w-0 @3xl:block">
+        <table className="w-full table-fixed border-collapse">
+          <thead>
+            <tr className="text-caption text-text-muted uppercase">
+              <th className="px-3 pb-2 text-left font-semibold">Phụ trách</th>
+              <th className="px-3 pb-2 text-left font-semibold">Nhiệm vụ</th>
+              <th className="px-3 pb-2 text-left font-semibold">Khu vực</th>
+              <th className="px-3 pb-2 text-left font-semibold">Khung giờ</th>
+              <th className="px-3 pb-2 text-left font-semibold">Trạng thái</th>
+              <th className="px-3 pb-2 text-right font-semibold">Hành động</th>
+            </tr>
+          </thead>
+          {groups.map((group) => (
+            <tbody key={group.date}>
+              <tr>
+                <th
+                  colSpan={6}
+                  className="bg-surface-subtle px-3 py-1.5 text-left text-caption font-semibold text-text-secondary"
+                >
+                  {formatDutyDate(group.date)}
+                </th>
+              </tr>
+              {group.items.map((row) => (
+                <DutyTableRow key={row.id} row={row} actions={actions} />
+              ))}
+            </tbody>
+          ))}
+        </table>
       </div>
     </div>
   );
