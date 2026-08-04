@@ -116,6 +116,8 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+const HISTORY_PREVIEW = 5;
+
 function TaskDetailPage() {
   const { taskId } = Route.useParams();
   const access = useOrgAccess();
