@@ -66,6 +66,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "task.project_changed": "Đổi dự án của công việc",
   "task.team_changed": "Đổi Team phụ trách",
   "task.archived": "Lưu trữ công việc",
+  "task.cancelled": "Hủy công việc",
   "task.restored": "Khôi phục công việc",
   "task.participant_linked": "Thêm người tham gia công việc",
   "task.participant_unlinked": "Gỡ người tham gia công việc",
