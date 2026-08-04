@@ -15,6 +15,7 @@ import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
 import { RecognitionStatsPanel } from "@/components/recognition/recognition-stats-panel";
 
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
 import {
   REPORT_STATUS_LABEL,
@@ -65,6 +66,7 @@ function Block({ title, value }: { title: string; value: string | null }) {
 function WeeklyReportDetail() {
   const { reportId } = Route.useParams();
   const access = useOrgAccess();
+  const directory = useReviewerDirectory();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = React.useState(false);
 
@@ -101,7 +103,7 @@ function WeeklyReportDetail() {
     leaderTeamId: access.leaderTeamId,
   };
   const editable = canEditWeekly(report, ctx);
-  const reviewable = canReviewWeekly(report, ctx);
+  const reviewable = canReviewWeekly(report, ctx, directory);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">

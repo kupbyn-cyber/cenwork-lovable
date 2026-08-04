@@ -13,8 +13,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { ReviewActions } from "@/components/report/review-actions";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
-import { membersQuery } from "@/lib/org-data";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_TONE,
@@ -63,11 +63,11 @@ function Block({ title, value }: { title: string; value: string | null }) {
 function DailyReportDetail() {
   const { reportId } = Route.useParams();
   const access = useOrgAccess();
+  const directory = useReviewerDirectory();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = React.useState(false);
 
   const reportResult = useQuery(dailyReportQuery(reportId));
-  const membersResult = useQuery(membersQuery());
   const historyResult = useQuery(reportHistoryQuery("daily_report", reportId));
   const report = reportResult.data ?? null;
   const taskRefs = useQuery(
@@ -90,9 +90,8 @@ function DailyReportDetail() {
     role: access.role,
     leaderTeamId: access.leaderTeamId,
   };
-  const author = (membersResult.data ?? []).find((member) => member.id === report.author_id);
   const editable = canEditDaily(report, ctx);
-  const reviewable = canReviewDaily(report, ctx, author?.role === "leader");
+  const reviewable = canReviewDaily(report, ctx, directory);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">

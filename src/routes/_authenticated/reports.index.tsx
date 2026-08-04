@@ -27,6 +27,7 @@ import { ReportStatsPanel } from "@/components/report/report-stats-panel";
 import { ReportArchivePanel } from "@/components/report/report-archive-panel";
 
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatHanoiDate } from "@/lib/datetime";
@@ -39,6 +40,7 @@ import {
   dailyReportsQuery,
   formatWeekLabel,
   hanoiToday,
+  isReviewOverdue,
   mustSubmitDaily,
   reportStatusView,
   weeklyReportsQuery,
@@ -73,6 +75,7 @@ const ALL = "__all__";
 function ReportsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
+  const directory = useReviewerDirectory();
 
   const dailyResult = useQuery(dailyReportsQuery());
   const weeklyResult = useQuery(weeklyReportsQuery());
@@ -134,16 +137,18 @@ function ReportsPage() {
   );
 
   const awaitsMeDaily = React.useCallback(
-    (row: DailyReportRow) => {
-      const author = members.find((member) => member.id === row.author_id);
-      return canReviewDaily(row, ctx, author?.role === "leader");
-    },
-    [members, ctx.userId, ctx.role, ctx.leaderTeamId],
+    (row: DailyReportRow) => canReviewDaily(row, ctx, directory),
+    [directory, ctx.userId, ctx.role, ctx.leaderTeamId],
   );
   const awaitsMeWeekly = React.useCallback(
-    (row: WeeklyReportRow) => canReviewWeekly(row, ctx),
-    [ctx.userId, ctx.role, ctx.leaderTeamId],
+    (row: WeeklyReportRow) => canReviewWeekly(row, ctx, directory),
+    [directory, ctx.userId, ctx.role, ctx.leaderTeamId],
   );
+
+  // Chỉ báo cáo thật sự đến lượt người dùng hiện tại mới vào "Chờ tôi duyệt".
+  const myDailyQueue = dailyRows.filter(awaitsMeDaily);
+  const myWeeklyQueue = weeklyRows.filter(awaitsMeWeekly);
+  const myQueueCount = myDailyQueue.length + myWeeklyQueue.length;
 
   const dailyColumns = [
     {
@@ -152,7 +157,13 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: DailyReportRow) => {
         const view = reportStatusView(row.status, awaitsMeDaily(row));
-        return <StatusBadge label={view.label} tone={view.tone} />;
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            <StatusBadge label={view.label} tone={view.tone} />
+            {awaitsMeDaily(row) ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
+            {isReviewOverdue(row) ? <StatusBadge label="Quá hạn" tone="error" /> : null}
+          </div>
+        );
       },
     },
     {
@@ -196,7 +207,13 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: WeeklyReportRow) => {
         const view = reportStatusView(row.status, awaitsMeWeekly(row));
-        return <StatusBadge label={view.label} tone={view.tone} />;
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            <StatusBadge label={view.label} tone={view.tone} />
+            {awaitsMeWeekly(row) ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
+            {isReviewOverdue(row) ? <StatusBadge label="Quá hạn" tone="error" /> : null}
+          </div>
+        );
       },
     },
     {
@@ -324,6 +341,7 @@ function ReportsPage() {
         <TabsList>
           <TabsTrigger value="daily">Báo cáo ngày</TabsTrigger>
           <TabsTrigger value="weekly">Báo cáo tuần</TabsTrigger>
+          <TabsTrigger value="my-review">Chờ tôi duyệt{myQueueCount ? ` (${myQueueCount})` : ""}</TabsTrigger>
           <TabsTrigger value="workflow">Xử lý báo cáo</TabsTrigger>
           <TabsTrigger value="summary">Tổng hợp Team</TabsTrigger>
           <TabsTrigger value="stats">Thống kê</TabsTrigger>
@@ -344,6 +362,36 @@ function ReportsPage() {
         </TabsContent>
         <TabsContent value="summary" className="flex flex-col gap-3">
           <TeamSummaryPanel />
+        </TabsContent>
+
+        <TabsContent value="my-review" className="flex flex-col gap-4">
+          <span className="text-caption text-text-muted">
+            {myQueueCount} báo cáo đang chờ chính bạn duyệt
+          </span>
+          <div className="flex flex-col gap-2">
+            <p className="text-label font-semibold text-text-primary">Báo cáo ngày</p>
+            <DataTable
+              columns={dailyColumns}
+              data={myDailyQueue}
+              getRowId={(row) => row.id}
+              loading={dailyResult.isLoading}
+              emptyTitle="Không có báo cáo ngày chờ bạn duyệt"
+              emptyDescription="Chỉ báo cáo có bạn là người duyệt hiện tại mới xuất hiện tại đây."
+              onRowClick={(row) => openDetail("daily", row.id)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-label font-semibold text-text-primary">Báo cáo tuần</p>
+            <DataTable
+              columns={weeklyColumns}
+              data={myWeeklyQueue}
+              getRowId={(row) => row.id}
+              loading={weeklyResult.isLoading}
+              emptyTitle="Không có báo cáo tuần chờ bạn duyệt"
+              emptyDescription="Chỉ báo cáo có bạn là người duyệt hiện tại mới xuất hiện tại đây."
+              onRowClick={(row) => openDetail("weekly", row.id)}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="daily" className="flex flex-col gap-3">

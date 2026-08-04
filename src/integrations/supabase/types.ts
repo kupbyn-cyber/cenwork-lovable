@@ -5842,6 +5842,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["report_doc_status"]
       }
+      report_review_takeover: {
+        Args: { _id: string; _kind: string; _reason?: string }
+        Returns: undefined
+      }
       report_run_reminders: { Args: never; Returns: Json }
       report_section_visible: { Args: { _section: string }; Returns: boolean }
       report_set_archived: {
