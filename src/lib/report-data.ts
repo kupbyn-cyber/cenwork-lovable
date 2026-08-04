@@ -385,6 +385,99 @@ export const dailyTaskRefsQuery = (authorId: string | null, reportDate: string) 
     enabled: Boolean(authorId && reportDate),
   });
 
+/* ====== REPORT-DAILY-FLOW-02 — snapshot Báo cáo ngày tự sinh từ Task ====== */
+
+export interface DailyCompletedTask {
+  id: string;
+  name: string;
+  result: string;
+}
+
+export interface DailySnapshot {
+  /** Task người gửi phụ trách chính, hoàn thành trong ngày và đã có kết quả. */
+  completed: DailyCompletedTask[];
+  /** Task hoàn thành trong ngày nhưng chưa cập nhật kết quả — chặn gửi báo cáo. */
+  missingResult: { id: string; name: string }[];
+  openCount: number;
+  overdueCount: number;
+  reviewCount: number;
+}
+
+/**
+ * Tự sinh nội dung Báo cáo ngày từ Task của chính người gửi (assignee).
+ * Không tính Task chỉ tham gia/phối hợp, không tính Task đã hủy hoặc lưu trữ.
+ */
+export async function fetchDailySnapshot(
+  authorId: string,
+  reportDate: string,
+): Promise<DailySnapshot> {
+  const dayStart = hanoiStartOfDayMs(reportDate);
+  const empty: DailySnapshot = {
+    completed: [],
+    missingResult: [],
+    openCount: 0,
+    overdueCount: 0,
+    reviewCount: 0,
+  };
+  if (dayStart === null) return empty;
+  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      "id,name,status,deadline,result_text,result_updated_at,updated_at,is_archived,cancelled_at",
+    )
+    .eq("assignee_id", authorId)
+    .eq("approval_status", "approved")
+    .is("cancelled_at", null)
+    .limit(500);
+  if (error) throw new Error(error.message);
+
+  const snapshot: DailySnapshot = { ...empty, completed: [], missingResult: [] };
+  const now = Date.now();
+  for (const row of data ?? []) {
+    if (row.status === "done") {
+      const doneAt = new Date((row.result_updated_at ?? row.updated_at) as string).getTime();
+      if (Number.isNaN(doneAt) || doneAt < dayStart || doneAt >= dayEnd) continue;
+      const result = (row.result_text ?? "").trim();
+      if (result) snapshot.completed.push({ id: row.id, name: row.name, result });
+      else snapshot.missingResult.push({ id: row.id, name: row.name });
+      continue;
+    }
+    if (row.is_archived) continue;
+    snapshot.openCount += 1;
+    if (row.status === "review") snapshot.reviewCount += 1;
+    const deadline = new Date(row.deadline).getTime();
+    if (!Number.isNaN(deadline) && deadline < now) snapshot.overdueCount += 1;
+  }
+  snapshot.completed.sort((a, b) => a.name.localeCompare(b.name));
+  return snapshot;
+}
+
+export const dailySnapshotQuery = (authorId: string | null, reportDate: string) =>
+  queryOptions({
+    queryKey: ["daily-snapshot", authorId, reportDate],
+    queryFn: () => (authorId ? fetchDailySnapshot(authorId, reportDate) : Promise.resolve(null)),
+    enabled: Boolean(authorId && reportDate),
+  });
+
+/** Ba phần nội dung lưu vào báo cáo tại thời điểm gửi (snapshot cố định). */
+export function snapshotToReportContent(snapshot: DailySnapshot, note: string) {
+  const results =
+    snapshot.completed.length > 0
+      ? snapshot.completed.map((task) => `${task.name} — ${task.result}`).join("\n")
+      : "Không có Task hoàn thành hôm nay.";
+  const blockers =
+    `Còn mở: ${snapshot.openCount} | Quá hạn: ${snapshot.overdueCount} | ` +
+    `Chờ kiểm tra: ${snapshot.reviewCount}`;
+  return { results, blockers, nextPlan: note.trim() || "Không có ghi chú." };
+}
+
+/** Ghi chú bắt buộc khi có Task quá hạn hoặc không hoàn thành Task nào trong ngày. */
+export function isDailyNoteRequired(snapshot: DailySnapshot): boolean {
+  return snapshot.overdueCount > 0 || snapshot.completed.length === 0;
+}
+
 /* ================= Quyền (UI) ================= */
 
 export interface ReportAccessContext {
