@@ -1,11 +1,12 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { DrawerPanel } from "@/components/ui/drawer-panel";
 import { LinkifiedText } from "@/components/ui/linkified-text";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { cenToast } from "@/components/ui/toast";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { ReviewActions } from "@/components/report/review-actions";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -179,7 +180,7 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
           <div className="flex flex-wrap items-center gap-2">
             {view ? <StatusBadge label={view.label} tone={view.tone} /> : null}
             {reviewable ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
-            {overdue ? <StatusBadge label="Quá hạn" tone="danger" /> : null}
+            {overdue ? <StatusBadge label="Quá hạn" tone="error" /> : null}
             <span className="text-helper text-text-muted">
               Gửi:{" "}
               {(dailyRow ?? weeklyRow)?.submitted_at
