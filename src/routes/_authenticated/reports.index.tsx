@@ -421,6 +421,13 @@ function ReportsPage() {
           }
         />
       ) : null}
+
+      <ReportReviewDrawer
+        kind={detail?.kind ?? "daily"}
+        reportId={detail?.id ?? null}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 }
