@@ -148,6 +148,8 @@ function TaskDetailPage() {
 
   const requestsResult = useQuery(deadlineRequestsQuery("task", taskId));
   const pendingRequest = findPending(requestsResult.data, "task", taskId);
+  const commentsResult = useQuery(taskCommentsQuery(taskId));
+  const [historyExpanded, setHistoryExpanded] = React.useState(false);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
