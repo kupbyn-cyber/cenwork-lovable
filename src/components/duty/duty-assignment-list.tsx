@@ -203,7 +203,7 @@ function DutyCard({ row, actions }: { row: DutyAssignmentRow; actions: DutyListA
 function DutyTableRow({ row, actions }: { row: DutyAssignmentRow; actions: DutyListActions }) {
   const status = effectiveDutyStatus(row);
   return (
-    <tr className="border-t border-border-subtle align-top">
+    <tr className="border-t border-border-default align-top">
       <td className="w-[30%] min-w-0 px-3 py-3">
         <PersonChips people={peopleOf(row)} />
         {row.provider ? (
