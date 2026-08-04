@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, CalendarClock, Columns3, Plus, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Ban, CalendarClock, Columns3, Plus, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
 import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
+import { TaskCancelDialog } from "@/components/task/task-cancel-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskApprovalPanel } from "@/components/task/task-approval-panel";
 import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
@@ -50,13 +51,14 @@ import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
-  TASK_STATUS_TONE,
+  canCancelTask,
   canChangeTaskStatus,
   canEditTask,
   canManuallyArchiveTask,
   canRequestTaskDeadline,
   canRestoreTask,
   isTaskArchived,
+  taskStatusView,
   tasksQuery,
   type TaskAccessContext,
   type TaskRow,
@@ -159,6 +161,7 @@ function TasksPage() {
   const [editTarget, setEditTarget] = React.useState<TaskRow | null>(null);
   const [completeTarget, setCompleteTarget] = React.useState<TaskRow | null>(null);
   const [deadlineTarget, setDeadlineTarget] = React.useState<TaskRow | null>(null);
+  const [cancelTarget, setCancelTarget] = React.useState<TaskRow | null>(null);
   const [archiveTarget, setArchiveTarget] = React.useState<TaskRow | null>(null);
   const [restoreTarget, setRestoreTarget] = React.useState<TaskRow | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<TaskRow | null>(null);
@@ -296,6 +299,15 @@ function TasksPage() {
         onSelect: () => setArchiveTarget(row),
       });
     }
+    if (canCancelTask(row, ctx)) {
+      menuActions.push({
+        key: "cancel",
+        label: "Hủy công việc",
+        icon: Ban,
+        tone: "destructive",
+        onSelect: () => setCancelTarget(row),
+      });
+    }
     if (canRestoreTask(row, ctx)) {
       menuActions.push({
         key: "restore",
@@ -419,8 +431,8 @@ function TasksPage() {
             ...col("w-[148px]"),
             cell: (row: TaskRow) => (
               <StatusBadge
-                label={TASK_STATUS_LABEL[row.status]}
-                tone={TASK_STATUS_TONE[row.status]}
+                label={taskStatusView(row).label}
+                tone={taskStatusView(row).tone}
               />
             ),
           },
