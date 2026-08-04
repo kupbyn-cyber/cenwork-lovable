@@ -18,18 +18,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
-import { ReportConfigPanel } from "@/components/report/report-config-panel";
-import { ReportObligationsPanel } from "@/components/report/report-obligations-panel";
-import { ReportDocList } from "@/components/report/report-doc-list";
 import { ReportReviewDrawer } from "@/components/report/report-review-drawer";
-import { TeamSummaryPanel } from "@/components/report/team-summary-panel";
-import { ReportStatsPanel } from "@/components/report/report-stats-panel";
-import { ReportArchivePanel } from "@/components/report/report-archive-panel";
 
+import { cn } from "@/lib/utils";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
-import { PERMISSIONS } from "@/lib/permissions";
 import { formatHanoiDate } from "@/lib/datetime";
 import {
   REPORT_STATUS_LABEL,
@@ -44,6 +38,7 @@ import {
   isReviewOverdue,
   mustSubmitDaily,
   reportStatusView,
+  weekStartOf,
   weeklyReportsQuery,
   weeklyReviewerView,
   weekNumberLabel,
@@ -75,6 +70,25 @@ export const Route = createFileRoute("/_authenticated/reports/")({
 
 const ALL = "__all__";
 
+/** REPORT-UI-STATUS-NAV-01 — 5 chip tóm tắt trạng thái báo cáo ngày. */
+type DailyChip = "submitted" | "missing" | "pending" | "approved" | "changes";
+
+const DAILY_CHIP_LABEL: Record<DailyChip, string> = {
+  submitted: "Đã nộp",
+  missing: "Chưa nộp",
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  changes: "Yêu cầu sửa",
+};
+
+const DAILY_CHIP_ORDER: DailyChip[] = ["submitted", "missing", "pending", "approved", "changes"];
+
+interface MissingRow {
+  id: string;
+  name: string;
+  teamName: string | null;
+}
+
 function ReportsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
@@ -92,7 +106,8 @@ function ReportsPage() {
   const [toDate, setToDate] = React.useState("");
   // REPORT-DAILY-LIST-01 — tab "Báo cáo ngày" mặc định chỉ hôm nay (giờ Hà Nội).
   const [dailyDate, setDailyDate] = React.useState(() => hanoiToday());
-  const [dailyShowHistory, setDailyShowHistory] = React.useState(false);
+  const [dailyChip, setDailyChip] = React.useState<DailyChip>("submitted");
+  const [archiveKind, setArchiveKind] = React.useState<"daily" | "weekly">("daily");
   const [dailyOpen, setDailyOpen] = React.useState(false);
   const [weeklyOpen, setWeeklyOpen] = React.useState(false);
   const [detail, setDetail] = React.useState<{ kind: "daily" | "weekly"; id: string } | null>(null);
@@ -106,9 +121,6 @@ function ReportsPage() {
   const teams = teamsResult.data ?? [];
   const members = membersResult.data ?? [];
   const me = members.find((member) => member.id === access.userId) ?? null;
-
-  const canViewObligations = access.can(PERMISSIONS.REPORTS_OBLIGATIONS_VIEW);
-  const canConfigReports = access.can(PERMISSIONS.REPORTS_CONFIG) || access.isLeader;
 
   const ctx = {
     userId: access.userId,
@@ -127,11 +139,6 @@ function ReportsPage() {
     });
   }, [dailyResult.data, statusFilter, teamFilter, authorFilter, fromDate, toDate]);
 
-  const dailyTabRows = React.useMemo(
-    () => (dailyShowHistory ? dailyRows : dailyRows.filter((row) => row.report_date === dailyDate)),
-    [dailyRows, dailyShowHistory, dailyDate],
-  );
-
   const weeklyRows = React.useMemo(() => {
     return (weeklyResult.data ?? []).filter((row) => {
       if (statusFilter !== ALL && row.status !== statusFilter) return false;
@@ -142,6 +149,56 @@ function ReportsPage() {
       return true;
     });
   }, [weeklyResult.data, statusFilter, teamFilter, authorFilter, fromDate, toDate]);
+
+  /** Báo cáo của đúng ngày đang chọn, dùng cho chip và bảng tab Báo cáo ngày. */
+  const dayRows = React.useMemo(
+    () => dailyRows.filter((row) => row.report_date === dailyDate),
+    [dailyRows, dailyDate],
+  );
+
+  const teamNameOf = React.useCallback(
+    (teamId: string | null) => teams.find((team) => team.id === teamId)?.name ?? null,
+    [teams],
+  );
+
+  /** Chỉ Member/Leader đang hoạt động mới bị tính "Chưa nộp"; Admin/CMO được miễn. */
+  const missingRows = React.useMemo<MissingRow[]>(() => {
+    const submittedAuthors = new Set(
+      dayRows.filter((row) => row.status !== "draft").map((row) => row.author_id),
+    );
+    return members
+      .filter((member) => member.status === "active" && !member.locked_at)
+      .filter((member) => member.role === "member" || member.role === "leader")
+      .filter((member) => !submittedAuthors.has(member.id))
+      .filter((member) => (teamFilter === ALL ? true : member.primary_team_id === teamFilter))
+      .filter((member) => (authorFilter === ALL ? true : member.id === authorFilter))
+      .map((member) => ({
+        id: member.id,
+        name: member.display_name,
+        teamName: teamNameOf(member.primary_team_id),
+      }));
+  }, [members, dayRows, teamFilter, authorFilter, teamNameOf]);
+
+  const counts: Record<DailyChip, number> = {
+    submitted: dayRows.filter((row) => row.status !== "draft").length,
+    missing: missingRows.length,
+    pending: dayRows.filter((row) => row.status === "submitted").length,
+    approved: dayRows.filter((row) => row.status === "approved").length,
+    changes: dayRows.filter((row) => row.status === "changes_requested").length,
+  };
+
+  const chipRows = React.useMemo(() => {
+    switch (dailyChip) {
+      case "pending":
+        return dayRows.filter((row) => row.status === "submitted");
+      case "approved":
+        return dayRows.filter((row) => row.status === "approved");
+      case "changes":
+        return dayRows.filter((row) => row.status === "changes_requested");
+      default:
+        return dayRows.filter((row) => row.status !== "draft");
+    }
+  }, [dayRows, dailyChip]);
 
   const todayReport = (dailyResult.data ?? []).find(
     (row) => row.author_id === access.userId && row.report_date === hanoiToday(),
@@ -160,6 +217,11 @@ function ReportsPage() {
   const myDailyQueue = dailyRows.filter(awaitsMeDaily);
   const myWeeklyQueue = weeklyRows.filter(awaitsMeWeekly);
   const myQueueCount = myDailyQueue.length + myWeeklyQueue.length;
+
+  // Lưu trữ: báo cáo ngày trước hôm nay và báo cáo tuần đã qua tuần hiện tại.
+  const currentWeekStart = weekStartOf(hanoiToday());
+  const archiveDaily = dailyRows.filter((row) => row.report_date < hanoiToday());
+  const archiveWeekly = weeklyRows.filter((row) => row.week_start < currentWeekStart);
 
   const dailyColumns = [
     {
@@ -180,8 +242,7 @@ function ReportsPage() {
       cell: (row: DailyReportRow) => {
         const view = dailyReviewerView(row, directory);
         if (view.name) return <span className="text-text-secondary">{view.name}</span>;
-        if (view.missing) return <StatusBadge label="Thiếu người duyệt" tone="error" />;
-        return <span className="text-text-muted">Chưa cần duyệt</span>;
+        return <span className="text-text-muted">—</span>;
       },
     },
     {
@@ -198,16 +259,45 @@ function ReportsPage() {
       className: "min-w-[160px]",
       cell: (row: DailyReportRow) => {
         const view = reportStatusView(row.status, awaitsMeDaily(row));
-        const reviewer = dailyReviewerView(row, directory);
         return (
           <div className="flex flex-wrap items-center gap-1">
             <StatusBadge label={view.label} tone={view.tone} />
             {awaitsMeDaily(row) ? <StatusBadge label="Chờ bạn duyệt" tone="warning" /> : null}
-            {reviewer.missing ? <StatusBadge label="Thiếu người duyệt" tone="error" /> : null}
             {isReviewOverdue(row) ? <StatusBadge label="Quá hạn" tone="error" /> : null}
           </div>
         );
       },
+    },
+  ];
+
+  const missingColumns = [
+    {
+      id: "person",
+      header: "Nhân sự",
+      className: "min-w-[180px]",
+      cell: (row: MissingRow) => <span className="text-text-primary">{row.name}</span>,
+    },
+    {
+      id: "team",
+      header: "Team",
+      className: "min-w-[150px]",
+      cell: (row: MissingRow) => (
+        <span className="text-text-secondary">{row.teamName ?? "Chưa có Team"}</span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      className: "min-w-[160px]",
+      cell: () => <StatusBadge label="Chưa nộp báo cáo" tone="warning" />,
+    },
+    {
+      id: "note",
+      header: "Ghi chú",
+      className: "min-w-[200px]",
+      cell: () => (
+        <span className="text-text-muted">Chưa có báo cáo cho ngày {formatHanoiDate(dailyDate)}</span>
+      ),
     },
   ];
 
@@ -260,9 +350,6 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: WeeklyReportRow) => {
         const view = weeklyReviewerView(row, directory);
-        if (view.missing && !view.name) {
-          return <StatusBadge label="Thiếu người duyệt" tone="error" />;
-        }
         return <span className="text-text-secondary">{view.name ?? "—"}</span>;
       },
     },
@@ -272,7 +359,7 @@ function ReportsPage() {
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
         title="Báo cáo"
-        description="Báo cáo ngày cá nhân và báo cáo tuần của Team, trong phạm vi bạn được xem."
+        description="Báo cáo ngày cá nhân và báo cáo tuần của Team trong hệ thống."
         actions={
           <div className="flex flex-wrap gap-2">
             {mustSubmitDaily(ctx) ? (
@@ -356,28 +443,11 @@ function ReportsPage() {
         <TabsList>
           <TabsTrigger value="daily">Báo cáo ngày</TabsTrigger>
           <TabsTrigger value="weekly">Báo cáo tuần</TabsTrigger>
-          <TabsTrigger value="my-review">Chờ tôi duyệt{myQueueCount ? ` (${myQueueCount})` : ""}</TabsTrigger>
-          <TabsTrigger value="workflow">Xử lý báo cáo</TabsTrigger>
-          <TabsTrigger value="summary">Tổng hợp Team</TabsTrigger>
-          <TabsTrigger value="stats">Thống kê</TabsTrigger>
+          <TabsTrigger value="my-review">
+            Chờ tôi duyệt{myQueueCount ? ` (${myQueueCount})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="archive">Lưu trữ</TabsTrigger>
-          {canViewObligations ? (
-            <TabsTrigger value="obligations">Nghĩa vụ</TabsTrigger>
-          ) : null}
-          {canConfigReports ? <TabsTrigger value="config">Cấu hình</TabsTrigger> : null}
         </TabsList>
-        <TabsContent value="stats" className="flex flex-col gap-3">
-          <ReportStatsPanel />
-        </TabsContent>
-        <TabsContent value="archive" className="flex flex-col gap-3">
-          <ReportArchivePanel />
-        </TabsContent>
-        <TabsContent value="workflow" className="flex flex-col gap-3">
-          <ReportDocList />
-        </TabsContent>
-        <TabsContent value="summary" className="flex flex-col gap-3">
-          <TeamSummaryPanel />
-        </TabsContent>
 
         <TabsContent value="my-review" className="flex flex-col gap-4">
           <span className="text-caption text-text-muted">
@@ -390,7 +460,7 @@ function ReportsPage() {
               data={myDailyQueue}
               getRowId={(row) => row.id}
               loading={dailyResult.isLoading}
-              emptyTitle="Không có báo cáo ngày chờ bạn duyệt"
+              emptyTitle="Không có báo cáo chờ bạn duyệt."
               emptyDescription="Chỉ báo cáo có bạn là người duyệt hiện tại mới xuất hiện tại đây."
               onRowClick={(row) => openDetail("daily", row.id)}
             />
@@ -402,7 +472,7 @@ function ReportsPage() {
               data={myWeeklyQueue}
               getRowId={(row) => row.id}
               loading={weeklyResult.isLoading}
-              emptyTitle="Không có báo cáo tuần chờ bạn duyệt"
+              emptyTitle="Không có báo cáo chờ bạn duyệt."
               emptyDescription="Chỉ báo cáo có bạn là người duyệt hiện tại mới xuất hiện tại đây."
               onRowClick={(row) => openDetail("weekly", row.id)}
             />
@@ -414,54 +484,64 @@ function ReportsPage() {
             <Input
               type="date"
               value={dailyDate}
-              onChange={(event) => {
-                setDailyDate(event.target.value);
-                setDailyShowHistory(false);
-              }}
+              onChange={(event) => setDailyDate(event.target.value)}
               aria-label="Ngày báo cáo"
               className="w-auto"
-              disabled={dailyShowHistory}
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setDailyDate(hanoiToday());
-                setDailyShowHistory(false);
-              }}
-            >
+            <Button variant="secondary" size="sm" onClick={() => setDailyDate(hanoiToday())}>
               Hôm nay
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDailyShowHistory((value) => !value)}
-            >
-              {dailyShowHistory ? "Chỉ xem theo ngày đã chọn" : "Xem báo cáo ngày trước"}
-            </Button>
-            <span className="text-caption text-text-muted">
-              {dailyTabRows.length} báo cáo{" "}
-              {dailyShowHistory ? "(gồm ngày trước)" : `ngày ${formatHanoiDate(dailyDate)}`}
-            </span>
           </div>
-          <DataTable
-            columns={dailyColumns}
-            data={dailyTabRows}
-            getRowId={(row) => row.id}
-            loading={dailyResult.isLoading}
-            error={dailyResult.isError}
-            onRetry={() => void dailyResult.refetch()}
-            errorTitle="Không tải được báo cáo ngày"
-            emptyTitle={
-              dailyShowHistory ? "Chưa có báo cáo ngày nào" : "Chưa có báo cáo cho ngày đã chọn"
-            }
-            emptyDescription="Báo cáo của ngày trước vẫn được giữ nguyên — chọn ngày khác hoặc xem Lưu trữ."
-            rowClassName={(row) =>
-              awaitsMeDaily(row) ? "border-l-2 border-l-state-warning bg-state-warning/5" : undefined
-            }
-            onRowClick={(row) => openDetail("daily", row.id)}
-          />
+
+          <div className="flex flex-wrap gap-2">
+            {DAILY_CHIP_ORDER.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setDailyChip(chip)}
+                aria-pressed={dailyChip === chip}
+                className={cn(
+                  "cen-transition rounded-badge border px-3 py-1.5 text-label font-medium",
+                  dailyChip === chip
+                    ? "border-brand-primary bg-brand-primary text-brand-foreground"
+                    : "border-border-default bg-background-elevated text-text-secondary hover:text-text-primary",
+                )}
+              >
+                {DAILY_CHIP_LABEL[chip]}: {counts[chip]}
+              </button>
+            ))}
+          </div>
+
+          {dailyChip === "missing" ? (
+            <DataTable
+              columns={missingColumns}
+              data={missingRows}
+              getRowId={(row) => row.id}
+              loading={membersResult.isLoading}
+              emptyTitle="Tất cả nhân sự đã gửi báo cáo"
+              emptyDescription={`Không còn ai chưa gửi báo cáo ngày ${formatHanoiDate(dailyDate)}.`}
+            />
+          ) : (
+            <DataTable
+              columns={dailyColumns}
+              data={chipRows}
+              getRowId={(row) => row.id}
+              loading={dailyResult.isLoading}
+              error={dailyResult.isError}
+              onRetry={() => void dailyResult.refetch()}
+              errorTitle="Không tải được báo cáo ngày"
+              emptyTitle="Chưa có báo cáo phù hợp"
+              emptyDescription="Chọn chip trạng thái khác hoặc đổi ngày để xem báo cáo."
+              rowClassName={(row) =>
+                awaitsMeDaily(row)
+                  ? "border-l-2 border-l-state-warning bg-state-warning/5"
+                  : undefined
+              }
+              onRowClick={(row) => openDetail("daily", row.id)}
+            />
+          )}
         </TabsContent>
+
         <TabsContent value="weekly" className="flex flex-col gap-3">
           <span className="text-caption text-text-muted">{weeklyRows.length} báo cáo tuần</span>
           <DataTable
@@ -482,16 +562,48 @@ function ReportsPage() {
             onRowClick={(row) => openDetail("weekly", row.id)}
           />
         </TabsContent>
-        {canViewObligations ? (
-          <TabsContent value="obligations" className="flex flex-col gap-3">
-            <ReportObligationsPanel />
-          </TabsContent>
-        ) : null}
-        {canConfigReports ? (
-          <TabsContent value="config" className="flex flex-col gap-3">
-            <ReportConfigPanel />
-          </TabsContent>
-        ) : null}
+
+        <TabsContent value="archive" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={archiveKind}
+              onValueChange={(value) => setArchiveKind(value as "daily" | "weekly")}
+            >
+              <SelectTrigger aria-label="Loại báo cáo" className="w-[190px]">
+                <SelectValue placeholder="Loại báo cáo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Báo cáo ngày</SelectItem>
+                <SelectItem value="weekly">Báo cáo tuần</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-caption text-text-muted">
+              {archiveKind === "daily" ? archiveDaily.length : archiveWeekly.length} báo cáo cũ ·
+              dùng bộ lọc Team, người gửi, trạng thái và khoảng ngày phía trên
+            </span>
+          </div>
+          {archiveKind === "daily" ? (
+            <DataTable
+              columns={dailyColumns}
+              data={archiveDaily}
+              getRowId={(row) => row.id}
+              loading={dailyResult.isLoading}
+              emptyTitle="Chưa có báo cáo ngày cũ"
+              emptyDescription="Báo cáo của các ngày trước sẽ được lưu tại đây."
+              onRowClick={(row) => openDetail("daily", row.id)}
+            />
+          ) : (
+            <DataTable
+              columns={weeklyColumns}
+              data={archiveWeekly}
+              getRowId={(row) => row.id}
+              loading={weeklyResult.isLoading}
+              emptyTitle="Chưa có báo cáo tuần cũ"
+              emptyDescription="Báo cáo của các tuần trước sẽ được lưu tại đây."
+              onRowClick={(row) => openDetail("weekly", row.id)}
+            />
+          )}
+        </TabsContent>
       </Tabs>
 
       {access.userId ? (
