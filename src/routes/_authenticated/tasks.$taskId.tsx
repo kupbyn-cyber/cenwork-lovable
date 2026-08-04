@@ -543,6 +543,15 @@ function TaskDetailPage() {
         }}
       />
 
+      <TaskCancelDialog
+        task={cancelOpen ? task : null}
+        onOpenChange={(open) => setCancelOpen(open)}
+        onCancelled={() => {
+          invalidate();
+          flash("status");
+        }}
+      />
+
       <DeadlineRequestModal
         open={requestOpen}
         onOpenChange={setRequestOpen}
