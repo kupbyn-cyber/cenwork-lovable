@@ -6,6 +6,7 @@ import {
   Archive,
   ArchiveRestore,
   ArrowLeft,
+  Ban,
   CalendarClock,
   Loader2,
   Pencil,
@@ -35,6 +36,7 @@ import {
   DeadlineRequestModal,
 } from "@/components/common/deadline-request-modal";
 import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
+import { TaskCancelDialog } from "@/components/task/task-cancel-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { cn } from "@/lib/utils";
 import { useFlashHighlight } from "@/hooks/use-flash-highlight";
@@ -52,8 +54,8 @@ import {
   TASK_PRIORITY_TONE,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
-  TASK_STATUS_TONE,
   canApproveTaskDeadline,
+  canCancelTask,
   canChangeTaskStatus,
   canEditTask,
   canManuallyArchiveTask,
@@ -62,12 +64,14 @@ import {
   formatDate,
   formatDateTime,
   isCompletedEarly,
+  isTaskCancelled,
   isTaskManuallyArchived,
   isTaskOverdue,
   setTaskStatus,
   taskHistoryQuery,
   taskQuery,
   taskResultsQuery,
+  taskStatusView,
   taskTimeProgress,
   type TaskAccessContext,
   type TaskStatus,
@@ -121,6 +125,7 @@ function TaskDetailPage() {
   const [requestOpen, setRequestOpen] = React.useState(false);
   const [decisionOpen, setDecisionOpen] = React.useState(false);
   const [completeOpen, setCompleteOpen] = React.useState(false);
+  const [cancelOpen, setCancelOpen] = React.useState(false);
 
   const task = taskResult.data ?? null;
   const ctx: TaskAccessContext = {
@@ -292,6 +297,15 @@ function TaskDetailPage() {
                         onSelect: () => setRestoreOpen(true),
                       }
                     : null,
+                  canCancelTask(task, ctx)
+                    ? {
+                        key: "cancel",
+                        label: "Hủy công việc",
+                        icon: Ban,
+                        tone: "destructive" as const,
+                        onSelect: () => setCancelOpen(true),
+                      }
+                    : null,
                 ].filter(Boolean) as RowAction[]
               }
             />
@@ -317,8 +331,8 @@ function TaskDetailPage() {
                   )}
                 >
                   <StatusBadge
-                    label={TASK_STATUS_LABEL[task.status]}
-                    tone={TASK_STATUS_TONE[task.status]}
+                    label={taskStatusView(task).label}
+                    tone={taskStatusView(task).tone}
                   />
                 </span>
               }
@@ -403,6 +417,16 @@ function TaskDetailPage() {
                 <InfoRow
                   label="Trạng thái lưu trữ"
                   value={`Đã đưa vào Lưu trữ thủ công lúc ${formatDateTime(task.manually_archived_at)}. Trạng thái nghiệp vụ giữ nguyên.`}
+                />
+              </div>
+            ) : null}
+            {isTaskCancelled(task) ? (
+              <div className="sm:col-span-2">
+                <InfoRow
+                  label="Đã hủy"
+                  value={`Hủy lúc ${formatDateTime(task.cancelled_at)}${
+                    task.cancel_reason ? ` · Lý do: ${task.cancel_reason}` : ""
+                  }. Công việc đã vào Lưu trữ, chỉ xem chi tiết và lịch sử.`}
                 />
               </div>
             ) : null}
