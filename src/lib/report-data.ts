@@ -1150,6 +1150,7 @@ export interface WeeklyReportInput {
   blockers: string;
   nextWeekPlan: string;
   status: Extract<ReportStatus, "draft" | "submitted">;
+  snapshot?: WeeklySnapshot | null;
 }
 
 export async function createWeeklyReport(input: WeeklyReportInput & { leaderId: string }) {
@@ -1164,6 +1165,7 @@ export async function createWeeklyReport(input: WeeklyReportInput & { leaderId: 
       blockers: input.blockers,
       next_week_plan: input.nextWeekPlan,
       status: input.status,
+      snapshot: (input.snapshot ?? null) as never,
     })
     .select("id")
     .single();
@@ -1183,6 +1185,7 @@ export async function updateWeeklyReport(
       blockers: input.blockers,
       next_week_plan: input.nextWeekPlan,
       status: input.status,
+      snapshot: (input.snapshot ?? null) as never,
     })
     .eq("id", id);
   fail(error);
