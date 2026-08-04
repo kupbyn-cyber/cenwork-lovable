@@ -21,6 +21,7 @@ import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
 import { ReportConfigPanel } from "@/components/report/report-config-panel";
 import { ReportObligationsPanel } from "@/components/report/report-obligations-panel";
 import { ReportDocList } from "@/components/report/report-doc-list";
+import { ReportReviewDrawer } from "@/components/report/report-review-drawer";
 import { TeamSummaryPanel } from "@/components/report/team-summary-panel";
 import { ReportStatsPanel } from "@/components/report/report-stats-panel";
 import { ReportArchivePanel } from "@/components/report/report-archive-panel";
@@ -32,12 +33,14 @@ import { formatHanoiDate } from "@/lib/datetime";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_ORDER,
-  REPORT_STATUS_TONE,
   canCreateWeekly,
+  canReviewDaily,
+  canReviewWeekly,
   dailyReportsQuery,
   formatWeekLabel,
   hanoiToday,
   mustSubmitDaily,
+  reportStatusView,
   weeklyReportsQuery,
   type DailyReportRow,
   type WeeklyReportRow,
@@ -83,6 +86,13 @@ function ReportsPage() {
   const [toDate, setToDate] = React.useState("");
   const [dailyOpen, setDailyOpen] = React.useState(false);
   const [weeklyOpen, setWeeklyOpen] = React.useState(false);
+  const [detail, setDetail] = React.useState<{ kind: "daily" | "weekly"; id: string } | null>(null);
+  const [detailOpen, setDetailOpen] = React.useState(false);
+
+  function openDetail(kind: "daily" | "weekly", id: string) {
+    setDetail({ kind, id });
+    setDetailOpen(true);
+  }
 
   const teams = teamsResult.data ?? [];
   const members = membersResult.data ?? [];
@@ -123,14 +133,27 @@ function ReportsPage() {
     (row) => row.author_id === access.userId && row.report_date === hanoiToday(),
   );
 
+  const awaitsMeDaily = React.useCallback(
+    (row: DailyReportRow) => {
+      const author = members.find((member) => member.id === row.author_id);
+      return canReviewDaily(row, ctx, author?.role === "leader");
+    },
+    [members, ctx.userId, ctx.role, ctx.leaderTeamId],
+  );
+  const awaitsMeWeekly = React.useCallback(
+    (row: WeeklyReportRow) => canReviewWeekly(row, ctx),
+    [ctx.userId, ctx.role, ctx.leaderTeamId],
+  );
+
   const dailyColumns = [
     {
-      id: "date",
-      header: "Ngày",
-      className: "min-w-[130px]",
-      cell: (row: DailyReportRow) => (
-        <TableCellStack primary={formatHanoiDate(row.report_date)} secondary={row.teamName ?? "—"} />
-      ),
+      id: "status",
+      header: "Trạng thái",
+      className: "min-w-[150px]",
+      cell: (row: DailyReportRow) => {
+        const view = reportStatusView(row.status, awaitsMeDaily(row));
+        return <StatusBadge label={view.label} tone={view.tone} />;
+      },
     },
     {
       id: "author",
@@ -138,6 +161,14 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: DailyReportRow) => (
         <span className="text-text-secondary">{row.authorName ?? "—"}</span>
+      ),
+    },
+    {
+      id: "date",
+      header: "Ngày / Team",
+      className: "min-w-[130px]",
+      cell: (row: DailyReportRow) => (
+        <TableCellStack primary={formatHanoiDate(row.report_date)} secondary={row.teamName ?? "—"} />
       ),
     },
     {
@@ -156,27 +187,17 @@ function ReportsPage() {
         <span className="text-text-secondary">{row.reviewerName ?? "—"}</span>
       ),
     },
-    {
-      id: "status",
-      header: "Trạng thái",
-      className: "min-w-[160px]",
-      cell: (row: DailyReportRow) => (
-        <StatusBadge label={REPORT_STATUS_LABEL[row.status]} tone={REPORT_STATUS_TONE[row.status]} />
-      ),
-    },
   ];
 
   const weeklyColumns = [
     {
-      id: "week",
-      header: "Tuần",
-      className: "min-w-[200px]",
-      cell: (row: WeeklyReportRow) => (
-        <TableCellStack
-          primary={formatWeekLabel(row.week_start)}
-          secondary={row.teamName ?? "—"}
-        />
-      ),
+      id: "status",
+      header: "Trạng thái",
+      className: "min-w-[150px]",
+      cell: (row: WeeklyReportRow) => {
+        const view = reportStatusView(row.status, awaitsMeWeekly(row));
+        return <StatusBadge label={view.label} tone={view.tone} />;
+      },
     },
     {
       id: "leader",
@@ -184,6 +205,17 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: WeeklyReportRow) => (
         <span className="text-text-secondary">{row.leaderName ?? "—"}</span>
+      ),
+    },
+    {
+      id: "week",
+      header: "Tuần / Team",
+      className: "min-w-[200px]",
+      cell: (row: WeeklyReportRow) => (
+        <TableCellStack
+          primary={formatWeekLabel(row.week_start)}
+          secondary={row.teamName ?? "—"}
+        />
       ),
     },
     {
@@ -200,14 +232,6 @@ function ReportsPage() {
       className: "min-w-[150px]",
       cell: (row: WeeklyReportRow) => (
         <span className="text-text-secondary">{row.reviewerName ?? "—"}</span>
-      ),
-    },
-    {
-      id: "status",
-      header: "Trạng thái",
-      className: "min-w-[160px]",
-      cell: (row: WeeklyReportRow) => (
-        <StatusBadge label={REPORT_STATUS_LABEL[row.status]} tone={REPORT_STATUS_TONE[row.status]} />
       ),
     },
   ];
@@ -334,9 +358,10 @@ function ReportsPage() {
             errorTitle="Không tải được báo cáo ngày"
             emptyTitle="Chưa có báo cáo ngày nào"
             emptyDescription="Báo cáo ngày sẽ xuất hiện tại đây sau khi được tạo."
-            onRowClick={(row) =>
-              void navigate({ to: "/reports/daily/$reportId", params: { reportId: row.id } })
+            rowClassName={(row) =>
+              awaitsMeDaily(row) ? "border-l-2 border-l-state-warning bg-state-warning/5" : undefined
             }
+            onRowClick={(row) => openDetail("daily", row.id)}
           />
         </TabsContent>
         <TabsContent value="weekly" className="flex flex-col gap-3">
@@ -351,9 +376,12 @@ function ReportsPage() {
             errorTitle="Không tải được báo cáo tuần"
             emptyTitle="Chưa có báo cáo tuần nào"
             emptyDescription="Leader tạo báo cáo tuần cho Team để tổng hợp kết quả."
-            onRowClick={(row) =>
-              void navigate({ to: "/reports/weekly/$reportId", params: { reportId: row.id } })
+            rowClassName={(row) =>
+              awaitsMeWeekly(row)
+                ? "border-l-2 border-l-state-warning bg-state-warning/5"
+                : undefined
             }
+            onRowClick={(row) => openDetail("weekly", row.id)}
           />
         </TabsContent>
         {canViewObligations ? (
