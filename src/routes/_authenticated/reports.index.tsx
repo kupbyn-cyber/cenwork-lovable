@@ -239,8 +239,8 @@ function ReportsPage() {
       className: "min-w-[200px]",
       cell: (row: WeeklyReportRow) => (
         <TableCellStack
-          primary={formatWeekLabel(row.week_start)}
-          secondary={row.teamName ?? "—"}
+          primary={weekNumberLabel(row.week_start)}
+          secondary={`${formatWeekLabel(row.week_start)} · ${row.teamName ?? "—"}`}
         />
       ),
     },
@@ -256,9 +256,13 @@ function ReportsPage() {
       id: "reviewer",
       header: "Người duyệt",
       className: "min-w-[150px]",
-      cell: (row: WeeklyReportRow) => (
-        <span className="text-text-secondary">{row.reviewerName ?? "—"}</span>
-      ),
+      cell: (row: WeeklyReportRow) => {
+        const view = weeklyReviewerView(row, directory);
+        if (view.missing && !view.name) {
+          return <StatusBadge label="Thiếu người duyệt" tone="error" />;
+        }
+        return <span className="text-text-secondary">{view.name ?? "—"}</span>;
+      },
     },
   ];
 
