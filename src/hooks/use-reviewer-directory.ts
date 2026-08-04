@@ -18,6 +18,7 @@ export function useReviewerDirectory(): ReviewerDirectory {
         role: m.role,
         status: m.status,
         primary_team_id: m.primary_team_id,
+        display_name: m.display_name,
       })),
       teams: (teams.data ?? []).map((t) => ({ id: t.id, leader_id: t.leader_id })),
     }),
