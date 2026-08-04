@@ -146,6 +146,13 @@ export async function publishAnnouncementCore(
   }));
 
 
+  // ANN-RECIPIENT-01: phạm vi có thể đã đổi khi sửa nháp — dựng lại danh sách người nhận.
+  const { error: resetError } = await supabase
+    .from("announcement_recipients")
+    .delete()
+    .eq("announcement_id", announcementId);
+  if (resetError) throw new Error(resetError.message);
+
   const { error: insertError } = await supabase
     .from("announcement_recipients")
     .upsert(rows, { onConflict: "announcement_id,user_id", ignoreDuplicates: true });
