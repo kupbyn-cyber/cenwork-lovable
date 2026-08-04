@@ -85,6 +85,35 @@ export function formatWeekLabel(weekStart: string): string {
   return `${formatHanoiDate(weekStart)} – ${formatHanoiDate(addDays(weekStart, 6))}`;
 }
 
+/* ===== REPORT-WEEKLY-FLOW-01 — gọi báo cáo tuần theo số tuần trong năm ===== */
+
+/** Số tuần ISO (tuần bắt đầu Thứ Hai) của một ngày `yyyy-MM-dd`. */
+export function isoWeekNumber(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, m! - 1, d!));
+  const dow = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
+  date.setUTCDate(date.getUTCDate() + 4 - dow);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+/** `Tuần 32`. */
+export function weekNumberLabel(weekStart: string): string {
+  return `Tuần ${isoWeekNumber(weekStart)}`;
+}
+
+/** `Tuần 32 · 05/08–11/08/2026`. */
+export function formatWeekTitle(weekStart: string): string {
+  const end = addDays(weekStart, 6);
+  const short = (value: string) => formatHanoiDate(value).slice(0, 5);
+  return `${weekNumberLabel(weekStart)} · ${short(weekStart)}–${formatHanoiDate(end)}`;
+}
+
+/** `Báo cáo tuần 32 — Team Branding`. */
+export function weeklyReportTitle(weekStart: string, teamName: string | null): string {
+  return `Báo cáo tuần ${isoWeekNumber(weekStart)} — ${teamName ?? "Team"}`;
+}
+
 /* ================= Báo cáo ngày ================= */
 
 export interface DailyReportRow {
