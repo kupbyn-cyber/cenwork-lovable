@@ -270,6 +270,7 @@ export function isTaskAssignee(task: TaskRow, ctx: TaskAccessContext) {
 }
 
 export function canEditTask(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
   if (task.is_archived) return privileged(ctx);
   return canManageTask(task, ctx) || isTaskAssignee(task, ctx);
 }
@@ -287,6 +288,43 @@ export function canManuallyArchiveTask(task: TaskRow, ctx: TaskAccessContext) {
   return privileged(ctx) && !isTaskManuallyArchived(task);
 }
 
+/* ---- TASK-RULE-XX — Hủy công việc ---- */
+
+export function isTaskCancelled(task: TaskRow) {
+  return task.cancelled_at !== null;
+}
+
+/** Nhãn trạng thái hiển thị: Task đã hủy luôn hiện "Đã hủy". */
+export function taskStatusView(task: TaskRow): { label: string; tone: StatusTone } {
+  if (isTaskCancelled(task)) return { label: "Đã hủy", tone: "error" };
+  return { label: TASK_STATUS_LABEL[task.status], tone: TASK_STATUS_TONE[task.status] };
+}
+
+/**
+ * Chỉ ẩn/hiện nút; quyền thật do RPC `task_cancel` kiểm tra ở database.
+ * Admin/CMO hủy mọi Task; Leader hủy trong phạm vi quản lý; người tạo hủy khi chưa bắt đầu.
+ */
+export function canCancelTask(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
+  if (task.status === "done") return false;
+  if (isTaskManuallyArchived(task)) return false;
+  if (privileged(ctx)) return true;
+  if (ctx.leaderTeamId) {
+    if (task.team_id === ctx.leaderTeamId) return true;
+    if (task.assigneeTeamId === ctx.leaderTeamId) return true;
+    if (task.projectResponsibleTeamId === ctx.leaderTeamId) return true;
+  }
+  if (ctx.userId && task.created_by === ctx.userId && task.status === "not_started") return true;
+  return false;
+}
+
+export async function cancelTask(taskId: string, reason: string) {
+  const text = reason.trim();
+  if (!text) throw new Error("Cần nhập lý do hủy.");
+  const { error } = await supabase.rpc("task_cancel", { _task: taskId, _reason: text });
+  if (error) throw new Error(error.message);
+}
+
 /** Chỉ dữ liệu lưu trữ thủ công mới được khôi phục; dữ liệu hoàn thành thì không. */
 export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
   return privileged(ctx) && isTaskManuallyArchived(task);
@@ -299,6 +337,7 @@ export function canRestoreTask(task: TaskRow, ctx: TaskAccessContext) {
 export function isTaskArchived(task: TaskRow) {
   return (
     task.status === "done" ||
+    isTaskCancelled(task) ||
     isTaskManuallyArchived(task) ||
     task.projectManuallyArchivedAt !== null
   );
@@ -350,6 +389,7 @@ export function isTaskAwaitingApproval(task: TaskRow) {
 
 /** Duyệt: Admin/CMO, hoặc Leader của Team phụ trách mặc định của Dự án. */
 export function canApproveTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
+  if (isTaskCancelled(task)) return false;
   if (!isTaskAwaitingApproval(task)) return false;
   if (task.approval_status === "withdrawn") return false;
   if (privileged(ctx)) return true;
@@ -364,13 +404,18 @@ export function isTaskSubmissionAuthor(task: TaskRow, ctx: TaskAccessContext) {
 
 export function canWithdrawTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
   return (
+    !isTaskCancelled(task) &&
     isTaskSubmissionAuthor(task, ctx) &&
     (task.approval_status === "pending" || task.approval_status === "changes_requested")
   );
 }
 
 export function canResubmitTask(task: TaskRow, ctx: TaskAccessContext) {
-  return isTaskSubmissionAuthor(task, ctx) && task.approval_status === "changes_requested";
+  return (
+    !isTaskCancelled(task) &&
+    isTaskSubmissionAuthor(task, ctx) &&
+    task.approval_status === "changes_requested"
+  );
 }
 
 export interface TaskSubmissionInput {
@@ -570,7 +615,7 @@ export function formatDateTime(value: string | null) {
 }
 
 export function isTaskOverdue(task: TaskRow) {
-  if (task.status === "done" || task.is_archived) return false;
+  if (task.status === "done" || task.is_archived || isTaskCancelled(task)) return false;
   return isPastInstant(task.deadline);
 }
 
