@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, RotateCcw, Undo2, X } from "lucide-react";
+import { Ban, Check, RotateCcw, Undo2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,10 +9,12 @@ import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
+import { TaskCancelDialog } from "@/components/task/task-cancel-dialog";
 import {
   TASK_APPROVAL_LABEL,
   TASK_APPROVAL_TONE,
   canApproveTaskSubmission,
+  canCancelTask,
   canResubmitTask,
   canWithdrawTaskSubmission,
   decideTaskApproval,
@@ -34,6 +36,7 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
   const queryClient = useQueryClient();
   const { data } = useQuery(taskApprovalsQuery());
   const [rejectTarget, setRejectTarget] = React.useState<TaskRow | null>(null);
+  const [cancelTarget, setCancelTarget] = React.useState<TaskRow | null>(null);
   const [reason, setReason] = React.useState("");
   const [reasonError, setReasonError] = React.useState<string | null>(null);
 
@@ -176,11 +179,23 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
                     Thu hồi
                   </Button>
                 ) : null}
+                {canCancelTask(row, ctx) ? (
+                  <Button size="sm" variant="ghost" onClick={() => setCancelTarget(row)}>
+                    <Ban />
+                    Hủy
+                  </Button>
+                ) : null}
               </div>
             </Card>
           );
         })}
       </div>
+
+      <TaskCancelDialog
+        task={cancelTarget}
+        title="Hủy task này?"
+        onOpenChange={(open) => (open ? undefined : setCancelTarget(null))}
+      />
 
       <Modal
         open={rejectTarget !== null}
