@@ -692,6 +692,17 @@ function TasksPage() {
         }}
       />
 
+      <TaskCancelDialog
+        task={cancelTarget}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+        onCancelled={() => {
+          refresh();
+          setCancelTarget(null);
+        }}
+      />
+
       <ConfirmDialog
         open={archiveTarget !== null}
         onOpenChange={(open) => {
