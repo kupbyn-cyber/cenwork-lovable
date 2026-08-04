@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { ReviewActions } from "@/components/report/review-actions";
 import { useOrgAccess } from "@/hooks/use-org-access";
+import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
 import { membersQuery } from "@/lib/org-data";
 import {
@@ -90,9 +91,8 @@ function DailyReportDetail() {
     role: access.role,
     leaderTeamId: access.leaderTeamId,
   };
-  const author = (membersResult.data ?? []).find((member) => member.id === report.author_id);
   const editable = canEditDaily(report, ctx);
-  const reviewable = canReviewDaily(report, ctx, author?.role === "leader");
+  const reviewable = canReviewDaily(report, ctx, directory);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
