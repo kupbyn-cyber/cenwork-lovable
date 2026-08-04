@@ -395,6 +395,103 @@ export interface ReportAccessContext {
 
 const privileged = (ctx: ReportAccessContext) => ctx.role === "admin" || ctx.role === "cmo";
 
+/* ========== REPORT-REVIEW-UI-01 — xác định người duyệt thật sự ========== */
+
+export interface ReviewerDirectoryMember {
+  id: string;
+  role: AppRoleKey | null;
+  status: string;
+  primary_team_id: string | null;
+}
+
+export interface ReviewerDirectoryTeam {
+  id: string;
+  leader_id: string | null;
+}
+
+export interface ReviewerDirectory {
+  members: ReviewerDirectoryMember[];
+  teams: ReviewerDirectoryTeam[];
+}
+
+export const EMPTY_REVIEWER_DIRECTORY: ReviewerDirectory = { members: [], teams: [] };
+
+function activeWithRole(dir: ReviewerDirectory, role: AppRoleKey): string | null {
+  return dir.members.find((m) => m.role === role && m.status === "active")?.id ?? null;
+}
+
+function isActive(dir: ReviewerDirectory, id: string | null | undefined): boolean {
+  if (!id) return false;
+  return dir.members.some((m) => m.id === id && m.status === "active");
+}
+
+/**
+ * Luồng duyệt:
+ * - Báo cáo Member → Leader Team chính.
+ * - Báo cáo Leader → CMO.
+ * - Báo cáo tuần → CMO.
+ * Admin chỉ là người duyệt khi được chỉ định trực tiếp (`reviewer_id`, gồm cả tiếp quản)
+ * hoặc khi không còn Leader/CMO hợp lệ.
+ */
+export function resolveDailyReviewerId(
+  report: DailyReportRow,
+  dir: ReviewerDirectory,
+): string | null {
+  if (report.reviewer_id) return report.reviewer_id;
+  const author = dir.members.find((m) => m.id === report.author_id) ?? null;
+  if (author?.role !== "leader") {
+    const teamId = report.team_id ?? author?.primary_team_id ?? null;
+    const leaderId = teamId ? (dir.teams.find((t) => t.id === teamId)?.leader_id ?? null) : null;
+    if (leaderId && leaderId !== report.author_id && isActive(dir, leaderId)) return leaderId;
+  }
+  const cmo = activeWithRole(dir, "cmo");
+  if (cmo && cmo !== report.author_id) return cmo;
+  const admin = activeWithRole(dir, "admin");
+  return admin && admin !== report.author_id ? admin : null;
+}
+
+export function resolveWeeklyReviewerId(
+  report: WeeklyReportRow,
+  dir: ReviewerDirectory,
+): string | null {
+  if (report.reviewer_id) return report.reviewer_id;
+  const cmo = activeWithRole(dir, "cmo");
+  if (cmo && cmo !== report.leader_id) return cmo;
+  const admin = activeWithRole(dir, "admin");
+  return admin && admin !== report.leader_id ? admin : null;
+}
+
+/** Quá hạn duyệt: đã gửi nhưng để quá 48 giờ chưa xử lý. */
+export function isReviewOverdue(row: {
+  status: ReportStatus;
+  submitted_at: string | null;
+}): boolean {
+  if (row.status !== "submitted" || !row.submitted_at) return false;
+  return Date.now() - new Date(row.submitted_at).getTime() > 48 * 60 * 60 * 1000;
+}
+
+/** Admin đang không phải người duyệt vẫn có thể chủ động tiếp quản. */
+export function canTakeoverReview(
+  row: { status: ReportStatus },
+  ctx: ReportAccessContext,
+  awaitingMe: boolean,
+): boolean {
+  return ctx.role === "admin" && row.status === "submitted" && !awaitingMe;
+}
+
+export async function takeoverReportReview(
+  kind: "daily" | "weekly",
+  id: string,
+  reason: string | null,
+) {
+  const { error } = await supabase.rpc("report_review_takeover", {
+    _kind: kind,
+    _id: id,
+    _reason: reason,
+  });
+  fail(error);
+}
+
 /** Member và Leader phải gửi báo cáo ngày. */
 export function mustSubmitDaily(ctx: ReportAccessContext) {
   return ctx.role === "member" || ctx.role === "leader";
@@ -412,21 +509,17 @@ export function canEditDaily(report: DailyReportRow, ctx: ReportAccessContext) {
 }
 
 /**
- * Member gửi cho Leader Team chính; Leader gửi cho CMO/Admin.
- * `authorIsLeader` lấy từ danh sách thành viên (vai trò người gửi).
+ * Chỉ đúng người duyệt hiện tại mới thấy hành động duyệt.
+ * Quyền xem toàn hệ thống (Admin/CMO) không tự biến thành quyền duyệt.
  */
 export function canReviewDaily(
   report: DailyReportRow,
   ctx: ReportAccessContext,
-  authorIsLeader: boolean,
+  dir: ReviewerDirectory,
 ) {
   if (!ctx.userId || report.author_id === ctx.userId) return false;
   if (report.status !== "submitted") return false;
-  if (privileged(ctx)) return true;
-  if (authorIsLeader) return false;
-  return Boolean(
-    ctx.role === "leader" && ctx.leaderTeamId && report.team_id === ctx.leaderTeamId,
-  );
+  return resolveDailyReviewerId(report, dir) === ctx.userId;
 }
 
 export function canCreateWeekly(ctx: ReportAccessContext) {
@@ -442,6 +535,16 @@ export function canEditWeekly(report: WeeklyReportRow, ctx: ReportAccessContext)
 
 export function canReviewWeekly(report: WeeklyReportRow, ctx: ReportAccessContext) {
   return privileged(ctx) && report.status === "submitted";
+}
+
+export function canReviewWeeklyBy(
+  report: WeeklyReportRow,
+  ctx: ReportAccessContext,
+  dir: ReviewerDirectory,
+) {
+  if (!ctx.userId || report.leader_id === ctx.userId) return false;
+  if (report.status !== "submitted") return false;
+  return resolveWeeklyReviewerId(report, dir) === ctx.userId;
 }
 
 /* ================= Ghi dữ liệu ================= */
