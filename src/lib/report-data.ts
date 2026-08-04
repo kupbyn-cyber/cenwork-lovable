@@ -222,7 +222,7 @@ export interface WeeklyReportRow {
 
 const WEEKLY_SELECT = `
   id,team_id,week_start,leader_id,highlights,unfinished,blockers,next_week_plan,status,
-  reviewer_id,review_note,submitted_at,reviewed_at,created_at,updated_at,
+  reviewer_id,review_note,submitted_at,reviewed_at,created_at,updated_at,snapshot,
   leader:profiles!weekly_reports_leader_id_fkey(id,display_name),
   reviewer:profiles!weekly_reports_reviewer_id_fkey(id,display_name),
   team:teams(id,name)
@@ -251,6 +251,7 @@ function mapWeekly(row: Record<string, unknown>): WeeklyReportRow {
     reviewed_at: (row["reviewed_at"] as string | null) ?? null,
     created_at: row["created_at"] as string,
     updated_at: row["updated_at"] as string,
+    snapshot: (row["snapshot"] as WeeklySnapshot | null) ?? null,
   };
 }
 
