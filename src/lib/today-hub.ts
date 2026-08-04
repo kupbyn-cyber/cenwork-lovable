@@ -20,6 +20,7 @@ export type ActionReason =
   | "approval_overdue"
   | "changes_requested"
   | "awaiting_my_approval"
+  | "awaiting_my_review"
   | "task_overdue"
   | "report_due"
   | "task_due_soon"
@@ -31,6 +32,7 @@ export const ACTION_REASON_WEIGHT: Record<ActionReason, number> = {
   approval_overdue: 95,
   changes_requested: 90,
   awaiting_my_approval: 80,
+  awaiting_my_review: 78,
   task_overdue: 70,
   report_due: 60,
   task_due_soon: 50,
@@ -42,12 +44,13 @@ export const ACTION_REASON_LABEL: Record<ActionReason, string> = {
   announcement_overdue: "Thông báo quá hạn",
   approval_overdue: "Phê duyệt quá hạn",
   changes_requested: "Bị yêu cầu chỉnh sửa",
-  awaiting_my_approval: "Chờ bạn duyệt",
-  task_overdue: "Quá hạn",
+  awaiting_my_approval: "Cần duyệt",
+  awaiting_my_review: "Cần kiểm tra",
+  task_overdue: "Task bạn phụ trách — quá hạn",
   report_due: "Đến hạn báo cáo",
-  task_due_soon: "Sắp đến hạn",
-  announcement_pending: "Chưa xác nhận",
-  mention: "Nhắc tên / trả lời",
+  task_due_soon: "Task bạn phụ trách — sắp đến hạn",
+  announcement_pending: "Cần xác nhận",
+  mention: "Được mention",
 };
 
 export const ACTION_REASON_TONE: Record<
@@ -58,6 +61,7 @@ export const ACTION_REASON_TONE: Record<
   approval_overdue: "error",
   changes_requested: "error",
   awaiting_my_approval: "warning",
+  awaiting_my_review: "warning",
   task_overdue: "error",
   report_due: "warning",
   task_due_soon: "warning",
