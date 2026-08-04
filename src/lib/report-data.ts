@@ -972,6 +972,34 @@ export function resolveWeeklyReviewerId(
   return admin && admin !== report.leader_id ? admin : null;
 }
 
+/** Người duyệt dự kiến của báo cáo tuần chưa tồn tại: CMO trước, Admin dự phòng. */
+export function resolveWeeklyReviewerForLeader(
+  leaderId: string,
+  dir: ReviewerDirectory,
+): string | null {
+  const cmo = activeWithRole(dir, "cmo");
+  if (cmo && cmo !== leaderId) return cmo;
+  const admin = activeWithRole(dir, "admin");
+  return admin && admin !== leaderId ? admin : null;
+}
+
+export const WEEKLY_REVIEWER_MISSING_MESSAGE =
+  "Chưa xác định được người duyệt báo cáo tuần.";
+
+/** Tên người duyệt hiển thị ngoài danh sách báo cáo tuần. */
+export function weeklyReviewerView(
+  report: WeeklyReportRow,
+  dir: ReviewerDirectory,
+): { name: string | null; missing: boolean } {
+  const reviewerId = resolveWeeklyReviewerId(report, dir);
+  if (!reviewerId) return { name: null, missing: report.status !== "approved" };
+  const name =
+    report.reviewerName ??
+    maskName(dir.members.find((m) => m.id === reviewerId)?.display_name ?? null) ??
+    null;
+  return { name, missing: !name && report.status === "submitted" };
+}
+
 /** Quá hạn duyệt: đã gửi nhưng để quá 48 giờ chưa xử lý. */
 export function isReviewOverdue(row: {
   status: ReportStatus;
