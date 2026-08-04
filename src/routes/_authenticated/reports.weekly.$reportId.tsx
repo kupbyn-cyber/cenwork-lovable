@@ -66,6 +66,7 @@ function Block({ title, value }: { title: string; value: string | null }) {
 function WeeklyReportDetail() {
   const { reportId } = Route.useParams();
   const access = useOrgAccess();
+  const directory = useReviewerDirectory();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = React.useState(false);
 
