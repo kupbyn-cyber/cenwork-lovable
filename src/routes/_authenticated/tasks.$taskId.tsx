@@ -18,7 +18,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TaskCommentThread } from "@/components/task/task-comment-thread";
+import {
+  CollapsibleList,
+  TaskFactsCard,
+  TaskNextActionsCard,
+  TaskObjectiveCard,
+  TaskOverviewCard,
+  TaskProjectCard,
+} from "@/components/task/task-detail-blocks";
+import { taskNextActions } from "@/lib/task-next-actions";
+import { taskCommentsQuery } from "@/lib/task-comment-data";
+import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE } from "@/lib/project-data";
 import { cenToast } from "@/components/ui/toast";
 import { RowActionsMenu, type RowAction } from "@/components/common/row-actions-menu";
 import {
