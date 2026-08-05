@@ -5777,6 +5777,10 @@ export type Database = {
       report_config_manager: { Args: never; Returns: boolean }
       report_content_snapshot: { Args: { _report: string }; Returns: Json }
       report_current_reviewer: { Args: { _report: string }; Returns: string }
+      report_daily_reviewer: {
+        Args: { _author: string; _team?: string }
+        Returns: string
+      }
       report_decide_exemption: {
         Args: { _approve: boolean; _note?: string; _request: string }
         Returns: undefined
@@ -5849,6 +5853,17 @@ export type Database = {
         Args: { _id: string; _kind: string; _reason?: string }
         Returns: undefined
       }
+      report_reviewer_directory: {
+        Args: never
+        Returns: {
+          display_name: string
+          id: string
+          leader_of_team: string
+          primary_team_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["account_status"]
+        }[]
+      }
       report_run_reminders: { Args: never; Returns: Json }
       report_section_visible: { Args: { _section: string }; Returns: boolean }
       report_set_archived: {
@@ -5870,6 +5885,7 @@ export type Database = {
         Returns: undefined
       }
       report_upsert_obligations: { Args: { _period: string }; Returns: number }
+      report_weekly_reviewer: { Args: { _leader: string }; Returns: string }
       set_manual_archive: {
         Args: { _archived: boolean; _entity_id: string; _entity_type: string }
         Returns: undefined
