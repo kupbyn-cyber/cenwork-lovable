@@ -934,7 +934,6 @@ export function resolveDailyReviewerForAuthor(
     const team = teamId ?? author?.primary_team_id ?? null;
     const leaderId = team ? (dir.teams.find((t) => t.id === team)?.leader_id ?? null) : null;
     if (leaderId && leaderId !== authorId && isActive(dir, leaderId)) return leaderId;
-    return null;
   }
   const cmo = activeWithRole(dir, "cmo");
   if (cmo && cmo !== authorId) return cmo;
