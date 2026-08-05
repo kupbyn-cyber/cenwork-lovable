@@ -2,7 +2,7 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
@@ -256,7 +256,8 @@ export function WeeklyReportDrawer({
   }
 
   return (
-    <DrawerPanel
+    <Modal
+      size="xl"
       open={open}
       onOpenChange={onOpenChange}
       title={weeklyReportTitle(weekStart, teamName ?? report?.teamName ?? null)}
@@ -340,6 +341,6 @@ export function WeeklyReportDrawer({
           )}
         </FormField>
       </div>
-    </DrawerPanel>
+    </Modal>
   );
 }

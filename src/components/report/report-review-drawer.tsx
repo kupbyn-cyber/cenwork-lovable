@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
+import { Modal } from "@/components/ui/modal";
 import { LinkifiedText } from "@/components/ui/linkified-text";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
@@ -149,10 +149,10 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
   }
 
   return (
-    <DrawerPanel
+    <Modal
       open={open}
       onOpenChange={onOpenChange}
-      side={isMobile ? "bottom" : "right"}
+      size={isMobile ? "md" : "xl"}
       title={title}
       description={`${sender} · ${teamName}`}
       footer={
@@ -305,6 +305,6 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
           </div>
         </div>
       )}
-    </DrawerPanel>
+    </Modal>
   );
 }

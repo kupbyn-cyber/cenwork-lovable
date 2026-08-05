@@ -2,7 +2,6 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { DrawerPanel } from "@/components/ui/drawer-panel";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
@@ -129,7 +128,8 @@ export function DailyReportDrawer({
 
   return (
     <>
-    <DrawerPanel
+    <Modal
+      size="lg"
       open={open}
       onOpenChange={onOpenChange}
       title={report ? "Sửa báo cáo ngày" : "Tạo báo cáo ngày"}
@@ -244,7 +244,7 @@ export function DailyReportDrawer({
           )}
         </FormField>
       </div>
-    </DrawerPanel>
+    </Modal>
 
     <Modal
       open={thanksReportId !== null}
