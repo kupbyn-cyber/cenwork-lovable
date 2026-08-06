@@ -275,11 +275,11 @@ export function TaskFormDrawer({
   }
 
   const assigneeOptions = allowOthers
-    ? people
-    : people.filter((person) => person.id === ctx.userId);
+    ? scopedPool
+    : scopedPool.filter((person) => person.id === ctx.userId);
   const selfName =
     people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
-  const participantPool = people;
+  const participantPool = scopedPool;
 
   return (
     <Modal
