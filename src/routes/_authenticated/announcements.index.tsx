@@ -66,7 +66,7 @@ const DESCRIPTION =
   "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
 
 export const Route = createFileRoute("/_authenticated/announcements/")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { kind?: InboxKindFilter } => ({
     kind:
       search["kind"] === "internal" || search["kind"] === "system"
         ? (search["kind"] as InboxKindFilter)
@@ -90,7 +90,7 @@ function AnnouncementsPage() {
   const { can } = useOrgAccess();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { kind } = Route.useSearch();
+  const { kind = "all" as InboxKindFilter } = Route.useSearch();
   const [tab, setTab] = React.useState("todo");
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
