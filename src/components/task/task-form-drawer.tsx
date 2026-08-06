@@ -152,6 +152,10 @@ export function TaskFormDrawer({
   });
 
   const selectedProject = projects.find((project) => project.id === form.projectId) ?? null;
+  /** Người nhận việc chỉ trong phạm vi dự án liên quan (Chủ dự án / Team phụ trách / Team tham gia). */
+  const scopePeople = useQuery(projectScopePeopleQuery(selectedProject?.id ?? null));
+  const scopedPool: PersonOption[] =
+    selectedProject && scopePeople.data ? scopePeople.data : people;
   const missingTeam = memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
   const noLeaderHint =
     memberFlow && selectedProject?.responsible_team_id
