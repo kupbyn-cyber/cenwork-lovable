@@ -204,6 +204,24 @@ export async function fetchActivePeople(): Promise<PersonOption[]> {
   return (data ?? []).map((row) => ({ id: row.id, display_name: row.display_name }));
 }
 
+/** Nhân sự thuộc phạm vi một dự án: Chủ dự án / Người tạo / Team phụ trách / Team tham gia. */
+export async function fetchProjectScopePeople(projectId: string): Promise<PersonOption[]> {
+  const { data, error } = await supabase.rpc("project_scope_people", { _project: projectId });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as PersonOption[]).map((row) => ({
+    id: row.id,
+    display_name: row.display_name,
+  }));
+}
+
+export const projectScopePeopleQuery = (projectId: string | null) =>
+  queryOptions({
+    queryKey: ["project-scope-people", projectId],
+    queryFn: () => fetchProjectScopePeople(projectId!),
+    enabled: Boolean(projectId),
+    staleTime: 30_000,
+  });
+
 export const activePeopleQuery = () =>
   queryOptions({ queryKey: ["active-people"], queryFn: fetchActivePeople });
 
