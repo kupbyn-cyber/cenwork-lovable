@@ -1,7 +1,16 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, Ban, CalendarClock, Columns3, Plus, Trash2, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Ban,
+  CalendarClock,
+  Columns3,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,8 +92,23 @@ import {
 
 export const Route = createFileRoute("/_authenticated/tasks/")({
   /** DASH-CORE-01 — nhận tham số lọc sẵn khi drill-down từ Dashboard hiệu suất. */
-  validateSearch: (search: Record<string, unknown>) => {
-    const str = (key: string) => (typeof search[key] === "string" ? (search[key] as string) : undefined);
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    status?: string | undefined;
+    assignee?: string | undefined;
+    team?: string | undefined;
+    project?: string | undefined;
+    priority?: string | undefined;
+    kind?: string | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
+    overdue?: string | undefined;
+    mine?: string | undefined;
+    needsMe?: string | undefined;
+  } => {
+    const str = (key: string) =>
+      typeof search[key] === "string" ? (search[key] as string) : undefined;
     return {
       status: str("status"),
       assignee: str("assignee"),
@@ -430,10 +454,7 @@ function TasksPage() {
             header: "Trạng thái",
             ...col("w-[148px]"),
             cell: (row: TaskRow) => (
-              <StatusBadge
-                label={taskStatusView(row).label}
-                tone={taskStatusView(row).tone}
-              />
+              <StatusBadge label={taskStatusView(row).label} tone={taskStatusView(row).tone} />
             ),
           },
         ]

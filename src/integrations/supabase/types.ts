@@ -5698,6 +5698,13 @@ export type Database = {
         Args: { _approve: boolean; _project: string; _reason?: string }
         Returns: Database["public"]["Enums"]["project_status"]
       }
+      project_scope_people: {
+        Args: { _project: string }
+        Returns: {
+          display_name: string
+          id: string
+        }[]
+      }
       project_submit: {
         Args: { _project: string }
         Returns: Database["public"]["Enums"]["project_status"]

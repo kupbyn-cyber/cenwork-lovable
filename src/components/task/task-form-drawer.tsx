@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
-import {
-  getTaskNameWarning,
-  TASK_NAME_HELPER,
-  TASK_NAME_PLACEHOLDER,
-} from "@/lib/task-name-hint";
+import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
-import { isProjectApproved, type PersonOption, type ProjectRow } from "@/lib/project-data";
+import {
+  isProjectApproved,
+  projectScopePeopleQuery,
+  type PersonOption,
+  type ProjectRow,
+} from "@/lib/project-data";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
@@ -147,7 +148,29 @@ export function TaskFormDrawer({
   });
 
   const selectedProject = projects.find((project) => project.id === form.projectId) ?? null;
-  const missingTeam = memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
+  /** Người nhận việc chỉ trong phạm vi dự án liên quan (Chủ dự án / Team phụ trách / Team tham gia). */
+  const scopePeople = useQuery(projectScopePeopleQuery(selectedProject?.id ?? null));
+  const scopedPool: PersonOption[] =
+    selectedProject && scopePeople.data ? scopePeople.data : people;
+
+  // Đổi dự án → người phụ trách phải nằm trong phạm vi dự án mới.
+  React.useEffect(() => {
+    if (!selectedProject || !scopePeople.data) return;
+    if (scopePeople.data.some((person) => person.id === form.assigneeId)) return;
+    const fallback = scopePeople.data.some((person) => person.id === ctx.userId)
+      ? (ctx.userId ?? "")
+      : "";
+    setForm((prev) => ({
+      ...prev,
+      assigneeId: fallback,
+      participantIds: prev.participantIds.filter((id) =>
+        scopePeople.data!.some((person) => person.id === id),
+      ),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id, scopePeople.data]);
+  const missingTeam =
+    memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
   const noLeaderHint =
     memberFlow && selectedProject?.responsible_team_id
       ? "Nếu Team phụ trách chưa có Leader, yêu cầu sẽ được Admin/CMO xử lý."
@@ -266,18 +289,19 @@ export function TaskFormDrawer({
   }
 
   const assigneeOptions = allowOthers
-    ? people
-    : people.filter((person) => person.id === ctx.userId);
-  const selfName =
-    people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
-  const participantPool = people;
+    ? scopedPool
+    : scopedPool.filter((person) => person.id === ctx.userId);
+  const selfName = people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
+  const participantPool = scopedPool;
 
   return (
     <Modal
       size="xl"
       open={open}
       onOpenChange={mutation.isPending ? () => undefined : onOpenChange}
-      title={memberFlow ? "Gửi công việc chờ duyệt" : isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"}
+      title={
+        memberFlow ? "Gửi công việc chờ duyệt" : isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"
+      }
       description={
         memberFlow
           ? "Công việc sẽ được gửi tới Leader của Team phụ trách dự án để phê duyệt."
@@ -516,25 +540,25 @@ export function TaskFormDrawer({
             )}
           </FormField>
           {memberFlow ? null : (
-          <FormField id="task-status" label="Trạng thái">
-            {(control) => (
-              <Select
-                value={form.status}
-                onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
-              >
-                <SelectTrigger {...control} aria-label="Trạng thái">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_STATUS_ORDER.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {TASK_STATUS_LABEL[status]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </FormField>
+            <FormField id="task-status" label="Trạng thái">
+              {(control) => (
+                <Select
+                  value={form.status}
+                  onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
+                >
+                  <SelectTrigger {...control} aria-label="Trạng thái">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TASK_STATUS_ORDER.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {TASK_STATUS_LABEL[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
           )}
         </div>
 

@@ -48,7 +48,14 @@ const PRESETS: DashPreset[] = ["today", "week", "month", "custom"];
 
 export const Route = createFileRoute("/_authenticated/performance")({
   /** DASH-QA-01 — bộ lọc nằm trên URL để reload hoặc chia sẻ không mất trạng thái. */
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    preset?: DashPreset | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
+    team?: string | undefined;
+  } => {
     const str = (key: string) =>
       typeof search[key] === "string" && search[key] !== "" ? (search[key] as string) : undefined;
     const preset = str("preset");
@@ -90,7 +97,10 @@ function DashboardPage() {
 
   const setSearch = React.useCallback(
     (next: { preset?: DashPreset; from?: string; to?: string; team?: string | undefined }) => {
-      void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...next }), replace: true });
+      void navigate({
+        search: (prev: Record<string, unknown>) => ({ ...prev, ...next }),
+        replace: true,
+      });
     },
     [navigate],
   );
@@ -180,7 +190,9 @@ function DashboardPage() {
           {data && data.scope === "org" && data.teams.length > 0 ? (
             <Select
               value={teamId}
-              onValueChange={(value) => setSearch({ team: value === ALL_TEAMS ? undefined : value })}
+              onValueChange={(value) =>
+                setSearch({ team: value === ALL_TEAMS ? undefined : value })
+              }
             >
               <SelectTrigger className="w-full lg:w-56" aria-label="Lọc theo Team">
                 <SelectValue placeholder="Tất cả Team" />
@@ -335,8 +347,10 @@ function DashboardPage() {
 
           <p className="text-xs text-text-muted">
             Số liệu tính theo giờ Hà Nội, cập nhật lúc{" "}
-            {new Date(data.generated_at).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}.
-            Dashboard chỉ hiển thị và điều hướng; mọi thao tác thực hiện tại trang chức năng.
+            {new Date(data.generated_at).toLocaleTimeString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            })}
+            . Dashboard chỉ hiển thị và điều hướng; mọi thao tác thực hiện tại trang chức năng.
           </p>
         </>
       ) : null}
