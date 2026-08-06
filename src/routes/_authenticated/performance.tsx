@@ -49,7 +49,7 @@ const PRESETS: DashPreset[] = ["today", "week", "month", "custom"];
 export const Route = createFileRoute("/_authenticated/performance")({
   /** DASH-QA-01 — bộ lọc nằm trên URL để reload hoặc chia sẻ không mất trạng thái. */
   validateSearch: (search: Record<string, unknown>): {
-    preset?: DashPreset; from?: string; to?: string; team?: string;
+    preset?: DashPreset | undefined; from?: string | undefined; to?: string | undefined; team?: string | undefined;
   } => {
     const str = (key: string) =>
       typeof search[key] === "string" && search[key] !== "" ? (search[key] as string) : undefined;

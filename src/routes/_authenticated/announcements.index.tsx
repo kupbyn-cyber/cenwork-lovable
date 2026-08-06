@@ -66,7 +66,7 @@ const DESCRIPTION =
   "Soạn, phát hành và theo dõi thông báo nội bộ bắt buộc xác nhận trong CEN WORK.";
 
 export const Route = createFileRoute("/_authenticated/announcements/")({
-  validateSearch: (search: Record<string, unknown>): { kind?: InboxKindFilter } => ({
+  validateSearch: (search: Record<string, unknown>): { kind?: InboxKindFilter | undefined } => ({
     kind:
       search["kind"] === "internal" || search["kind"] === "system"
         ? (search["kind"] as InboxKindFilter)

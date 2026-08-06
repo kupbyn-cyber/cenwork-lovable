@@ -84,8 +84,10 @@ import {
 export const Route = createFileRoute("/_authenticated/tasks/")({
   /** DASH-CORE-01 — nhận tham số lọc sẵn khi drill-down từ Dashboard hiệu suất. */
   validateSearch: (search: Record<string, unknown>): {
-    status?: string; assignee?: string; team?: string; project?: string; priority?: string;
-    kind?: string; from?: string; to?: string; overdue?: string; mine?: string; needsMe?: string;
+    status?: string | undefined; assignee?: string | undefined; team?: string | undefined;
+    project?: string | undefined; priority?: string | undefined; kind?: string | undefined;
+    from?: string | undefined; to?: string | undefined; overdue?: string | undefined;
+    mine?: string | undefined; needsMe?: string | undefined;
   } => {
     const str = (key: string) => (typeof search[key] === "string" ? (search[key] as string) : undefined);
     return {
