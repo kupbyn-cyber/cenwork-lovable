@@ -156,6 +156,23 @@ export function TaskFormDrawer({
   const scopePeople = useQuery(projectScopePeopleQuery(selectedProject?.id ?? null));
   const scopedPool: PersonOption[] =
     selectedProject && scopePeople.data ? scopePeople.data : people;
+
+  // Đổi dự án → người phụ trách phải nằm trong phạm vi dự án mới.
+  React.useEffect(() => {
+    if (!selectedProject || !scopePeople.data) return;
+    if (scopePeople.data.some((person) => person.id === form.assigneeId)) return;
+    const fallback = scopePeople.data.some((person) => person.id === ctx.userId)
+      ? (ctx.userId ?? "")
+      : "";
+    setForm((prev) => ({
+      ...prev,
+      assigneeId: fallback,
+      participantIds: prev.participantIds.filter((id) =>
+        scopePeople.data!.some((person) => person.id === id),
+      ),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id, scopePeople.data]);
   const missingTeam = memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
   const noLeaderHint =
     memberFlow && selectedProject?.responsible_team_id
