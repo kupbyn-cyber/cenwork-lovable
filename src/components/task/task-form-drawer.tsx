@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,12 @@ import {
 } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
-import { isProjectApproved, type PersonOption, type ProjectRow } from "@/lib/project-data";
+import {
+  isProjectApproved,
+  projectScopePeopleQuery,
+  type PersonOption,
+  type ProjectRow,
+} from "@/lib/project-data";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
