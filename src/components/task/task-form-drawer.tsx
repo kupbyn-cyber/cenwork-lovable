@@ -16,11 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
-import {
-  getTaskNameWarning,
-  TASK_NAME_HELPER,
-  TASK_NAME_PLACEHOLDER,
-} from "@/lib/task-name-hint";
+import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import {
@@ -173,7 +169,8 @@ export function TaskFormDrawer({
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProject?.id, scopePeople.data]);
-  const missingTeam = memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
+  const missingTeam =
+    memberFlow && selectedProject !== null && !selectedProject.responsible_team_id;
   const noLeaderHint =
     memberFlow && selectedProject?.responsible_team_id
       ? "Nếu Team phụ trách chưa có Leader, yêu cầu sẽ được Admin/CMO xử lý."
@@ -294,8 +291,7 @@ export function TaskFormDrawer({
   const assigneeOptions = allowOthers
     ? scopedPool
     : scopedPool.filter((person) => person.id === ctx.userId);
-  const selfName =
-    people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
+  const selfName = people.find((person) => person.id === ctx.userId)?.display_name ?? "Bạn";
   const participantPool = scopedPool;
 
   return (
@@ -303,7 +299,9 @@ export function TaskFormDrawer({
       size="xl"
       open={open}
       onOpenChange={mutation.isPending ? () => undefined : onOpenChange}
-      title={memberFlow ? "Gửi công việc chờ duyệt" : isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"}
+      title={
+        memberFlow ? "Gửi công việc chờ duyệt" : isCreate ? "Tạo công việc" : "Chỉnh sửa công việc"
+      }
       description={
         memberFlow
           ? "Công việc sẽ được gửi tới Leader của Team phụ trách dự án để phê duyệt."
@@ -542,25 +540,25 @@ export function TaskFormDrawer({
             )}
           </FormField>
           {memberFlow ? null : (
-          <FormField id="task-status" label="Trạng thái">
-            {(control) => (
-              <Select
-                value={form.status}
-                onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
-              >
-                <SelectTrigger {...control} aria-label="Trạng thái">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_STATUS_ORDER.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {TASK_STATUS_LABEL[status]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </FormField>
+            <FormField id="task-status" label="Trạng thái">
+              {(control) => (
+                <Select
+                  value={form.status}
+                  onValueChange={(value) => setForm({ ...form, status: value as TaskStatus })}
+                >
+                  <SelectTrigger {...control} aria-label="Trạng thái">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TASK_STATUS_ORDER.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {TASK_STATUS_LABEL[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
           )}
         </div>
 

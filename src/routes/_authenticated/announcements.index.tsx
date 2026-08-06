@@ -261,40 +261,40 @@ function AnnouncementsPage() {
             }
             aria-hidden={tab === "created"}
           >
-              {(
-                [
-                  ["all", "Tất cả"],
-                  ["internal", "Nội bộ"],
-                  ["system", "Hệ thống"],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={kind === value ? "primary" : "secondary"}
-                  aria-pressed={kind === value}
-                  disabled={tab === "created"}
-                  tabIndex={tab === "created" ? -1 : undefined}
-                  onClick={() => setKind(value)}
-                >
-                  {label}
-                  {value === "system" && systemUnread > 0 ? ` (${systemUnread})` : ""}
-                </Button>
-              ))}
+            {(
+              [
+                ["all", "Tất cả"],
+                ["internal", "Nội bộ"],
+                ["system", "Hệ thống"],
+              ] as const
+            ).map(([value, label]) => (
               <Button
+                key={value}
                 type="button"
                 size="sm"
-                variant="ghost"
-                className="ms-auto"
-                disabled={tab === "created" || systemUnread === 0 || markAll.isPending}
+                variant={kind === value ? "primary" : "secondary"}
+                aria-pressed={kind === value}
+                disabled={tab === "created"}
                 tabIndex={tab === "created" ? -1 : undefined}
-                loading={markAll.isPending}
-                onClick={() => markAll.mutate()}
+                onClick={() => setKind(value)}
               >
-                <CheckCheck />
-                Đánh dấu thông báo hệ thống đã đọc tất cả
+                {label}
+                {value === "system" && systemUnread > 0 ? ` (${systemUnread})` : ""}
               </Button>
+            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="ms-auto"
+              disabled={tab === "created" || systemUnread === 0 || markAll.isPending}
+              tabIndex={tab === "created" ? -1 : undefined}
+              loading={markAll.isPending}
+              onClick={() => markAll.mutate()}
+            >
+              <CheckCheck />
+              Đánh dấu thông báo hệ thống đã đọc tất cả
+            </Button>
           </div>
 
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
