@@ -143,7 +143,7 @@ export async function fetchTaskReviewerOptions(
   projectId: string | null,
 ): Promise<TaskReviewerOption[]> {
   const { data, error } = await supabase.rpc("task_reviewer_candidates", {
-    _project: projectId,
+    _project: projectId as unknown as string,
   });
   if (error) throw new Error(error.message);
   return ((data ?? []) as { kind: string; user_id: string; display_name: string }[]).map((row) => ({
