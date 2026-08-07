@@ -4579,6 +4579,8 @@ export type Database = {
           result_text: string | null
           result_updated_at: string | null
           result_updated_by: string | null
+          reviewer_id: string | null
+          reviewer_type: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
           submitted_at: string | null
@@ -4612,6 +4614,8 @@ export type Database = {
           result_text?: string | null
           result_updated_at?: string | null
           result_updated_by?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           submitted_at?: string | null
@@ -4645,6 +4649,8 @@ export type Database = {
           result_text?: string | null
           result_updated_at?: string | null
           result_updated_by?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           submitted_at?: string | null
@@ -4690,6 +4696,13 @@ export type Database = {
           {
             foreignKeyName: "tasks_result_updated_by_fkey"
             columns: ["result_updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_reviewer_id_fkey"
+            columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -5910,6 +5923,7 @@ export type Database = {
         Args: { _reason: string; _task: string }
         Returns: undefined
       }
+      task_cancel_notify: { Args: { _task: string }; Returns: undefined }
       task_comments_mark_read: { Args: { _task: string }; Returns: undefined }
       task_log_approval_event: {
         Args: {
@@ -5921,19 +5935,51 @@ export type Database = {
         Returns: undefined
       }
       task_member_resubmit: { Args: { _task: string }; Returns: undefined }
-      task_member_submit: {
-        Args: {
-          _deadline: string
-          _description: string
-          _name: string
-          _participants?: string[]
-          _priority: Database["public"]["Enums"]["task_priority"]
-          _project: string
-          _start_date: string
-        }
-        Returns: string
-      }
+      task_member_submit:
+        | {
+            Args: {
+              _deadline: string
+              _description: string
+              _name: string
+              _participants?: string[]
+              _priority: Database["public"]["Enums"]["task_priority"]
+              _project: string
+              _start_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _deadline: string
+              _description: string
+              _name: string
+              _participants?: string[]
+              _priority: Database["public"]["Enums"]["task_priority"]
+              _project: string
+              _reviewer?: string
+              _reviewer_type?: string
+              _start_date: string
+            }
+            Returns: string
+          }
       task_member_withdraw: { Args: { _task: string }; Returns: undefined }
+      task_reviewer_candidates: {
+        Args: { _actor?: string; _project: string }
+        Returns: {
+          display_name: string
+          kind: string
+          user_id: string
+        }[]
+      }
+      task_reviewer_is_valid: {
+        Args: {
+          _actor: string
+          _project: string
+          _reviewer: string
+          _type: string
+        }
+        Returns: boolean
+      }
       task_submission_notify: { Args: { _task: string }; Returns: undefined }
       task_unread_comment_counts: {
         Args: never
