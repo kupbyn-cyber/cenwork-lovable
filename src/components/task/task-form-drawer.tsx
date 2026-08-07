@@ -488,9 +488,7 @@ export function TaskFormDrawer({
             <SearchableSelect
               id={control.id}
               value={form.reviewerKind || null}
-              onChange={(value) =>
-                setForm({ ...form, reviewerKind: value as TaskReviewerKind })
-              }
+              onChange={(value) => setForm({ ...form, reviewerKind: value as TaskReviewerKind })}
               ariaLabel="Người duyệt"
               placeholder="Chọn người duyệt"
               searchPlaceholder="Tìm người duyệt…"

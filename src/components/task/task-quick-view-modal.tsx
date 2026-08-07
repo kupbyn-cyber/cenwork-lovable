@@ -76,10 +76,7 @@ export function TaskQuickViewModal({ task, onOpenChange }: TaskQuickViewModalPro
             />
             <DeadlineCountdown
               task={task}
-              className={cn(
-                "text-body font-semibold",
-                isTaskOverdue(task) && "text-state-danger",
-              )}
+              className={cn("text-body font-semibold", isTaskOverdue(task) && "text-state-danger")}
             />
             <span className="text-caption text-text-muted">{formatDateTime(task.deadline)}</span>
           </div>
@@ -111,9 +108,7 @@ export function TaskQuickViewModal({ task, onOpenChange }: TaskQuickViewModalPro
             <Fact label="Người tạo" value={task.creatorName ?? "—"} />
             <Fact
               label="Người tham gia"
-              value={
-                task.participantNames.length === 0 ? "—" : task.participantNames.join(", ")
-              }
+              value={task.participantNames.length === 0 ? "—" : task.participantNames.join(", ")}
             />
           </div>
 
