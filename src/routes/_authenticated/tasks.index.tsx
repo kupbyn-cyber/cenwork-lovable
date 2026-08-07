@@ -628,7 +628,7 @@ function TasksPage() {
         <TaskCardList
           tasks={visibleRows}
           columns={columns}
-          onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          onOpen={(task) => setQuickView(task)}
           unreadCount={unreadCount}
           onOpenComments={openComments}
           renderActions={rowActions}
@@ -646,9 +646,16 @@ function TasksPage() {
           errorTitle="Không tải được danh sách công việc"
           emptyTitle={emptyTitle}
           emptyDescription={emptyDescription}
-          onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
+          onRowClick={(row) => setQuickView(row)}
         />
       )}
+
+      <TaskQuickViewModal
+        task={quickView}
+        onOpenChange={(open) => {
+          if (!open) setQuickView(null);
+        }}
+      />
 
       {visibleRows.length < rows.length ? (
         <div className="flex justify-center">
