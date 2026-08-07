@@ -480,6 +480,8 @@ export interface TaskSubmissionInput {
   deadline: string;
   priority: TaskPriority;
   participantIds: string[];
+  reviewerType: TaskReviewerKind;
+  reviewerId: string;
 }
 
 /** Gửi Leader duyệt — mọi ràng buộc phạm vi được chốt trong RPC phía database. */
@@ -493,6 +495,8 @@ export async function submitTaskForApproval(input: TaskSubmissionInput) {
     _deadline: input.deadline,
     _priority: input.priority,
     _participants: input.participantIds,
+    _reviewer_type: input.reviewerType,
+    _reviewer: input.reviewerId,
   });
   if (error) throw new Error(error.message);
   return data as string;
@@ -530,6 +534,8 @@ export interface TaskInput {
   deadline: string;
   priority: TaskPriority;
   status: TaskStatus;
+  reviewerType?: TaskReviewerKind | null;
+  reviewerId?: string | null;
 }
 
 export async function createTask(input: TaskInput & { createdBy: string }) {
@@ -546,6 +552,8 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
       priority: input.priority,
       status: input.status,
       created_by: input.createdBy,
+      reviewer_type: input.reviewerType ?? null,
+      reviewer_id: input.reviewerId ?? null,
     })
     .select("id")
     .single();
@@ -566,6 +574,8 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
   if (input.deadline !== undefined) payload.deadline = input.deadline;
   if (input.priority !== undefined) payload.priority = input.priority;
   if (input.status !== undefined) payload.status = input.status;
+  if (input.reviewerType !== undefined) payload.reviewer_type = input.reviewerType;
+  if (input.reviewerId !== undefined) payload.reviewer_id = input.reviewerId;
   const { error } = await supabase.from("tasks").update(payload).eq("id", id);
   fail(error);
 }
