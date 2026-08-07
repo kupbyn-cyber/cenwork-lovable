@@ -189,6 +189,8 @@ function TasksPage() {
   const [archiveTarget, setArchiveTarget] = React.useState<TaskRow | null>(null);
   const [restoreTarget, setRestoreTarget] = React.useState<TaskRow | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<TaskRow | null>(null);
+  /** TASK-WORKFLOW-UX-01 — nhìn nhanh công việc trước khi mở trang chi tiết. */
+  const [quickView, setQuickView] = React.useState<TaskRow | null>(null);
 
   const projects = projectsResult.data ?? [];
   const teams = teamsResult.data ?? [];
