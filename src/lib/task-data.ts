@@ -107,11 +107,58 @@ export interface TaskRow {
   approval_note: string | null;
   participantIds: string[];
   participantNames: string[];
+  /** TASK-WORKFLOW-UX-01 — Người duyệt bắt buộc khi tạo Task. */
+  reviewer_type: TaskReviewerKind | null;
+  reviewer_id: string | null;
+  reviewerName: string | null;
   /** TASK-RULE-XX — hủy công việc: chỉ xem chi tiết và lịch sử sau khi hủy. */
   cancelled_at: string | null;
   cancelled_by: string | null;
   cancel_reason: string | null;
 }
+
+/* ================= Người duyệt Task ================= */
+
+export type TaskReviewerKind = "project_owner" | "my_leader" | "cmo";
+
+export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
+  project_owner: "Chủ dự án",
+  my_leader: "Leader của tôi",
+  cmo: "CMO",
+};
+
+export const TASK_REVIEWER_ORDER: TaskReviewerKind[] = ["project_owner", "my_leader", "cmo"];
+
+export interface TaskReviewerOption {
+  kind: TaskReviewerKind;
+  userId: string;
+  displayName: string;
+}
+
+/**
+ * Ba lựa chọn Người duyệt hợp lệ (database là nguồn xác thực cuối cùng).
+ * Lựa chọn nào không có người thật sẽ không xuất hiện trong danh sách.
+ */
+export async function fetchTaskReviewerOptions(
+  projectId: string | null,
+): Promise<TaskReviewerOption[]> {
+  const { data, error } = await supabase.rpc("task_reviewer_candidates", {
+    _project: projectId,
+  });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { kind: string; user_id: string; display_name: string }[]).map((row) => ({
+    kind: row.kind as TaskReviewerKind,
+    userId: row.user_id,
+    displayName: row.display_name,
+  }));
+}
+
+export const taskReviewerOptionsQuery = (projectId: string | null) =>
+  queryOptions({
+    queryKey: ["task-reviewer-options", projectId],
+    queryFn: () => fetchTaskReviewerOptions(projectId),
+    staleTime: 30_000,
+  });
 
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
@@ -120,10 +167,12 @@ const SELECT = `
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
+  reviewer_type,reviewer_id,
   project:projects(id,name,owner_id,manually_archived_at,responsible_team_id),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
   resultAuthor:profiles!tasks_result_updated_by_fkey(id,display_name),
+  reviewer:profiles!tasks_reviewer_id_fkey(id,display_name),
   team:teams(id,name),
   task_participants(user_id,profiles(display_name))
 `;
@@ -142,6 +191,7 @@ function mapTask(raw: RawTask): TaskRow {
     | null;
   const creator = raw["creator"] as { display_name: string } | null;
   const resultAuthor = raw["resultAuthor"] as { display_name: string } | null;
+  const reviewer = raw["reviewer"] as { display_name: string } | null;
   const team = raw["team"] as { name: string } | null;
   const participants = (raw["task_participants"] ?? []) as {
     user_id: string;
@@ -187,6 +237,10 @@ function mapTask(raw: RawTask): TaskRow {
     approval_note: (raw["approval_note"] as string | null) ?? null,
     participantIds: participants.map((p) => p.user_id),
     participantNames: participants.map((p) => maskName(p.profiles?.display_name, p.user_id) ?? "—"),
+    reviewer_type: (raw["reviewer_type"] as TaskReviewerKind | null) ?? null,
+    reviewer_id: (raw["reviewer_id"] as string | null) ?? null,
+    reviewerName:
+      maskName(reviewer?.display_name, (raw["reviewer_id"] as string | null) ?? undefined) ?? null,
     cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
     cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
     cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
