@@ -41,6 +41,7 @@ import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskApprovalPanel } from "@/components/task/task-approval-panel";
 import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
 import { TaskCardList } from "@/components/task/task-card-list";
+import { TaskQuickViewModal } from "@/components/task/task-quick-view-modal";
 import { TaskSavedViews } from "@/components/task/task-saved-views";
 import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
