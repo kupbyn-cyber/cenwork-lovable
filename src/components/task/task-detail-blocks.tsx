@@ -188,6 +188,17 @@ export function TaskFactsCard({ task }: { task: TaskRow }) {
         />
         <FactCard label="Người phụ trách" value={task.assigneeName ?? "—"} emphasis />
         <FactCard
+          label="Người duyệt"
+          emphasis
+          value={
+            task.reviewerName
+              ? `${task.reviewerName}${
+                  task.reviewer_type ? ` (${TASK_REVIEWER_LABEL[task.reviewer_type]})` : ""
+                }`
+              : "—"
+          }
+        />
+        <FactCard
           label="Mức ưu tiên"
           value={
             <StatusBadge
