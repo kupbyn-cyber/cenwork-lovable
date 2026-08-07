@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
@@ -28,6 +29,8 @@ import {
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
+  TASK_REVIEWER_LABEL,
+  TASK_REVIEWER_ORDER,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   canAssignToOthers,
@@ -37,9 +40,11 @@ import {
   isMemberSubmissionFlow,
   submitTaskForApproval,
   syncTaskParticipants,
+  taskReviewerOptionsQuery,
   updateTask,
   type TaskAccessContext,
   type TaskPriority,
+  type TaskReviewerKind,
   type TaskRow,
   type TaskStatus,
 } from "@/lib/task-data";
@@ -79,6 +84,8 @@ interface FormState {
   priority: TaskPriority;
   status: TaskStatus;
   participantIds: string[];
+  /** Loại người duyệt đã chọn: chủ dự án / leader của tôi / CMO. */
+  reviewerKind: TaskReviewerKind | "";
 }
 
 function initialState(
@@ -99,6 +106,7 @@ function initialState(
     priority: task?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
+    reviewerKind: task?.reviewer_type ?? "",
   };
 }
 
