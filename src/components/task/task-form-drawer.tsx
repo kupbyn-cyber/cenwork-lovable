@@ -293,7 +293,9 @@ export function TaskFormDrawer({
       next.projectId = "Chọn dự án bạn đang tham gia.";
     }
     if (!state.assigneeId) next.assigneeId = "Chọn người phụ trách.";
-    if (!state.reviewerKind) next.reviewerKind = "Chọn người duyệt.";
+    if (!state.reviewerKind && reviewerOptions.length > 0) {
+      next.reviewerKind = "Chọn người duyệt.";
+    }
     if (!state.deadlineDate || !state.deadlineTime) {
       next.deadlineDate = "Chọn đầy đủ ngày và giờ deadline.";
       return next;
