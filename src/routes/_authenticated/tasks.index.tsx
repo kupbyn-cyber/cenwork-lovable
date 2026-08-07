@@ -41,6 +41,7 @@ import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskApprovalPanel } from "@/components/task/task-approval-panel";
 import { TaskAdvancedFilters } from "@/components/task/task-advanced-filters";
 import { TaskCardList } from "@/components/task/task-card-list";
+import { TaskQuickViewModal } from "@/components/task/task-quick-view-modal";
 import { TaskSavedViews } from "@/components/task/task-saved-views";
 import { RowActionsCell } from "@/components/common/row-actions-cell";
 import { DeadlineRequestModal } from "@/components/common/deadline-request-modal";
@@ -189,6 +190,8 @@ function TasksPage() {
   const [archiveTarget, setArchiveTarget] = React.useState<TaskRow | null>(null);
   const [restoreTarget, setRestoreTarget] = React.useState<TaskRow | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<TaskRow | null>(null);
+  /** TASK-WORKFLOW-UX-01 — nhìn nhanh công việc trước khi mở trang chi tiết. */
+  const [quickView, setQuickView] = React.useState<TaskRow | null>(null);
 
   const projects = projectsResult.data ?? [];
   const teams = teamsResult.data ?? [];
@@ -628,7 +631,7 @@ function TasksPage() {
         <TaskCardList
           tasks={visibleRows}
           columns={columns}
-          onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
+          onOpen={(task) => setQuickView(task)}
           unreadCount={unreadCount}
           onOpenComments={openComments}
           renderActions={rowActions}
@@ -646,9 +649,16 @@ function TasksPage() {
           errorTitle="Không tải được danh sách công việc"
           emptyTitle={emptyTitle}
           emptyDescription={emptyDescription}
-          onRowClick={(row) => void navigate({ to: "/tasks/$taskId", params: { taskId: row.id } })}
+          onRowClick={(row) => setQuickView(row)}
         />
       )}
+
+      <TaskQuickViewModal
+        task={quickView}
+        onOpenChange={(open) => {
+          if (!open) setQuickView(null);
+        }}
+      />
 
       {visibleRows.length < rows.length ? (
         <div className="flex justify-center">

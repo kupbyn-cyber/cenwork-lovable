@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
@@ -28,6 +29,8 @@ import {
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_ORDER,
+  TASK_REVIEWER_LABEL,
+  TASK_REVIEWER_ORDER,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
   canAssignToOthers,
@@ -37,9 +40,11 @@ import {
   isMemberSubmissionFlow,
   submitTaskForApproval,
   syncTaskParticipants,
+  taskReviewerOptionsQuery,
   updateTask,
   type TaskAccessContext,
   type TaskPriority,
+  type TaskReviewerKind,
   type TaskRow,
   type TaskStatus,
 } from "@/lib/task-data";
@@ -79,6 +84,8 @@ interface FormState {
   priority: TaskPriority;
   status: TaskStatus;
   participantIds: string[];
+  /** Loại người duyệt đã chọn: chủ dự án / leader của tôi / CMO. */
+  reviewerKind: TaskReviewerKind | "";
 }
 
 function initialState(
@@ -99,6 +106,7 @@ function initialState(
     priority: task?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
+    reviewerKind: task?.reviewer_type ?? "",
   };
 }
 
@@ -153,6 +161,24 @@ export function TaskFormDrawer({
   const scopedPool: PersonOption[] =
     selectedProject && scopePeople.data ? scopePeople.data : people;
 
+  /** Người duyệt: chỉ 3 lựa chọn hợp lệ, database kiểm tra lại khi ghi. */
+  const reviewerResult = useQuery(taskReviewerOptionsQuery(selectedProject?.id ?? null));
+  const reviewerOptions = reviewerResult.data ?? [];
+  const selectedReviewer =
+    reviewerOptions.find((option) => option.kind === form.reviewerKind) ?? null;
+
+  // Đổi dự án → nếu lựa chọn người duyệt không còn hợp lệ thì chọn lại mặc định.
+  React.useEffect(() => {
+    if (!reviewerResult.data) return;
+    if (reviewerResult.data.some((option) => option.kind === form.reviewerKind)) return;
+    const preferred =
+      TASK_REVIEWER_ORDER.find((kind) =>
+        reviewerResult.data!.some((option) => option.kind === kind),
+      ) ?? "";
+    setForm((prev) => ({ ...prev, reviewerKind: preferred }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewerResult.data]);
+
   // Đổi dự án → người phụ trách phải nằm trong phạm vi dự án mới.
   React.useEffect(() => {
     if (!selectedProject || !scopePeople.data) return;
@@ -199,11 +225,18 @@ export function TaskFormDrawer({
           deadline: payload.deadline,
           priority: payload.priority,
           participantIds: state.participantIds,
+          reviewerType: selectedReviewer!.kind,
+          reviewerId: selectedReviewer!.userId,
         });
       }
 
       if (isCreate) {
-        const id = await createTask({ ...payload, createdBy: ctx.userId! });
+        const id = await createTask({
+          ...payload,
+          createdBy: ctx.userId!,
+          reviewerType: selectedReviewer?.kind ?? null,
+          reviewerId: selectedReviewer?.userId ?? null,
+        });
         if (state.participantIds.length > 0) {
           await syncTaskParticipants(id, [], state.participantIds);
         }
@@ -213,7 +246,11 @@ export function TaskFormDrawer({
       await updateTask(
         task.id,
         canScope
-          ? payload
+          ? {
+              ...payload,
+              reviewerType: selectedReviewer?.kind ?? null,
+              reviewerId: selectedReviewer?.userId ?? null,
+            }
           : {
               name: payload.name,
               description: payload.description,
@@ -256,6 +293,9 @@ export function TaskFormDrawer({
       next.projectId = "Chọn dự án bạn đang tham gia.";
     }
     if (!state.assigneeId) next.assigneeId = "Chọn người phụ trách.";
+    if (!state.reviewerKind && reviewerOptions.length > 0) {
+      next.reviewerKind = "Chọn người duyệt.";
+    }
     if (!state.deadlineDate || !state.deadlineTime) {
       next.deadlineDate = "Chọn đầy đủ ngày và giờ deadline.";
       return next;
@@ -381,22 +421,20 @@ export function TaskFormDrawer({
               }
             >
               {(control) => (
-                <Select
-                  value={form.projectId}
-                  onValueChange={(value) => setForm({ ...form, projectId: value })}
+                <SearchableSelect
+                  id={control.id}
+                  value={form.projectId === NONE ? null : form.projectId}
+                  onChange={(value) => setForm({ ...form, projectId: value })}
                   disabled={Boolean(lockedProjectId)}
-                >
-                  <SelectTrigger {...control} aria-label="Dự án">
-                    <SelectValue placeholder="Chọn dự án" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectableProjects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  ariaLabel="Dự án"
+                  placeholder="Chọn dự án"
+                  searchPlaceholder="Tìm dự án…"
+                  emptyText="Không có dự án phù hợp trong phạm vi của bạn."
+                  options={selectableProjects.map((project) => ({
+                    value: project.id,
+                    label: project.name,
+                  }))}
+                />
               )}
             </FormField>
             <p className="text-body-sm text-text-secondary">
@@ -414,26 +452,60 @@ export function TaskFormDrawer({
             }
           >
             {(control) => (
-              <Select
+              <SearchableSelect
+                id={control.id}
                 value={form.projectId}
-                onValueChange={(value) => setForm({ ...form, projectId: value })}
+                onChange={(value) => setForm({ ...form, projectId: value })}
                 disabled={!allowProject || Boolean(lockedProjectId)}
-              >
-                <SelectTrigger {...control} aria-label="Dự án">
-                  <SelectValue placeholder="Công việc độc lập" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>Công việc độc lập</SelectItem>
-                  {selectableProjects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                ariaLabel="Dự án"
+                placeholder="Công việc độc lập"
+                searchPlaceholder="Tìm dự án…"
+                emptyText="Không có dự án phù hợp trong phạm vi của bạn."
+                options={[
+                  { value: NONE, label: "Công việc độc lập" },
+                  ...selectableProjects.map((project) => ({
+                    value: project.id,
+                    label: project.name,
+                  })),
+                ]}
+              />
             )}
           </FormField>
         ) : null}
+
+        <FormField
+          id="task-reviewer"
+          label="Người duyệt"
+          required
+          error={errors.reviewerKind}
+          helperText={
+            reviewerOptions.length === 0
+              ? "Chưa xác định được người duyệt hợp lệ. Vui lòng liên hệ Admin/CMO."
+              : "Chỉ được chọn Chủ dự án, Leader của bạn hoặc CMO."
+          }
+        >
+          {(control) => (
+            <SearchableSelect
+              id={control.id}
+              value={form.reviewerKind || null}
+              onChange={(value) => setForm({ ...form, reviewerKind: value as TaskReviewerKind })}
+              ariaLabel="Người duyệt"
+              placeholder="Chọn người duyệt"
+              searchPlaceholder="Tìm người duyệt…"
+              emptyText="Không có người duyệt hợp lệ."
+              options={TASK_REVIEWER_ORDER.filter((kind) =>
+                reviewerOptions.some((option) => option.kind === kind),
+              ).map((kind) => {
+                const option = reviewerOptions.find((item) => item.kind === kind)!;
+                return {
+                  value: kind,
+                  label: `${TASK_REVIEWER_LABEL[kind]} — ${option.displayName}`,
+                  hint: option.displayName,
+                };
+              })}
+            />
+          )}
+        </FormField>
 
         {canScope && !memberFlow ? (
           <FormField
@@ -444,22 +516,20 @@ export function TaskFormDrawer({
             helperText={allowOthers ? undefined : "Bạn chỉ được tự nhận việc."}
           >
             {(control) => (
-              <Select
-                value={form.assigneeId}
-                onValueChange={(value) => setForm({ ...form, assigneeId: value })}
+              <SearchableSelect
+                id={control.id}
+                value={form.assigneeId || null}
+                onChange={(value) => setForm({ ...form, assigneeId: value })}
                 disabled={!allowOthers}
-              >
-                <SelectTrigger {...control} aria-label="Người phụ trách">
-                  <SelectValue placeholder="Chọn người phụ trách" />
-                </SelectTrigger>
-                <SelectContent>
-                  {assigneeOptions.map((person) => (
-                    <SelectItem key={person.id} value={person.id}>
-                      {person.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                ariaLabel="Người phụ trách"
+                placeholder="Chọn người phụ trách"
+                searchPlaceholder="Tìm thành viên…"
+                emptyText="Không có nhân sự phù hợp trong phạm vi dự án."
+                options={assigneeOptions.map((person) => ({
+                  value: person.id,
+                  label: person.display_name,
+                }))}
+              />
             )}
           </FormField>
         ) : null}
