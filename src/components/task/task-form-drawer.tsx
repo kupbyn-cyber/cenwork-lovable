@@ -161,6 +161,24 @@ export function TaskFormDrawer({
   const scopedPool: PersonOption[] =
     selectedProject && scopePeople.data ? scopePeople.data : people;
 
+  /** Người duyệt: chỉ 3 lựa chọn hợp lệ, database kiểm tra lại khi ghi. */
+  const reviewerResult = useQuery(taskReviewerOptionsQuery(selectedProject?.id ?? null));
+  const reviewerOptions = reviewerResult.data ?? [];
+  const selectedReviewer =
+    reviewerOptions.find((option) => option.kind === form.reviewerKind) ?? null;
+
+  // Đổi dự án → nếu lựa chọn người duyệt không còn hợp lệ thì chọn lại mặc định.
+  React.useEffect(() => {
+    if (!reviewerResult.data) return;
+    if (reviewerResult.data.some((option) => option.kind === form.reviewerKind)) return;
+    const preferred =
+      TASK_REVIEWER_ORDER.find((kind) =>
+        reviewerResult.data!.some((option) => option.kind === kind),
+      ) ?? "";
+    setForm((prev) => ({ ...prev, reviewerKind: preferred }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewerResult.data]);
+
   // Đổi dự án → người phụ trách phải nằm trong phạm vi dự án mới.
   React.useEffect(() => {
     if (!selectedProject || !scopePeople.data) return;
@@ -207,11 +225,18 @@ export function TaskFormDrawer({
           deadline: payload.deadline,
           priority: payload.priority,
           participantIds: state.participantIds,
+          reviewerType: selectedReviewer!.kind,
+          reviewerId: selectedReviewer!.userId,
         });
       }
 
       if (isCreate) {
-        const id = await createTask({ ...payload, createdBy: ctx.userId! });
+        const id = await createTask({
+          ...payload,
+          createdBy: ctx.userId!,
+          reviewerType: selectedReviewer?.kind ?? null,
+          reviewerId: selectedReviewer?.userId ?? null,
+        });
         if (state.participantIds.length > 0) {
           await syncTaskParticipants(id, [], state.participantIds);
         }
@@ -221,7 +246,11 @@ export function TaskFormDrawer({
       await updateTask(
         task.id,
         canScope
-          ? payload
+          ? {
+              ...payload,
+              reviewerType: selectedReviewer?.kind ?? null,
+              reviewerId: selectedReviewer?.userId ?? null,
+            }
           : {
               name: payload.name,
               description: payload.description,
