@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import type { TaskNextAction } from "@/lib/task-next-actions";
 import {
   TASK_PRIORITY_LABEL,
+  TASK_REVIEWER_LABEL,
   TASK_PRIORITY_TONE,
   formatDate,
   formatDateTime,
