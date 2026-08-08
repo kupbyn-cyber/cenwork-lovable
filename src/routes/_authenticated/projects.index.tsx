@@ -748,58 +748,57 @@ function ProjectsPage() {
           onChange={(event) => setSearch(event.target.value)}
           aria-label="Tìm theo tên dự án"
         />
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger aria-label="Lọc theo Team">
-            <SelectValue placeholder="Team" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Team</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-          <SelectTrigger aria-label="Lọc theo Chủ dự án">
-            <SelectValue placeholder="Chủ dự án" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Owner</SelectItem>
-            {people.map((person) => (
-              <SelectItem key={person.id} value={person.id}>
-                {person.display_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger aria-label="Lọc theo trạng thái">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {PROJECT_STATUS_ORDER.map((status) => (
-              <SelectItem key={status} value={status}>
-                {PROJECT_STATUS_LABEL[status]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={facilityFilter} onValueChange={setFacilityFilter}>
-          <SelectTrigger aria-label="Lọc theo Cơ sở">
-            <SelectValue placeholder="Cơ sở" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Cơ sở</SelectItem>
-            {facilities.map((facility) => (
-              <SelectItem key={facility.id} value={facility.id}>
-                {facility.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={teamFilter}
+          onChange={setTeamFilter}
+          ariaLabel="Lọc theo Team"
+          placeholder="Tất cả Team"
+          searchPlaceholder="Tìm Team…"
+          options={[
+            { value: ALL, label: "Tất cả Team" },
+            ...teams.map((team) => ({ value: team.id, label: team.name })),
+          ]}
+        />
+        <SearchableSelect
+          value={ownerFilter}
+          onChange={setOwnerFilter}
+          ariaLabel="Lọc theo Chủ dự án"
+          placeholder="Tất cả Owner"
+          searchPlaceholder="Tìm theo tên, email…"
+          options={[
+            { value: ALL, label: "Tất cả Owner" },
+            ...people.map((person) => ({
+              value: person.id,
+              label: person.display_name,
+              hint: person.email ?? undefined,
+            })),
+          ]}
+        />
+        <SearchableSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          ariaLabel="Lọc theo trạng thái"
+          placeholder="Tất cả trạng thái"
+          searchPlaceholder="Tìm trạng thái…"
+          options={[
+            { value: ALL, label: "Tất cả trạng thái" },
+            ...PROJECT_STATUS_ORDER.map((status) => ({
+              value: status,
+              label: PROJECT_STATUS_LABEL[status],
+            })),
+          ]}
+        />
+        <SearchableSelect
+          value={facilityFilter}
+          onChange={setFacilityFilter}
+          ariaLabel="Lọc theo Cơ sở"
+          placeholder="Tất cả Cơ sở"
+          searchPlaceholder="Tìm cơ sở…"
+          options={[
+            { value: ALL, label: "Tất cả Cơ sở" },
+            ...facilities.map((facility) => ({ value: facility.id, label: facility.name })),
+          ]}
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
