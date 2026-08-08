@@ -373,7 +373,7 @@ export function TaskFormDrawer({
       }
       description={
         memberFlow
-          ? "Công việc sẽ được gửi tới Leader của Team phụ trách dự án để phê duyệt."
+          ? "Công việc sẽ được gửi tới người duyệt đã chọn để phê duyệt."
           : canScope
             ? "Công việc có thể thuộc một dự án hoặc đứng độc lập."
             : "Bạn là người phụ trách: chỉ cập nhật được nội dung và tiến độ."
@@ -399,6 +399,23 @@ export function TaskFormDrawer({
           <p role="alert" className="text-body-sm text-state-danger">
             {formError}
           </p>
+        ) : null}
+
+        {prefillApplied && prefill ? (
+          <div className="flex flex-col gap-2 rounded-control border border-border-subtle bg-surface-raised px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="min-w-0 break-words text-body-sm text-text-secondary">
+              Đã áp dụng từ bộ lọc hiện tại: {prefill.labels.join(" · ")}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={clearPrefill}
+            >
+              Xóa giá trị tự điền
+            </Button>
+          </div>
         ) : null}
 
         <FormField
