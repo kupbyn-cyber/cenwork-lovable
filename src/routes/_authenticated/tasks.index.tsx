@@ -306,6 +306,12 @@ function TasksPage() {
 
   const currentConfig: SavedViewConfig = { filters, sort, columns };
 
+  /** Giá trị tự điền cho form tạo Task, lấy từ bộ lọc hiện tại và đã kiểm tra hợp lệ. */
+  const createPrefill = React.useMemo(
+    () => buildTaskPrefill(filters, projects, people, teams),
+    [filters, projects, people, teams],
+  );
+
   const rowActions = (row: TaskRow) => {
     const canComplete =
       canChangeTaskStatus(row, ctx) && row.status !== "done" && !isTaskArchived(row);
