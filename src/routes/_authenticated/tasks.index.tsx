@@ -530,13 +530,21 @@ function TasksPage() {
           ariaLabel="Lọc theo người phụ trách"
           value={filters.assignee}
           onChange={(value) => patchFilters({ assignee: value })}
-          options={people.map((person) => ({ value: person.id, label: person.display_name }))}
+          searchable
+          searchPlaceholder="Tìm theo tên, email…"
+          options={people.map((person) => ({
+            value: person.id,
+            label: person.display_name,
+            hint: person.email ?? undefined,
+          }))}
         />
         <MultiSelect
           placeholder="Dự án"
           ariaLabel="Lọc theo dự án"
           value={filters.project}
           onChange={(value) => patchFilters({ project: value })}
+          searchable
+          searchPlaceholder="Tìm dự án…"
           options={[
             { value: NO_PROJECT, label: "Công việc độc lập" },
             ...projects.map((project) => ({ value: project.id, label: project.name })),
@@ -547,6 +555,8 @@ function TasksPage() {
           ariaLabel="Lọc theo Team"
           value={filters.team}
           onChange={(value) => patchFilters({ team: value })}
+          searchable
+          searchPlaceholder="Tìm Team…"
           options={teams.map((team) => ({ value: team.id, label: team.name }))}
         />
         <Select value={sort} onValueChange={(value) => setSort(value as TaskSortKey)}>
@@ -681,7 +691,7 @@ function TasksPage() {
           projects={projects}
           teams={teams}
           people={people}
-          onCreated={(taskId) => void navigate({ to: "/tasks/$taskId", params: { taskId } })}
+          prefill={createPrefill}
         />
       ) : null}
 
