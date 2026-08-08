@@ -20,6 +20,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
+import { hasPrefill, type TaskPrefill } from "@/lib/task-prefill";
 import {
   isProjectApproved,
   projectScopePeopleQuery,
@@ -67,6 +68,8 @@ export interface TaskFormDrawerProps {
   people: PersonOption[];
   /** Khóa sẵn dự án (khi tạo từ màn hình dự án). */
   lockedProjectId?: string | null;
+  /** Giá trị tự điền từ bộ lọc hiện tại của danh sách (chỉ áp dụng khi tạo mới). */
+  prefill?: TaskPrefill | null;
   onCreated?: (taskId: string) => void;
 }
 
@@ -92,18 +95,20 @@ function initialState(
   task: TaskRow | null,
   ctx: TaskAccessContext,
   lockedProjectId?: string | null,
+  prefill?: TaskPrefill | null,
 ): FormState {
   const deadline = utcToHanoiInputs(task?.deadline ?? null);
+  const applied = task === null ? (prefill ?? null) : null;
   return {
     name: task?.name ?? "",
     description: task?.description ?? "",
-    projectId: task?.project_id ?? lockedProjectId ?? NONE,
-    assigneeId: task?.assignee_id ?? ctx.userId ?? "",
-    teamId: task?.team_id ?? NONE,
-    startDate: task?.start_date ?? "",
-    deadlineDate: deadline.date,
+    projectId: task?.project_id ?? lockedProjectId ?? applied?.projectId ?? NONE,
+    assigneeId: task?.assignee_id ?? applied?.assigneeId ?? ctx.userId ?? "",
+    teamId: task?.team_id ?? applied?.teamId ?? NONE,
+    startDate: task?.start_date ?? applied?.startDate ?? "",
+    deadlineDate: deadline.date || (applied?.deadlineDate ?? ""),
     deadlineTime: deadline.time || (task ? "" : "17:00"),
-    priority: task?.priority ?? "medium",
+    priority: task?.priority ?? applied?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
     reviewerKind: task?.reviewer_type ?? "",
@@ -123,6 +128,7 @@ export function TaskFormDrawer({
   teams,
   people,
   lockedProjectId,
+  prefill,
   onCreated,
 }: TaskFormDrawerProps) {
   const queryClient = useQueryClient();
@@ -133,19 +139,42 @@ export function TaskFormDrawer({
   /** Member: tạo Task = gửi Leader của Team phụ trách dự án duyệt. */
   const memberFlow = isCreate && isMemberSubmissionFlow(ctx);
 
-  const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
+  const [form, setForm] = React.useState<FormState>(() =>
+    initialState(task, ctx, lockedProjectId, prefill),
+  );
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  /** Dòng thông báo "Đã áp dụng từ bộ lọc": ẩn sau khi người dùng xóa giá trị tự điền. */
+  const [prefillApplied, setPrefillApplied] = React.useState(false);
   const nameWarning = getTaskNameWarning(form.name);
 
   React.useEffect(() => {
     if (open) {
-      setForm(initialState(task, ctx, lockedProjectId));
+      setForm(initialState(task, ctx, lockedProjectId, prefill));
+      setPrefillApplied(task === null && hasPrefill(prefill));
       setErrors({});
       setFormError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task, lockedProjectId]);
+
+  /** Xóa các giá trị tự điền từ bộ lọc, giữ nguyên nội dung người dùng đã nhập tay. */
+  const clearPrefill = () => {
+    setPrefillApplied(false);
+    setForm((prev) => ({
+      ...prev,
+      projectId: lockedProjectId ?? NONE,
+      assigneeId: ctx.userId ?? "",
+      teamId: NONE,
+      startDate: prefill?.startDate && prev.startDate === prefill.startDate ? "" : prev.startDate,
+      deadlineDate:
+        prefill?.deadlineDate && prev.deadlineDate === prefill.deadlineDate
+          ? ""
+          : prev.deadlineDate,
+      priority: prefill?.priority && prev.priority === prefill.priority ? "medium" : prev.priority,
+      participantIds: [],
+    }));
+  };
 
   /** Dự án chưa duyệt không được tạo Task (ràng buộc thật ở database). */
   const selectableProjects = projects.filter((project) => {
