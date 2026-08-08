@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Modal } from "@/components/ui/modal";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +56,11 @@ import {
  * Team, người tham gia) chỉ mở cho người có quyền quản lý Task.
  */
 const NONE = "__none__";
+
+/** Gợi ý phụ để tìm kiếm nhân sự (email, Team) — không lộ dữ liệu ngoài phạm vi. */
+function personHint(person: PersonOption): string | undefined {
+  return person.email ?? undefined;
+}
 
 export interface TaskFormDrawerProps {
   open: boolean;
