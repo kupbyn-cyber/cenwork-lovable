@@ -58,6 +58,7 @@ import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
+import { buildTaskPrefill } from "@/lib/task-prefill";
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
