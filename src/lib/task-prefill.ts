@@ -44,8 +44,7 @@ export function buildTaskPrefill(
   const project =
     projectId && projectId !== NO_PROJECT
       ? (projects.find(
-          (item) =>
-            item.id === projectId && isProjectApproved(item) && item.status !== "archived",
+          (item) => item.id === projectId && isProjectApproved(item) && item.status !== "archived",
         ) ?? null)
       : null;
   if (project) labels.push(project.name);
@@ -92,10 +91,10 @@ export function hasPrefill(prefill: TaskPrefill | null | undefined): boolean {
   if (!prefill) return false;
   return Boolean(
     prefill.projectId ||
-      prefill.assigneeId ||
-      prefill.teamId ||
-      prefill.deadlineDate ||
-      prefill.startDate ||
-      prefill.priority,
+    prefill.assigneeId ||
+    prefill.teamId ||
+    prefill.deadlineDate ||
+    prefill.startDate ||
+    prefill.priority,
   );
 }

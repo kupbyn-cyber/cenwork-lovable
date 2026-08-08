@@ -2,16 +2,7 @@ import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { taskUnreadCountsQuery } from "@/lib/task-comment-data";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Archive,
-  ArchiveRestore,
-  CalendarClock,
-  Check,
-  Plus,
-  Send,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Check, Plus, Send, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -519,9 +510,7 @@ function ProjectsPage() {
     const tasks = tasksByProject[project.id] ?? [];
     if (tasks.length === 0) {
       return (
-        <p className="py-2 text-body-sm text-text-muted">
-          Chưa có công việc nào trong dự án này.
-        </p>
+        <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
       );
     }
     if (isMobile) {
@@ -564,8 +553,7 @@ function ProjectsPage() {
               {APPROVAL_ACTION_LABEL[entry.action] ?? entry.action}
             </span>{" "}
             · {APPROVAL_STAGE_LABEL[entry.stage] ?? entry.stage} · Vòng {entry.round} ·{" "}
-            {entry.actorName ?? "Hệ thống"} ·{" "}
-            {new Date(entry.created_at).toLocaleString("vi-VN")}
+            {entry.actorName ?? "Hệ thống"} · {new Date(entry.created_at).toLocaleString("vi-VN")}
             {entry.reason ? (
               <span className="block text-caption text-text-muted">Lý do: {entry.reason}</span>
             ) : null}
@@ -610,9 +598,7 @@ function ProjectsPage() {
           </Badge>
           <span className="text-text-muted">
             Gửi duyệt:{" "}
-            {project.submitted_at
-              ? new Date(project.submitted_at).toLocaleString("vi-VN")
-              : "—"}
+            {project.submitted_at ? new Date(project.submitted_at).toLocaleString("vi-VN") : "—"}
           </span>
         </div>
         <div>
