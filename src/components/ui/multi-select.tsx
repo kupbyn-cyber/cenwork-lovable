@@ -16,7 +16,7 @@ export interface MultiSelectOption {
   value: string;
   label: string;
   /** Dữ liệu phụ dùng để tìm kiếm và hiển thị (email, Team, chức danh…). */
-  hint?: string;
+  hint?: string | undefined;
 }
 
 export interface MultiSelectProps {
