@@ -120,10 +120,6 @@ function initialState(
   };
 }
 
-function toggle(list: string[], id: string) {
-  return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
-}
-
 export function TaskFormDrawer({
   open,
   onOpenChange,
