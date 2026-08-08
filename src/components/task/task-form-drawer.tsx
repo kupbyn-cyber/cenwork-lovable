@@ -539,14 +539,26 @@ export function TaskFormDrawer({
               placeholder="Chọn người duyệt"
               searchPlaceholder="Tìm người duyệt…"
               emptyText="Không có người duyệt hợp lệ."
-              options={TASK_REVIEWER_ORDER.filter((kind) =>
-                reviewerOptions.some((option) => option.kind === kind),
-              ).map((kind) => {
-                const option = reviewerOptions.find((item) => item.kind === kind)!;
+              options={TASK_REVIEWER_ORDER.map((kind) => {
+                const option = reviewerOptions.find((item) => item.kind === kind) ?? null;
+                if (option) {
+                  return {
+                    value: kind,
+                    label: `${TASK_REVIEWER_LABEL[kind]} — ${option.displayName}`,
+                    hint: option.displayName,
+                  };
+                }
+                const missing =
+                  kind === "my_leader"
+                    ? "Chưa có Leader hợp lệ"
+                    : kind === "cmo"
+                      ? "Chưa có CMO hợp lệ"
+                      : "Chưa có Chủ dự án hợp lệ";
                 return {
                   value: kind,
-                  label: `${TASK_REVIEWER_LABEL[kind]} — ${option.displayName}`,
-                  hint: option.displayName,
+                  label: TASK_REVIEWER_LABEL[kind],
+                  hint: missing,
+                  disabled: true,
                 };
               })}
             />
@@ -574,6 +586,7 @@ export function TaskFormDrawer({
                 options={assigneeOptions.map((person) => ({
                   value: person.id,
                   label: person.display_name,
+                  hint: personHint(person),
                 }))}
               />
             )}
@@ -685,29 +698,21 @@ export function TaskFormDrawer({
             helperText="Người tham gia xem được công việc nhưng không phải người phụ trách."
           >
             {() => (
-              <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
-                {participantPool.length === 0 ? (
-                  <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
-                ) : (
-                  participantPool
-                    .filter((person) => person.id !== form.assigneeId)
-                    .map((person) => (
-                      <label key={person.id} className="flex items-center gap-2 text-body-sm">
-                        <Checkbox
-                          checked={form.participantIds.includes(person.id)}
-                          onCheckedChange={() =>
-                            setForm({
-                              ...form,
-                              participantIds: toggle(form.participantIds, person.id),
-                            })
-                          }
-                          aria-label={person.display_name}
-                        />
-                        <span className="min-w-0 break-words">{person.display_name}</span>
-                      </label>
-                    ))
-                )}
-              </div>
+              <MultiSelect
+                placeholder="Chọn người tham gia"
+                ariaLabel="Người tham gia"
+                searchable
+                searchPlaceholder="Tìm thành viên…"
+                value={form.participantIds}
+                onChange={(value) => setForm({ ...form, participantIds: value })}
+                options={participantPool
+                  .filter((person) => person.id !== form.assigneeId)
+                  .map((person) => ({
+                    value: person.id,
+                    label: person.display_name,
+                    hint: personHint(person),
+                  }))}
+              />
             )}
           </FormField>
         ) : null}
