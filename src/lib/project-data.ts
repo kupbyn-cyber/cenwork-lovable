@@ -191,17 +191,25 @@ export const projectTaskCountsQuery = () =>
 export interface PersonOption {
   id: string;
   display_name: string;
+  /** Dữ liệu phụ chỉ dùng để tìm kiếm/hiển thị gợi ý (email, Team). */
+  email?: string | null;
+  primary_team_id?: string | null;
 }
 
 export async function fetchActivePeople(): Promise<PersonOption[]> {
   await primeLockedIdentity();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,display_name,status")
+    .select("id,display_name,status,email,primary_team_id")
     .eq("status", "active")
     .order("display_name");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => ({ id: row.id, display_name: row.display_name }));
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    display_name: row.display_name,
+    email: row.email ?? null,
+    primary_team_id: row.primary_team_id ?? null,
+  }));
 }
 
 /** Nhân sự thuộc phạm vi một dự án: Chủ dự án / Người tạo / Team phụ trách / Team tham gia. */

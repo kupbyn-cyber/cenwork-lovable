@@ -58,6 +58,7 @@ import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
+import { buildTaskPrefill } from "@/lib/task-prefill";
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
@@ -306,6 +307,12 @@ function TasksPage() {
 
   const currentConfig: SavedViewConfig = { filters, sort, columns };
 
+  /** Giá trị tự điền cho form tạo Task, lấy từ bộ lọc hiện tại và đã kiểm tra hợp lệ. */
+  const createPrefill = React.useMemo(
+    () => buildTaskPrefill(filters, projects, people, teams),
+    [filters, projects, people, teams],
+  );
+
   const rowActions = (row: TaskRow) => {
     const canComplete =
       canChangeTaskStatus(row, ctx) && row.status !== "done" && !isTaskArchived(row);
@@ -530,13 +537,21 @@ function TasksPage() {
           ariaLabel="Lọc theo người phụ trách"
           value={filters.assignee}
           onChange={(value) => patchFilters({ assignee: value })}
-          options={people.map((person) => ({ value: person.id, label: person.display_name }))}
+          searchable
+          searchPlaceholder="Tìm theo tên, email…"
+          options={people.map((person) => ({
+            value: person.id,
+            label: person.display_name,
+            hint: person.email ?? undefined,
+          }))}
         />
         <MultiSelect
           placeholder="Dự án"
           ariaLabel="Lọc theo dự án"
           value={filters.project}
           onChange={(value) => patchFilters({ project: value })}
+          searchable
+          searchPlaceholder="Tìm dự án…"
           options={[
             { value: NO_PROJECT, label: "Công việc độc lập" },
             ...projects.map((project) => ({ value: project.id, label: project.name })),
@@ -547,6 +562,8 @@ function TasksPage() {
           ariaLabel="Lọc theo Team"
           value={filters.team}
           onChange={(value) => patchFilters({ team: value })}
+          searchable
+          searchPlaceholder="Tìm Team…"
           options={teams.map((team) => ({ value: team.id, label: team.name }))}
         />
         <Select value={sort} onValueChange={(value) => setSort(value as TaskSortKey)}>
@@ -681,7 +698,7 @@ function TasksPage() {
           projects={projects}
           teams={teams}
           people={people}
-          onCreated={(taskId) => void navigate({ to: "/tasks/$taskId", params: { taskId } })}
+          prefill={createPrefill}
         />
       ) : null}
 

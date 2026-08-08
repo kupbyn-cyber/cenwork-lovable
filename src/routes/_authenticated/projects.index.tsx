@@ -2,16 +2,7 @@ import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { taskUnreadCountsQuery } from "@/lib/task-comment-data";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Archive,
-  ArchiveRestore,
-  CalendarClock,
-  Check,
-  Plus,
-  Send,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Check, Plus, Send, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +14,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { PageHeader } from "@/components/ui/page-header";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -518,9 +510,7 @@ function ProjectsPage() {
     const tasks = tasksByProject[project.id] ?? [];
     if (tasks.length === 0) {
       return (
-        <p className="py-2 text-body-sm text-text-muted">
-          Chưa có công việc nào trong dự án này.
-        </p>
+        <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
       );
     }
     if (isMobile) {
@@ -563,8 +553,7 @@ function ProjectsPage() {
               {APPROVAL_ACTION_LABEL[entry.action] ?? entry.action}
             </span>{" "}
             · {APPROVAL_STAGE_LABEL[entry.stage] ?? entry.stage} · Vòng {entry.round} ·{" "}
-            {entry.actorName ?? "Hệ thống"} ·{" "}
-            {new Date(entry.created_at).toLocaleString("vi-VN")}
+            {entry.actorName ?? "Hệ thống"} · {new Date(entry.created_at).toLocaleString("vi-VN")}
             {entry.reason ? (
               <span className="block text-caption text-text-muted">Lý do: {entry.reason}</span>
             ) : null}
@@ -609,9 +598,7 @@ function ProjectsPage() {
           </Badge>
           <span className="text-text-muted">
             Gửi duyệt:{" "}
-            {project.submitted_at
-              ? new Date(project.submitted_at).toLocaleString("vi-VN")
-              : "—"}
+            {project.submitted_at ? new Date(project.submitted_at).toLocaleString("vi-VN") : "—"}
           </span>
         </div>
         <div>
@@ -748,58 +735,57 @@ function ProjectsPage() {
           onChange={(event) => setSearch(event.target.value)}
           aria-label="Tìm theo tên dự án"
         />
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger aria-label="Lọc theo Team">
-            <SelectValue placeholder="Team" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Team</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-          <SelectTrigger aria-label="Lọc theo Chủ dự án">
-            <SelectValue placeholder="Chủ dự án" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Owner</SelectItem>
-            {people.map((person) => (
-              <SelectItem key={person.id} value={person.id}>
-                {person.display_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger aria-label="Lọc theo trạng thái">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {PROJECT_STATUS_ORDER.map((status) => (
-              <SelectItem key={status} value={status}>
-                {PROJECT_STATUS_LABEL[status]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={facilityFilter} onValueChange={setFacilityFilter}>
-          <SelectTrigger aria-label="Lọc theo Cơ sở">
-            <SelectValue placeholder="Cơ sở" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Cơ sở</SelectItem>
-            {facilities.map((facility) => (
-              <SelectItem key={facility.id} value={facility.id}>
-                {facility.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={teamFilter}
+          onChange={setTeamFilter}
+          ariaLabel="Lọc theo Team"
+          placeholder="Tất cả Team"
+          searchPlaceholder="Tìm Team…"
+          options={[
+            { value: ALL, label: "Tất cả Team" },
+            ...teams.map((team) => ({ value: team.id, label: team.name })),
+          ]}
+        />
+        <SearchableSelect
+          value={ownerFilter}
+          onChange={setOwnerFilter}
+          ariaLabel="Lọc theo Chủ dự án"
+          placeholder="Tất cả Owner"
+          searchPlaceholder="Tìm theo tên, email…"
+          options={[
+            { value: ALL, label: "Tất cả Owner" },
+            ...people.map((person) => ({
+              value: person.id,
+              label: person.display_name,
+              hint: person.email ?? undefined,
+            })),
+          ]}
+        />
+        <SearchableSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          ariaLabel="Lọc theo trạng thái"
+          placeholder="Tất cả trạng thái"
+          searchPlaceholder="Tìm trạng thái…"
+          options={[
+            { value: ALL, label: "Tất cả trạng thái" },
+            ...PROJECT_STATUS_ORDER.map((status) => ({
+              value: status,
+              label: PROJECT_STATUS_LABEL[status],
+            })),
+          ]}
+        />
+        <SearchableSelect
+          value={facilityFilter}
+          onChange={setFacilityFilter}
+          ariaLabel="Lọc theo Cơ sở"
+          placeholder="Tất cả Cơ sở"
+          searchPlaceholder="Tìm cơ sở…"
+          options={[
+            { value: ALL, label: "Tất cả Cơ sở" },
+            ...facilities.map((facility) => ({ value: facility.id, label: facility.name })),
+          ]}
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

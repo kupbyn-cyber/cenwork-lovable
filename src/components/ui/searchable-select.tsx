@@ -14,7 +14,7 @@ export interface SearchableOption {
   value: string;
   label: string;
   /** Dòng phụ hiển thị dưới nhãn (vai trò, team…). */
-  hint?: string;
+  hint?: string | undefined;
   disabled?: boolean;
 }
 

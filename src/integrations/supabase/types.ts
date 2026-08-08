@@ -5935,33 +5935,20 @@ export type Database = {
         Returns: undefined
       }
       task_member_resubmit: { Args: { _task: string }; Returns: undefined }
-      task_member_submit:
-        | {
-            Args: {
-              _deadline: string
-              _description: string
-              _name: string
-              _participants?: string[]
-              _priority: Database["public"]["Enums"]["task_priority"]
-              _project: string
-              _start_date: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              _deadline: string
-              _description: string
-              _name: string
-              _participants?: string[]
-              _priority: Database["public"]["Enums"]["task_priority"]
-              _project: string
-              _reviewer?: string
-              _reviewer_type?: string
-              _start_date: string
-            }
-            Returns: string
-          }
+      task_member_submit: {
+        Args: {
+          _deadline: string
+          _description: string
+          _name: string
+          _participants?: string[]
+          _priority: Database["public"]["Enums"]["task_priority"]
+          _project: string
+          _reviewer?: string
+          _reviewer_type?: string
+          _start_date: string
+        }
+        Returns: string
+      }
       task_member_withdraw: { Args: { _task: string }; Returns: undefined }
       task_reviewer_candidates: {
         Args: { _actor?: string; _project: string }

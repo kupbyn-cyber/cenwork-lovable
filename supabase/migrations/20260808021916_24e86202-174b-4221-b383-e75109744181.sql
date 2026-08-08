@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.task_member_submit(uuid, text, text, date, timestamp with time zone, task_priority, uuid[]);

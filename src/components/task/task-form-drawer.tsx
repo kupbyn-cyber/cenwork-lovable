@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Modal } from "@/components/ui/modal";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
+import { hasPrefill, type TaskPrefill } from "@/lib/task-prefill";
 import {
   isProjectApproved,
   projectScopePeopleQuery,
@@ -56,6 +57,11 @@ import {
  */
 const NONE = "__none__";
 
+/** Gợi ý phụ để tìm kiếm nhân sự (email, Team) — không lộ dữ liệu ngoài phạm vi. */
+function personHint(person: PersonOption): string | undefined {
+  return person.email ?? undefined;
+}
+
 export interface TaskFormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -67,6 +73,8 @@ export interface TaskFormDrawerProps {
   people: PersonOption[];
   /** Khóa sẵn dự án (khi tạo từ màn hình dự án). */
   lockedProjectId?: string | null;
+  /** Giá trị tự điền từ bộ lọc hiện tại của danh sách (chỉ áp dụng khi tạo mới). */
+  prefill?: TaskPrefill | null;
   onCreated?: (taskId: string) => void;
 }
 
@@ -92,26 +100,24 @@ function initialState(
   task: TaskRow | null,
   ctx: TaskAccessContext,
   lockedProjectId?: string | null,
+  prefill?: TaskPrefill | null,
 ): FormState {
   const deadline = utcToHanoiInputs(task?.deadline ?? null);
+  const applied = task === null ? (prefill ?? null) : null;
   return {
     name: task?.name ?? "",
     description: task?.description ?? "",
-    projectId: task?.project_id ?? lockedProjectId ?? NONE,
-    assigneeId: task?.assignee_id ?? ctx.userId ?? "",
-    teamId: task?.team_id ?? NONE,
-    startDate: task?.start_date ?? "",
-    deadlineDate: deadline.date,
+    projectId: task?.project_id ?? lockedProjectId ?? applied?.projectId ?? NONE,
+    assigneeId: task?.assignee_id ?? applied?.assigneeId ?? ctx.userId ?? "",
+    teamId: task?.team_id ?? applied?.teamId ?? NONE,
+    startDate: task?.start_date ?? applied?.startDate ?? "",
+    deadlineDate: deadline.date || (applied?.deadlineDate ?? ""),
     deadlineTime: deadline.time || (task ? "" : "17:00"),
-    priority: task?.priority ?? "medium",
+    priority: task?.priority ?? applied?.priority ?? "medium",
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
     reviewerKind: task?.reviewer_type ?? "",
   };
-}
-
-function toggle(list: string[], id: string) {
-  return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
 }
 
 export function TaskFormDrawer({
@@ -123,6 +129,7 @@ export function TaskFormDrawer({
   teams,
   people,
   lockedProjectId,
+  prefill,
   onCreated,
 }: TaskFormDrawerProps) {
   const queryClient = useQueryClient();
@@ -133,19 +140,42 @@ export function TaskFormDrawer({
   /** Member: tạo Task = gửi Leader của Team phụ trách dự án duyệt. */
   const memberFlow = isCreate && isMemberSubmissionFlow(ctx);
 
-  const [form, setForm] = React.useState<FormState>(() => initialState(task, ctx, lockedProjectId));
+  const [form, setForm] = React.useState<FormState>(() =>
+    initialState(task, ctx, lockedProjectId, prefill),
+  );
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  /** Dòng thông báo "Đã áp dụng từ bộ lọc": ẩn sau khi người dùng xóa giá trị tự điền. */
+  const [prefillApplied, setPrefillApplied] = React.useState(false);
   const nameWarning = getTaskNameWarning(form.name);
 
   React.useEffect(() => {
     if (open) {
-      setForm(initialState(task, ctx, lockedProjectId));
+      setForm(initialState(task, ctx, lockedProjectId, prefill));
+      setPrefillApplied(task === null && hasPrefill(prefill));
       setErrors({});
       setFormError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task, lockedProjectId]);
+
+  /** Xóa các giá trị tự điền từ bộ lọc, giữ nguyên nội dung người dùng đã nhập tay. */
+  const clearPrefill = () => {
+    setPrefillApplied(false);
+    setForm((prev) => ({
+      ...prev,
+      projectId: lockedProjectId ?? NONE,
+      assigneeId: ctx.userId ?? "",
+      teamId: NONE,
+      startDate: prefill?.startDate && prev.startDate === prefill.startDate ? "" : prev.startDate,
+      deadlineDate:
+        prefill?.deadlineDate && prev.deadlineDate === prefill.deadlineDate
+          ? ""
+          : prev.deadlineDate,
+      priority: prefill?.priority && prev.priority === prefill.priority ? "medium" : prev.priority,
+      participantIds: [],
+    }));
+  };
 
   /** Dự án chưa duyệt không được tạo Task (ràng buộc thật ở database). */
   const selectableProjects = projects.filter((project) => {
@@ -344,7 +374,7 @@ export function TaskFormDrawer({
       }
       description={
         memberFlow
-          ? "Công việc sẽ được gửi tới Leader của Team phụ trách dự án để phê duyệt."
+          ? "Công việc sẽ được gửi tới người duyệt đã chọn để phê duyệt."
           : canScope
             ? "Công việc có thể thuộc một dự án hoặc đứng độc lập."
             : "Bạn là người phụ trách: chỉ cập nhật được nội dung và tiến độ."
@@ -370,6 +400,23 @@ export function TaskFormDrawer({
           <p role="alert" className="text-body-sm text-state-danger">
             {formError}
           </p>
+        ) : null}
+
+        {prefillApplied && prefill ? (
+          <div className="flex flex-col gap-2 rounded-control border border-border-subtle bg-surface-raised px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="min-w-0 break-words text-body-sm text-text-secondary">
+              Đã áp dụng từ bộ lọc hiện tại: {prefill.labels.join(" · ")}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={clearPrefill}
+            >
+              Xóa giá trị tự điền
+            </Button>
+          </div>
         ) : null}
 
         <FormField
@@ -493,14 +540,26 @@ export function TaskFormDrawer({
               placeholder="Chọn người duyệt"
               searchPlaceholder="Tìm người duyệt…"
               emptyText="Không có người duyệt hợp lệ."
-              options={TASK_REVIEWER_ORDER.filter((kind) =>
-                reviewerOptions.some((option) => option.kind === kind),
-              ).map((kind) => {
-                const option = reviewerOptions.find((item) => item.kind === kind)!;
+              options={TASK_REVIEWER_ORDER.map((kind) => {
+                const option = reviewerOptions.find((item) => item.kind === kind) ?? null;
+                if (option) {
+                  return {
+                    value: kind,
+                    label: `${TASK_REVIEWER_LABEL[kind]} — ${option.displayName}`,
+                    hint: option.displayName,
+                  };
+                }
+                const missing =
+                  kind === "my_leader"
+                    ? "Chưa có Leader hợp lệ"
+                    : kind === "cmo"
+                      ? "Chưa có CMO hợp lệ"
+                      : "Chưa có Chủ dự án hợp lệ";
                 return {
                   value: kind,
-                  label: `${TASK_REVIEWER_LABEL[kind]} — ${option.displayName}`,
-                  hint: option.displayName,
+                  label: TASK_REVIEWER_LABEL[kind],
+                  hint: missing,
+                  disabled: true,
                 };
               })}
             />
@@ -528,6 +587,7 @@ export function TaskFormDrawer({
                 options={assigneeOptions.map((person) => ({
                   value: person.id,
                   label: person.display_name,
+                  hint: personHint(person),
                 }))}
               />
             )}
@@ -639,29 +699,21 @@ export function TaskFormDrawer({
             helperText="Người tham gia xem được công việc nhưng không phải người phụ trách."
           >
             {() => (
-              <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-control border border-border-default p-3">
-                {participantPool.length === 0 ? (
-                  <span className="text-body-sm text-text-muted">Chưa có nhân sự khả dụng.</span>
-                ) : (
-                  participantPool
-                    .filter((person) => person.id !== form.assigneeId)
-                    .map((person) => (
-                      <label key={person.id} className="flex items-center gap-2 text-body-sm">
-                        <Checkbox
-                          checked={form.participantIds.includes(person.id)}
-                          onCheckedChange={() =>
-                            setForm({
-                              ...form,
-                              participantIds: toggle(form.participantIds, person.id),
-                            })
-                          }
-                          aria-label={person.display_name}
-                        />
-                        <span className="min-w-0 break-words">{person.display_name}</span>
-                      </label>
-                    ))
-                )}
-              </div>
+              <MultiSelect
+                placeholder="Chọn người tham gia"
+                ariaLabel="Người tham gia"
+                searchable
+                searchPlaceholder="Tìm thành viên…"
+                value={form.participantIds}
+                onChange={(value) => setForm({ ...form, participantIds: value })}
+                options={participantPool
+                  .filter((person) => person.id !== form.assigneeId)
+                  .map((person) => ({
+                    value: person.id,
+                    label: person.display_name,
+                    hint: personHint(person),
+                  }))}
+              />
             )}
           </FormField>
         ) : null}
