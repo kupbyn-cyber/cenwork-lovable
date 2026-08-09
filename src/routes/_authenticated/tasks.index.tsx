@@ -649,6 +649,8 @@ function TasksPage() {
         <TaskCardList
           tasks={visibleRows}
           columns={columns}
+          ctx={ctx}
+          onRequestComplete={setCompleteTarget}
           onOpen={(task) => setQuickView(task)}
           unreadCount={unreadCount}
           onOpenComments={openComments}
