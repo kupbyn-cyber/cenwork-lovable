@@ -567,7 +567,7 @@ export function TaskFormDrawer({
           )}
         </FormField>
 
-        {canScope && !memberFlow ? (
+        {canScope && (!memberFlow || allowOthers) ? (
           <FormField
             id="task-assignee"
             label="Người phụ trách"
