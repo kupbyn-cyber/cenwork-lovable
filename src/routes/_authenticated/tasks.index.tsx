@@ -464,7 +464,7 @@ function TasksPage() {
             header: "Trạng thái",
             ...col("w-[148px]"),
             cell: (row: TaskRow) => (
-              <StatusBadge label={taskStatusView(row).label} tone={taskStatusView(row).tone} />
+              <TaskStatusQuickSelect task={row} ctx={ctx} onRequestComplete={setCompleteTarget} />
             ),
           },
         ]
