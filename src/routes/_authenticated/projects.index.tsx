@@ -518,6 +518,8 @@ function ProjectsPage() {
         <TaskCardList
           tasks={tasks}
           columns={["assignee", "deadline", "priority", "status"]}
+          ctx={taskCtx}
+          onRequestComplete={setTaskCompleteTarget}
           onOpen={(task) => void navigate({ to: "/tasks/$taskId", params: { taskId: task.id } })}
           unreadCount={(taskId) => unreadCounts.data?.[taskId] ?? 0}
           onOpenComments={(taskId) =>
