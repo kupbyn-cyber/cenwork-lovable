@@ -135,7 +135,6 @@ export function TaskFormDrawer({
   const queryClient = useQueryClient();
   const isCreate = task === null;
   const canScope = isCreate ? true : canManageTask(task, ctx);
-  const allowOthers = canAssignToOthers(ctx);
   const allowProject = canCreateProjectTask(ctx);
   /** Member: tạo Task = gửi Leader của Team phụ trách dự án duyệt. */
   const memberFlow = isCreate && isMemberSubmissionFlow(ctx);
