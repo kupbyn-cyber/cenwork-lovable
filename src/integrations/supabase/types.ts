@@ -2978,6 +2978,59 @@ export type Database = {
           },
         ]
       }
+      project_owner_change_requests: {
+        Row: {
+          created_at: string
+          current_owner_id: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          project_id: string
+          proposed_owner_id: string
+          reason: string
+          requested_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_owner_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          project_id: string
+          proposed_owner_id: string
+          reason: string
+          requested_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_owner_id?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          project_id?: string
+          proposed_owner_id?: string
+          reason?: string
+          requested_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_owner_change_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_teams: {
         Row: {
           created_at: string
@@ -5313,6 +5366,7 @@ export type Database = {
         Args: { _teams: string[] }
         Returns: string[]
       }
+      app_base_url: { Args: never; Returns: string }
       approval_attachment_add: {
         Args: {
           _mime: string
@@ -5711,6 +5765,14 @@ export type Database = {
         Args: { _approve: boolean; _project: string; _reason?: string }
         Returns: Database["public"]["Enums"]["project_status"]
       }
+      project_owner_change_decide: {
+        Args: { _approve: boolean; _note?: string; _request: string }
+        Returns: undefined
+      }
+      project_owner_change_request: {
+        Args: { _new_owner: string; _project: string; _reason: string }
+        Returns: string
+      }
       project_scope_people: {
         Args: { _project: string }
         Returns: {
@@ -5937,6 +5999,7 @@ export type Database = {
       task_member_resubmit: { Args: { _task: string }; Returns: undefined }
       task_member_submit: {
         Args: {
+          _assignee?: string
           _deadline: string
           _description: string
           _name: string
@@ -5985,6 +6048,11 @@ export type Database = {
       }
       team_summary_publish: { Args: { _summary: string }; Returns: undefined }
       team_summary_visible: { Args: { _summary: string }; Returns: boolean }
+      telegram_compose: {
+        Args: { _body: string; _event: string; _link: string; _title: string }
+        Returns: string
+      }
+      telegram_icon: { Args: { _event: string }; Returns: string }
       verify_admin_bootstrap: { Args: { _user: string }; Returns: Json }
       verify_system_defaults: { Args: never; Returns: Json }
       write_audit: {
