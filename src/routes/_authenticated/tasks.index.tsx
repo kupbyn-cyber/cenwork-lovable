@@ -36,6 +36,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
 import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
+import { TaskStatusQuickSelect } from "@/components/task/task-status-quick-select";
 import { TaskCancelDialog } from "@/components/task/task-cancel-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
 import { TaskApprovalPanel } from "@/components/task/task-approval-panel";
