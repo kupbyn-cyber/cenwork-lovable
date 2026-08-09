@@ -19,6 +19,7 @@ import {
   canWithdrawTaskSubmission,
   decideTaskApproval,
   formatDateTime,
+  isTaskSubmissionAuthor,
   resubmitTaskForApproval,
   taskApprovalsQuery,
   withdrawTaskSubmission,
@@ -40,7 +41,13 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
   const [reason, setReason] = React.useState("");
   const [reasonError, setReasonError] = React.useState<string | null>(null);
 
-  const rows = data ?? [];
+  /**
+   * Phạm vi hiển thị: chỉ người được chỉ định duyệt (Admin/CMO thấy tất cả)
+   * và chính người gửi (để thu hồi/gửi lại).
+   */
+  const rows = (data ?? []).filter(
+    (row) => canApproveTaskSubmission(row, ctx) || isTaskSubmissionAuthor(row, ctx),
+  );
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["task-approvals"] });
