@@ -258,6 +258,7 @@ export function TaskFormDrawer({
           participantIds: state.participantIds,
           reviewerType: selectedReviewer!.kind,
           reviewerId: selectedReviewer!.userId,
+          assigneeId: allowOthers ? payload.assigneeId : null,
         });
       }
 
