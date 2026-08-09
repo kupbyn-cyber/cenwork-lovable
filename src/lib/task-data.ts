@@ -425,9 +425,16 @@ export function canCreateProjectTask(ctx: TaskAccessContext) {
   return privileged(ctx) || ctx.role === "leader";
 }
 
-/** Member chỉ được tự nhận việc. */
-export function canAssignToOthers(ctx: TaskAccessContext) {
-  return privileged(ctx) || ctx.role === "leader";
+/**
+ * Member chỉ được tự nhận việc — trừ khi họ là Chủ dự án đang chọn:
+ * Chủ dự án được giao việc cho nhân sự khác thuộc phạm vi dự án (database kiểm tra lại).
+ */
+export function canAssignToOthers(
+  ctx: TaskAccessContext,
+  project?: { owner_id?: string | null } | null,
+) {
+  if (privileged(ctx) || ctx.role === "leader") return true;
+  return Boolean(ctx.userId && project?.owner_id && project.owner_id === ctx.userId);
 }
 
 /* ================= Luồng duyệt Task của Member ================= */
@@ -441,12 +448,13 @@ export function isTaskAwaitingApproval(task: TaskRow) {
   return task.approval_status !== "approved";
 }
 
-/** Duyệt: Admin/CMO, hoặc Leader của Team phụ trách mặc định của Dự án. */
+/** Duyệt: Admin/CMO xem tất cả; người khác chỉ khi được chỉ định là Người duyệt. */
 export function canApproveTaskSubmission(task: TaskRow, ctx: TaskAccessContext) {
   if (isTaskCancelled(task)) return false;
   if (!isTaskAwaitingApproval(task)) return false;
   if (task.approval_status === "withdrawn") return false;
   if (privileged(ctx)) return true;
+  if (task.reviewer_id) return Boolean(ctx.userId && task.reviewer_id === ctx.userId);
   return Boolean(
     ctx.leaderTeamId && task.projectResponsibleTeamId === ctx.leaderTeamId,
   );
@@ -482,6 +490,8 @@ export interface TaskSubmissionInput {
   participantIds: string[];
   reviewerType: TaskReviewerKind;
   reviewerId: string;
+  /** Chủ dự án có thể giao việc cho người khác; bỏ trống = tự nhận việc. */
+  assigneeId?: string | null;
 }
 
 /** Gửi Leader duyệt — mọi ràng buộc phạm vi được chốt trong RPC phía database. */
@@ -497,6 +507,7 @@ export async function submitTaskForApproval(input: TaskSubmissionInput) {
     _participants: input.participantIds,
     _reviewer_type: input.reviewerType,
     _reviewer: input.reviewerId,
+    ...(input.assigneeId ? { _assignee: input.assigneeId } : {}),
   });
   if (error) throw new Error(error.message);
   return data as string;

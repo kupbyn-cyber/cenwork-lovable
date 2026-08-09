@@ -1,13 +1,13 @@
 import * as React from "react";
 
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import {
   CommentIndicator,
   DeadlineCountdown,
   PriorityLabel,
 } from "@/components/task/task-cell-bits";
-import { taskStatusView, type TaskRow } from "@/lib/task-data";
+import { TaskStatusQuickSelect } from "@/components/task/task-status-quick-select";
+import type { TaskAccessContext, TaskRow } from "@/lib/task-data";
 import type { OptionalColumnId } from "@/lib/task-view-data";
 
 /**
@@ -21,6 +21,8 @@ export interface TaskCardListProps {
   unreadCount: (taskId: string) => number;
   onOpenComments: (taskId: string) => void;
   renderActions: (task: TaskRow) => React.ReactNode;
+  ctx: TaskAccessContext;
+  onRequestComplete: (task: TaskRow) => void;
 }
 
 export function TaskCardList({
@@ -30,6 +32,8 @@ export function TaskCardList({
   unreadCount,
   onOpenComments,
   renderActions,
+  ctx,
+  onRequestComplete,
 }: TaskCardListProps) {
   const show = (id: OptionalColumnId) => columns.includes(id);
 
@@ -68,9 +72,10 @@ export function TaskCardList({
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {show("status") ? (
-              <StatusBadge
-                label={taskStatusView(task).label}
-                tone={taskStatusView(task).tone}
+              <TaskStatusQuickSelect
+                task={task}
+                ctx={ctx}
+                onRequestComplete={onRequestComplete}
               />
             ) : null}
             <DeadlineCountdown task={task} className="inline-block w-auto" />

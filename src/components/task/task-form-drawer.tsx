@@ -135,7 +135,6 @@ export function TaskFormDrawer({
   const queryClient = useQueryClient();
   const isCreate = task === null;
   const canScope = isCreate ? true : canManageTask(task, ctx);
-  const allowOthers = canAssignToOthers(ctx);
   const allowProject = canCreateProjectTask(ctx);
   /** Member: tạo Task = gửi Leader của Team phụ trách dự án duyệt. */
   const memberFlow = isCreate && isMemberSubmissionFlow(ctx);
@@ -186,6 +185,8 @@ export function TaskFormDrawer({
   });
 
   const selectedProject = projects.find((project) => project.id === form.projectId) ?? null;
+  /** Chủ dự án được giao việc cho nhân sự khác trong phạm vi dự án. */
+  const allowOthers = canAssignToOthers(ctx, selectedProject);
   /** Người nhận việc chỉ trong phạm vi dự án liên quan (Chủ dự án / Team phụ trách / Team tham gia). */
   const scopePeople = useQuery(projectScopePeopleQuery(selectedProject?.id ?? null));
   const scopedPool: PersonOption[] =
@@ -257,6 +258,7 @@ export function TaskFormDrawer({
           participantIds: state.participantIds,
           reviewerType: selectedReviewer!.kind,
           reviewerId: selectedReviewer!.userId,
+          assigneeId: allowOthers ? payload.assigneeId : null,
         });
       }
 
@@ -566,7 +568,7 @@ export function TaskFormDrawer({
           )}
         </FormField>
 
-        {canScope && !memberFlow ? (
+        {canScope && (!memberFlow || allowOthers) ? (
           <FormField
             id="task-assignee"
             label="Người phụ trách"
