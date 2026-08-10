@@ -25,6 +25,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 import { formatHanoiDate } from "@/lib/datetime";
+import { summarizeDailyResults } from "@/lib/daily-report-content";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_ORDER,
