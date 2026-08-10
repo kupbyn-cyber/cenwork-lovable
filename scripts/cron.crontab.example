@@ -1,0 +1,17 @@
+# CEN WORK — Lịch chạy tác vụ định kỳ trên máy chủ Mắt Bão (giờ UTC).
+# Cài bằng: crontab scripts/cron.crontab.example (sửa URL + secret trước).
+# Mọi tác vụ đều idempotent, chạy lặp không sinh dữ liệu trùng.
+
+CEN_URL=https://cen.example.com
+CEN_CRON_SECRET=dan-bi-mat-cua-ban
+
+# Nhắc báo cáo: 08:00, 20:00 và quá hạn 00:05 giờ Việt Nam
+0 1 * * *  curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"report-reminders"}' >/dev/null
+0 13 * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"report-reminders"}' >/dev/null
+5 17 * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"report-reminders"}' >/dev/null
+
+# Thông báo, phê duyệt quá hạn, trực nhật: mỗi 15 phút
+*/15 * * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"all"}' >/dev/null
+
+# Đẩy hàng đợi Telegram mỗi phút
+* * * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/telegram-dispatch" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{}' >/dev/null

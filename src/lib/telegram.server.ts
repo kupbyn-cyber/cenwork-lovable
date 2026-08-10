@@ -3,6 +3,7 @@
  * Bot Token chỉ đọc phía server: ưu tiên cấu hình trong bảng telegram_config,
  * dự phòng biến môi trường. Không log và không trả về client.
  */
+import { getAdminClient } from "@/lib/db/admin-client.server";
 const TELEGRAM_API = "https://api.telegram.org";
 
 export const TELEGRAM_TOKEN_MISSING =
@@ -33,7 +34,7 @@ export function readBotToken(): string | null {
 
 /** Đọc cấu hình Telegram dùng chung bằng service role (không lộ ra client). */
 export async function readTelegramConfig(): Promise<TelegramConfig> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const supabaseAdmin = await getAdminClient();
   const { data, error } = await supabaseAdmin
     .from("telegram_config")
     .select("bot_token,group_chat_id,daily_report_topic_id")

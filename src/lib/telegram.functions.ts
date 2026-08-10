@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
+import { getAdminClient } from "@/lib/db/admin-client.server";
 
 /**
  * CEN WORK — M5 server function cấu hình và vận hành Telegram.
@@ -18,7 +19,7 @@ async function assertAdmin(context: { supabase: { rpc: Function }; userId: strin
 }
 
 export const getTelegramConfig = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context as never);
     const { readTelegramConfig, maskToken } = await import("@/lib/telegram.server");
@@ -54,10 +55,10 @@ export const saveTelegramConfig = createServerFn({ method: "POST" })
       return { groupChatId, dailyReportTopicId, botToken };
     },
   )
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ data, context }) => {
     await assertAdmin(context as never);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
 
     const payload: Record<string, unknown> = {
       id: true,
@@ -93,7 +94,7 @@ export const saveTelegramConfig = createServerFn({ method: "POST" })
 
 /** Kiểm tra kết nối: gửi một tin kiểm tra cấu hình vào đúng Group + Topic Báo cáo ngày. */
 export const testTelegramConnection = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context as never);
     const { readTelegramConfig, sendTelegramMessage, TELEGRAM_TOKEN_MISSING } = await import(
@@ -114,7 +115,7 @@ export const testTelegramConnection = createServerFn({ method: "POST" })
         `Thời điểm kiểm tra: ${new Date().toISOString()}`,
     });
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     await supabaseAdmin.from("audit_logs").insert({
       user_id: context.userId,
       action: "telegram.config_tested",
@@ -128,7 +129,7 @@ export const testTelegramConnection = createServerFn({ method: "POST" })
   });
 
 export const dispatchTelegramQueue = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context as never);
     const { dispatchOutbox } = await import("@/lib/telegram-dispatch.server");
@@ -142,11 +143,11 @@ export const retryTelegramOutboxItem = createServerFn({ method: "POST" })
     if (!input.id) throw new Error("Thiếu mã bản ghi hàng đợi.");
     return { id: input.id };
   })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ data, context }) => {
     await assertAdmin(context as never);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     const { data: row, error } = await supabaseAdmin
       .from("telegram_outbox")
       .select("id,status,attempts")
@@ -176,7 +177,7 @@ export const testPersonalTelegram = createServerFn({ method: "POST" })
     if (!input?.userId) throw new Error("Thiếu mã thành viên.");
     return { userId: input.userId };
   })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ data, context }) => {
     if (data.userId !== context.userId) {
       const { data: allowed, error } = await (context.supabase.rpc as any)("can_manage_profile", {
@@ -186,7 +187,7 @@ export const testPersonalTelegram = createServerFn({ method: "POST" })
       if (!allowed) throw new Error("Bạn không có quyền kiểm tra Telegram của thành viên này.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("telegram_user_id,telegram_enabled,display_name")

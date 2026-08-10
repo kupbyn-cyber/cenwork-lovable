@@ -8,9 +8,14 @@ export const Route = createFileRoute("/api/public/hooks/telegram-dispatch")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Bản deploy độc lập dùng CEN_CRON_SECRET; bản cũ vẫn nhận apikey của project.
         const expected =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"] ?? "";
+          process.env["CEN_CRON_SECRET"] ??
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+          process.env["SUPABASE_ANON_KEY"] ??
+          "";
         const provided =
+          request.headers.get("x-cen-cron-secret") ??
           request.headers.get("apikey") ??
           request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
           "";

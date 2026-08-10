@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { resolveCallerRole } from "@/lib/permission-guard";
 import type { PerformanceDashboard } from "@/lib/performance";
 
@@ -10,7 +10,7 @@ import type { PerformanceDashboard } from "@/lib/performance";
  * được chốt ở server, không phụ thuộc việc ẩn UI.
  */
 export const getPerformanceDashboard = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator(
     (data: { from: string; to: string; teamId?: string | null; userId?: string | null }) => {
       const isDay = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);

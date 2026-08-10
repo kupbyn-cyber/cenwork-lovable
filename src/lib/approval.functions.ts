@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 import {
@@ -18,7 +18,7 @@ import {
  * trong danh sách người phê duyệt pending của phiên bản hiện tại hay không.
  */
 export const createApproval = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -36,7 +36,7 @@ export const createApproval = createServerFn({ method: "POST" })
   });
 
 export const decideApprovalRequest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -52,7 +52,7 @@ export const decideApprovalRequest = createServerFn({ method: "POST" })
   });
 
 export const withdrawApprovalRequest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({ requestId: z.string().uuid(), reason: z.string().nullable().default(null) })
@@ -64,7 +64,7 @@ export const withdrawApprovalRequest = createServerFn({ method: "POST" })
   });
 
 export const resubmitApprovalRequest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -81,7 +81,7 @@ export const resubmitApprovalRequest = createServerFn({ method: "POST" })
   });
 
 export const replaceApprovalApprover = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({

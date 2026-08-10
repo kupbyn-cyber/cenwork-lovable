@@ -9,8 +9,20 @@
 import type { PoolClient } from "pg";
 
 import { withAnon, withUser } from "@/db/pool.server";
+import { withPrivileged } from "@/db/pool.server";
 import { compileQuery, compileRpc, QueryCompileError } from "@/lib/db/compile.server";
 import type { DbWireResponse, JsonValue, QueryPlan, RestError, RpcPlan } from "@/lib/db/query-plan";
+
+/**
+ * Danh tính chạy truy vấn:
+ * - `cookie`  : lấy từ phiên đăng nhập của request (mặc định, dùng cho trình duyệt).
+ * - `user`    : danh tính đã được máy chủ xác thực trước đó (middleware server function).
+ * - `privileged`: tác vụ quản trị của chính máy chủ (tạo tài khoản, gửi Telegram...).
+ */
+export type DbIdentity =
+  | { mode: "cookie" }
+  | { mode: "user"; userId: string }
+  | { mode: "privileged" };
 
 async function currentUserId(): Promise<string | null> {
   try {
@@ -23,7 +35,12 @@ async function currentUserId(): Promise<string | null> {
   }
 }
 
-function runScoped<T>(userId: string | null, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+async function runScoped<T>(
+  identity: DbIdentity,
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  if (identity.mode === "privileged") return withPrivileged(fn);
+  const userId = identity.mode === "user" ? identity.userId : await currentUserId();
   return userId ? withUser(userId, fn) : withAnon(fn);
 }
 
@@ -77,12 +94,14 @@ function shapeSingle(rows: JsonValue[], mode: "one" | "maybe" | undefined): DbWi
   return { data: rows[0] ?? null, error: null, count: null, status: 200, statusText: "OK" };
 }
 
-export async function runQueryPlan(plan: QueryPlan): Promise<DbWireResponse> {
+export async function runQueryPlan(
+  plan: QueryPlan,
+  identity: DbIdentity = { mode: "cookie" },
+): Promise<DbWireResponse> {
   try {
     const compiled = await compileQuery(plan);
-    const userId = await currentUserId();
 
-    const result = await runScoped(userId, async (client) => {
+    const result = await runScoped(identity, async (client) => {
       let rows: JsonValue[] = [];
       let count: number | null = null;
       if (compiled.data) {
@@ -115,12 +134,14 @@ export async function runQueryPlan(plan: QueryPlan): Promise<DbWireResponse> {
   }
 }
 
-export async function runRpcPlan(plan: RpcPlan): Promise<DbWireResponse> {
+export async function runRpcPlan(
+  plan: RpcPlan,
+  identity: DbIdentity = { mode: "cookie" },
+): Promise<DbWireResponse> {
   try {
     const compiled = await compileRpc(plan);
-    const userId = await currentUserId();
 
-    const value = await runScoped(userId, async (client) => {
+    const value: JsonValue = await runScoped(identity, async (client) => {
       const { rows } = await client.query<{ data: JsonValue }>(compiled.text, compiled.values);
       return rows[0]?.data ?? null;
     });

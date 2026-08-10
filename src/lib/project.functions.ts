@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 
@@ -27,7 +27,7 @@ const createProjectSchema = z.object({
 });
 
 export const createProject = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => createProjectSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.PROJECTS_CREATE);

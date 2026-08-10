@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { resolveCallerRole } from "@/lib/permission-guard";
 import type { TodayHubResult } from "@/lib/today-hub";
 
@@ -9,7 +9,7 @@ import type { TodayHubResult } from "@/lib/today-hub";
  * Chạy bằng phiên người gọi (RLS giữ nguyên phạm vi); UI không tự lọc dữ liệu cấm.
  */
 export const getTodayHub = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ context }): Promise<TodayHubResult> => {
     const { buildTodayHub } = await import("@/lib/today.server");
     const role = await resolveCallerRole(context.supabase, context.userId);

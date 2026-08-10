@@ -43,6 +43,7 @@ import { Route as ApiFilesSplatRouteImport } from './routes/api/files.$'
 import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
 import { Route as AuthenticatedReportsDocReportIdRouteImport } from './routes/_authenticated/reports.doc.$reportId'
 import { Route as AuthenticatedReportsWeeklyReportIdRouteImport } from './routes/_authenticated/reports.weekly.$reportId'
+import { Route as ApiPublicHooksCronRouteImport } from './routes/api/public/hooks/cron'
 import { Route as ApiPublicHooksTelegramDispatchRouteImport } from './routes/api/public/hooks/telegram-dispatch'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -232,6 +233,11 @@ const AuthenticatedReportsWeeklyReportIdRoute =
     path: '/reports/weekly/$reportId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksCronRoute = ApiPublicHooksCronRouteImport.update({
+  id: '/api/public/hooks/cron',
+  path: '/api/public/hooks/cron',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksTelegramDispatchRoute =
   ApiPublicHooksTelegramDispatchRouteImport.update({
     id: '/api/public/hooks/telegram-dispatch',
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/cron': typeof ApiPublicHooksCronRoute
   '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRoutesByTo {
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/cron': typeof ApiPublicHooksCronRoute
   '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRoutesById {
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/daily/$reportId': typeof AuthenticatedReportsDailyReportIdRoute
   '/_authenticated/reports/doc/$reportId': typeof AuthenticatedReportsDocReportIdRoute
   '/_authenticated/reports/weekly/$reportId': typeof AuthenticatedReportsWeeklyReportIdRoute
+  '/api/public/hooks/cron': typeof ApiPublicHooksCronRoute
   '/api/public/hooks/telegram-dispatch': typeof ApiPublicHooksTelegramDispatchRoute
 }
 export interface FileRouteTypes {
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/reports/daily/$reportId'
     | '/reports/doc/$reportId'
     | '/reports/weekly/$reportId'
+    | '/api/public/hooks/cron'
     | '/api/public/hooks/telegram-dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -421,6 +431,7 @@ export interface FileRouteTypes {
     | '/reports/daily/$reportId'
     | '/reports/doc/$reportId'
     | '/reports/weekly/$reportId'
+    | '/api/public/hooks/cron'
     | '/api/public/hooks/telegram-dispatch'
   id:
     | '__root__'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/daily/$reportId'
     | '/_authenticated/reports/doc/$reportId'
     | '/_authenticated/reports/weekly/$reportId'
+    | '/api/public/hooks/cron'
     | '/api/public/hooks/telegram-dispatch'
   fileRoutesById: FileRoutesById
 }
@@ -467,6 +479,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+  ApiPublicHooksCronRoute: typeof ApiPublicHooksCronRoute
   ApiPublicHooksTelegramDispatchRoute: typeof ApiPublicHooksTelegramDispatchRoute
 }
 
@@ -710,6 +723,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsWeeklyReportIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/cron': {
+      id: '/api/public/hooks/cron'
+      path: '/api/public/hooks/cron'
+      fullPath: '/api/public/hooks/cron'
+      preLoaderRoute: typeof ApiPublicHooksCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/telegram-dispatch': {
       id: '/api/public/hooks/telegram-dispatch'
       path: '/api/public/hooks/telegram-dispatch'
@@ -796,6 +816,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
+  ApiPublicHooksCronRoute: ApiPublicHooksCronRoute,
   ApiPublicHooksTelegramDispatchRoute: ApiPublicHooksTelegramDispatchRoute,
 }
 export const routeTree = rootRouteImport

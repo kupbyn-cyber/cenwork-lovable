@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 import { MVP_ANNOUNCEMENT_FORMULA_VERSION } from "@/lib/mvp-scoring";
@@ -17,7 +17,7 @@ import { canTransitionCycle, MVP_CYCLE_STATUS_LABEL } from "@/lib/mvp-scoring";
 const cycleIdSchema = z.object({ cycleId: z.string().uuid() });
 
 export const createMvpCycle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z.object({ weekStart: z.string().date() }).parse(input),
   )
@@ -46,7 +46,7 @@ export const createMvpCycle = createServerFn({ method: "POST" })
   });
 
 export const collectCycleData = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => cycleIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_MANAGE);
@@ -54,7 +54,7 @@ export const collectCycleData = createServerFn({ method: "POST" })
   });
 
 export const recomputeCycleScores = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => cycleIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_MANAGE);
@@ -73,7 +73,7 @@ export const recomputeCycleScores = createServerFn({ method: "POST" })
 
 
 export const generateAwardProposals = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => cycleIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_APPROVE);
@@ -81,7 +81,7 @@ export const generateAwardProposals = createServerFn({ method: "POST" })
   });
 
 export const setCycleStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -147,7 +147,7 @@ export const setCycleStatus = createServerFn({ method: "POST" })
   });
 
 export const decideAward = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({

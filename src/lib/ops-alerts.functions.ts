@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { resolveCallerRole } from "@/lib/permission-guard";
 import type { OpsAlertsResult } from "@/lib/ops-alerts";
 
@@ -9,7 +9,7 @@ import type { OpsAlertsResult } from "@/lib/ops-alerts";
  * Kiểm tra vai trò tại server; Leader/Member luôn nhận danh sách rỗng.
  */
 export const getOpsAlerts = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: { startISO: string; endISO: string }) => input)
   .handler(async ({ data, context }): Promise<OpsAlertsResult> => {
     const role = await resolveCallerRole(context.supabase, context.userId);
