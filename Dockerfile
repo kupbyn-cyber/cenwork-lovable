@@ -15,6 +15,12 @@ COPY . .
 
 # Public (non-secret) build-time variables baked into the client bundle.
 # NEVER pass secrets here — anything VITE_* ends up in the browser bundle.
+# This image is the self-host PostgreSQL production build, so the backend
+# selector is hard-coded at BUILD TIME (Vite inlines import.meta.env.*).
+ARG VITE_CEN_DB=postgres
+ENV VITE_CEN_DB=$VITE_CEN_DB
+
+# Optional legacy Supabase values — not required in PostgreSQL mode.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_PROJECT_ID
