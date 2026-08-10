@@ -2,7 +2,17 @@ import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { taskUnreadCountsQuery } from "@/lib/task-comment-data";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, CalendarClock, Check, Plus, Send, Trash2, X } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  CalendarClock,
+  Check,
+  Plus,
+  Send,
+  Trash2,
+  UserCheck,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +49,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { facilitiesQuery, teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
+import { buildMineScope, isProjectMine } from "@/lib/mine-scope";
 import {
   APPROVAL_ACTION_LABEL,
   APPROVAL_STAGE_LABEL,
@@ -163,6 +174,8 @@ function ProjectsPage() {
   const [ownerFilter, setOwnerFilter] = React.useState(ALL);
   const [teamFilter, setTeamFilter] = React.useState(ALL);
   const [facilityFilter, setFacilityFilter] = React.useState(ALL);
+  /** Quick filter "Của tôi" — chỉ dự án liên quan trực tiếp tới người dùng. */
+  const [mineOnly, setMineOnly] = React.useState(false);
   const [view, setView] = React.useState<ProjectView>("active");
   const [limit, setLimit] = React.useState(PAGE_SIZE);
   const [expanded, setExpanded] = React.useState<string[]>([]);
@@ -193,6 +206,13 @@ function ProjectsPage() {
   const people = peopleResult.data ?? [];
   const approvals = approvalsResult.data ?? {};
   const teamName = (id: string) => teams.find((team) => team.id === id)?.name ?? "—";
+
+  const myPrimaryTeamId =
+    people.find((person) => person.id === access.userId)?.primary_team_id ?? null;
+  const mineScope = React.useMemo(
+    () => buildMineScope(access.userId, access.leaderTeamId, myPrimaryTeamId),
+    [access.userId, access.leaderTeamId, myPrimaryTeamId],
+  );
 
   /** KPI Task và Task con: tính từ MỘT query tasks duy nhất (không N+1). */
   const statsByProject = React.useMemo(() => buildProjectTaskStats(allTasks), [allTasks]);
@@ -303,9 +323,10 @@ function ProjectsPage() {
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
       if (teamFilter !== ALL && !project.teamIds.includes(teamFilter)) return false;
       if (facilityFilter !== ALL && !project.facilityIds.includes(facilityFilter)) return false;
+      if (mineOnly && !isProjectMine(project, mineScope, allTasks)) return false;
       return true;
     },
-    [search, statusFilter, ownerFilter, teamFilter, facilityFilter],
+    [search, statusFilter, ownerFilter, teamFilter, facilityFilter, mineOnly, mineScope, allTasks],
   );
 
   const counts = React.useMemo(() => {
@@ -326,14 +347,15 @@ function ProjectsPage() {
 
   React.useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [view, search, statusFilter, ownerFilter, teamFilter, facilityFilter]);
+  }, [view, search, statusFilter, ownerFilter, teamFilter, facilityFilter, mineOnly]);
 
   const filtering =
     search.trim() !== "" ||
     statusFilter !== ALL ||
     ownerFilter !== ALL ||
     teamFilter !== ALL ||
-    facilityFilter !== ALL;
+    facilityFilter !== ALL ||
+    mineOnly;
 
   const resetFilters = () => {
     setSearch("");
@@ -808,6 +830,15 @@ function ProjectsPage() {
             </Button>
           ))}
         </div>
+        <Button
+          variant={mineOnly ? "secondary" : "outline"}
+          size="sm"
+          aria-pressed={mineOnly}
+          onClick={() => setMineOnly((value) => !value)}
+        >
+          <UserCheck />
+          Của tôi
+        </Button>
         {filtering ? (
           <Button variant="ghost" size="sm" onClick={resetFilters}>
             <X />
