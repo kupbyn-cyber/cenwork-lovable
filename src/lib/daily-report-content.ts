@@ -54,7 +54,13 @@ export function formatDailyItemLine(item: {
 }
 
 function parseItemLine(line: string): DailyReportItem | null {
-  const text = clean(line).replace(/^[-•*\d.)\s]+/, "").trim();
+  const source = clean(line);
+  // Bỏ dòng tiêu đề nhóm và dòng "Không có" của định dạng báo cáo cũ.
+  if (!source) return null;
+  if (/^(✅|⚠️|⏳|📋|👤)/.test(source)) return null;
+  if (/^\p{Lu}[^\n]*\(\d+\)$/u.test(source)) return null;
+  if (/^không có\.?$/i.test(source)) return null;
+  const text = source.replace(/^[-•*\d.)\s]+/, "").trim();
   if (!text) return null;
   const match = text.match(/^([\s\S]*?)\s+[—–]\s+([\s\S]+)$/);
   const namePart = clean(match?.[1] ?? text);
