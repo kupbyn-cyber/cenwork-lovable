@@ -6,6 +6,7 @@ import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
 import { CEN_TIMEZONE, formatHanoiDate, hanoiStartOfDayMs } from "@/lib/datetime";
 import { maskName, primeLockedIdentity } from "@/lib/member-identity";
+import { NO_NOTE_TEXT, formatDailyItemLine } from "@/lib/daily-report-content";
 
 /**
  * CEN 1.0 — M4 Reports data layer.
@@ -778,6 +779,8 @@ export interface DailyCompletedTask {
   id: string;
   name: string;
   result: string;
+  projectName: string | null;
+  completedAt: string | null;
 }
 
 export interface DailySnapshot {
@@ -812,7 +815,7 @@ export async function fetchDailySnapshot(
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id,name,status,deadline,result_text,result_updated_at,updated_at,is_archived,cancelled_at",
+      "id,name,status,deadline,result_text,result_updated_at,updated_at,is_archived,cancelled_at,completed_at,project:projects(name)",
     )
     .eq("assignee_id", authorId)
     .eq("approval_status", "approved")
@@ -827,7 +830,18 @@ export async function fetchDailySnapshot(
       const doneAt = new Date((row.result_updated_at ?? row.updated_at) as string).getTime();
       if (Number.isNaN(doneAt) || doneAt < dayStart || doneAt >= dayEnd) continue;
       const result = (row.result_text ?? "").trim();
-      if (result) snapshot.completed.push({ id: row.id, name: row.name, result });
+      const project = (row as Record<string, unknown>)["project"] as { name?: string } | null;
+      if (result)
+        snapshot.completed.push({
+          id: row.id,
+          name: row.name,
+          result,
+          projectName: project?.name ?? null,
+          completedAt:
+            ((row as Record<string, unknown>)["completed_at"] as string | null) ??
+            (row.result_updated_at as string | null) ??
+            null,
+        });
       else snapshot.missingResult.push({ id: row.id, name: row.name });
       continue;
     }
@@ -852,12 +866,12 @@ export const dailySnapshotQuery = (authorId: string | null, reportDate: string) 
 export function snapshotToReportContent(snapshot: DailySnapshot, note: string) {
   const results =
     snapshot.completed.length > 0
-      ? snapshot.completed.map((task) => `${task.name} — ${task.result}`).join("\n")
+      ? snapshot.completed.map((task) => formatDailyItemLine(task)).join("\n")
       : "Không có Task hoàn thành hôm nay.";
   const blockers =
     `Còn mở: ${snapshot.openCount} | Quá hạn: ${snapshot.overdueCount} | ` +
     `Chờ kiểm tra: ${snapshot.reviewCount}`;
-  return { results, blockers, nextPlan: note.trim() || "Không có ghi chú." };
+  return { results, blockers, nextPlan: note.trim() || NO_NOTE_TEXT };
 }
 
 /** Ghi chú bắt buộc khi có Task quá hạn hoặc không hoàn thành Task nào trong ngày. */

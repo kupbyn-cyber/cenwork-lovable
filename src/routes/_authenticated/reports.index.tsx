@@ -25,6 +25,7 @@ import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { membersQuery, teamsQuery } from "@/lib/org-data";
 import { formatHanoiDate } from "@/lib/datetime";
+import { summarizeDailyResults } from "@/lib/daily-report-content";
 import {
   REPORT_STATUS_LABEL,
   REPORT_STATUS_ORDER,
@@ -249,9 +250,30 @@ function ReportsPage() {
       id: "results",
       header: "Kết quả",
       className: "min-w-[260px]",
-      cell: (row: DailyReportRow) => (
-        <span className="line-clamp-2 max-w-[420px] text-text-secondary">{row.results ?? "—"}</span>
-      ),
+      cell: (row: DailyReportRow) => {
+        const summary = summarizeDailyResults(row);
+        if (summary.count === 0) {
+          return summary.fallback ? (
+            <span className="line-clamp-2 max-w-[420px] text-text-secondary">
+              {summary.fallback}
+            </span>
+          ) : (
+            <span className="text-text-muted">Không có Task hoàn thành</span>
+          );
+        }
+        return (
+          <div className="flex max-w-[420px] min-w-0 flex-col gap-0.5">
+            <span className="text-body-sm font-medium text-text-primary">
+              {summary.count} Task hoàn thành
+            </span>
+            {summary.highlights.map((line, index) => (
+              <span key={index} className="line-clamp-1 text-helper text-text-secondary">
+                {line}
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       id: "status",

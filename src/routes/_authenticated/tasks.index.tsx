@@ -9,6 +9,7 @@ import {
   Columns3,
   Plus,
   Trash2,
+  UserCheck,
   X,
 } from "lucide-react";
 
@@ -59,6 +60,7 @@ import { teamsQuery } from "@/lib/org-data";
 import { setManualArchive } from "@/lib/deadline-data";
 import { canSoftDelete, softDeleteEntity } from "@/lib/soft-delete";
 import { activePeopleQuery, projectsQuery } from "@/lib/project-data";
+import { buildMineScope, isTaskMine } from "@/lib/mine-scope";
 import { buildTaskPrefill } from "@/lib/task-prefill";
 import {
   TASK_STATUS_LABEL,
@@ -198,6 +200,16 @@ function TasksPage() {
   const projects = projectsResult.data ?? [];
   const teams = teamsResult.data ?? [];
   const people = peopleResult.data ?? [];
+  const projectById = React.useMemo(
+    () => new Map(projects.map((project) => [project.id, project])),
+    [projects],
+  );
+  const myPrimaryTeamId =
+    people.find((person) => person.id === access.userId)?.primary_team_id ?? null;
+  const mineScope = React.useMemo(
+    () => buildMineScope(access.userId, access.leaderTeamId, myPrimaryTeamId),
+    [access.userId, access.leaderTeamId, myPrimaryTeamId],
+  );
   const savedViews = React.useMemo(() => viewsResult.data ?? [], [viewsResult.data]);
 
   const ctx: TaskAccessContext = {
@@ -281,9 +293,15 @@ function TasksPage() {
   const allTasks = React.useMemo(() => tasksResult.data ?? [], [tasksResult.data]);
 
   const rows = React.useMemo(
-    () => sortTasks(filterTasks(allTasks, filters, view, ctx), sort),
+    () =>
+      sortTasks(
+        filterTasks(allTasks, filters, view, ctx, (task) =>
+          isTaskMine(task, mineScope, projectById),
+        ),
+        sort,
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allTasks, filters, view, sort, access.userId, access.role, access.leaderTeamId],
+    [allTasks, filters, view, sort, mineScope, projectById, access.role],
   );
 
   const visibleRows = React.useMemo(() => rows.slice(0, limit), [rows, limit]);
@@ -604,6 +622,16 @@ function TasksPage() {
         </div>
 
         <TaskAdvancedFilters filters={filters} onChange={patchFilters} people={people} />
+
+        <Button
+          variant={filters.related ? "secondary" : "outline"}
+          size="sm"
+          aria-pressed={filters.related}
+          onClick={() => patchFilters({ related: !filters.related })}
+        >
+          <UserCheck />
+          Của tôi
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

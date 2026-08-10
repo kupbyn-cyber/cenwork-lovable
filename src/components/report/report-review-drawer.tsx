@@ -9,6 +9,13 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { cenToast } from "@/components/ui/toast";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { ReviewActions } from "@/components/report/review-actions";
+import { DailyReportSections } from "@/components/report/daily-report-sections";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { parseDailyReportContent } from "@/lib/daily-report-content";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
@@ -213,11 +220,18 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
           </div>
 
           {dailyRow ? (
-            <>
-              <Field title="Kết quả đạt được" value={dailyRow.results} />
-              <Field title="Vướng mắc" value={dailyRow.blockers} />
-              <Field title="Kế hoạch ngày mai" value={dailyRow.next_plan} />
-            </>
+            (() => {
+              const content = parseDailyReportContent(dailyRow);
+              return (
+                <DailyReportSections
+                  items={content.items}
+                  rawResults={content.rawResults}
+                  counts={content.counts}
+                  rawSummary={content.rawSummary}
+                  note={content.note}
+                />
+              );
+            })()
           ) : weeklyRow ? (
             <>
               <Field title="Kết quả nổi bật" value={weeklyRow.highlights} />
@@ -228,9 +242,12 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
           ) : null}
 
           {dailyRow ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-label font-semibold text-text-primary">Công việc trong ngày</p>
-              {taskRefs.isLoading ? (
+            <Collapsible className="flex flex-col gap-2">
+              <CollapsibleTrigger className="cen-transition self-start text-body-sm text-text-secondary hover:text-text-primary">
+                Xem snapshot công việc trong ngày
+              </CollapsibleTrigger>
+              <CollapsibleContent className="flex flex-col gap-2">
+                {taskRefs.isLoading ? (
                 <p className="text-helper text-text-muted">Đang tổng hợp…</p>
               ) : (taskRefs.data ?? []).length === 0 ? (
                 <p className="text-helper text-text-muted">Không có công việc nào trong ngày này.</p>
@@ -255,8 +272,9 @@ export function ReportReviewDrawer({ kind, reportId, open, onOpenChange }: Repor
                     </span>
                   </div>
                 ))
-              )}
-            </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           ) : null}
 
           <Field title="Nhận xét gần nhất" value={(dailyRow ?? weeklyRow)?.review_note ?? null} />
