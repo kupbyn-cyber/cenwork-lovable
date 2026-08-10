@@ -11,7 +11,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
+import { DailyReportSections } from "@/components/report/daily-report-sections";
 import { ReviewActions } from "@/components/report/review-actions";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { parseDailyReportContent } from "@/lib/daily-report-content";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import { formatHanoiDate, formatHanoiDateTime } from "@/lib/datetime";
@@ -92,6 +99,7 @@ function DailyReportDetail() {
   };
   const editable = canEditDaily(report, ctx);
   const reviewable = canReviewDaily(report, ctx, directory);
+  const content = parseDailyReportContent(report);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -129,19 +137,27 @@ function DailyReportDetail() {
             <CardTitle>Nội dung báo cáo</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Block title="Kết quả đạt được" value={report.results} />
-            <Block title="Vướng mắc" value={report.blockers} />
-            <Block title="Kế hoạch ngày mai" value={report.next_plan} />
+            <DailyReportSections
+              items={content.items}
+              rawResults={content.rawResults}
+              counts={content.counts}
+              rawSummary={content.rawSummary}
+              note={content.note}
+            />
           </CardContent>
         </Card>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Công việc trong ngày</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {taskRefs.isLoading ? (
+          <Collapsible>
+            <Card>
+              <CardHeader>
+                <CollapsibleTrigger className="cen-transition text-left text-body-sm text-text-secondary hover:text-text-primary">
+                  Xem snapshot công việc trong ngày
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="flex flex-col gap-3">
+                  {taskRefs.isLoading ? (
                 <p className="text-helper text-text-muted">Đang tổng hợp…</p>
               ) : (taskRefs.data ?? []).length === 0 ? (
                 <p className="text-helper text-text-muted">Không có công việc nào trong ngày này.</p>
@@ -166,9 +182,11 @@ function DailyReportDetail() {
                     </span>
                   </div>
                 ))
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           <Card>
             <CardHeader>
