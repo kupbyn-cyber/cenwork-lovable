@@ -77,6 +77,8 @@ export interface TaskFilterState {
   mine: boolean;
   createdByMe: boolean;
   needsMe: boolean;
+  /** Quick filter "Của tôi" — mọi nội dung liên quan trực tiếp tới người dùng. */
+  related: boolean;
 }
 
 export const EMPTY_FILTERS: TaskFilterState = {
@@ -95,6 +97,7 @@ export const EMPTY_FILTERS: TaskFilterState = {
   mine: false,
   createdByMe: false,
   needsMe: false,
+  related: false,
 };
 
 export const OPTIONAL_COLUMNS = [
@@ -137,7 +140,8 @@ export function hasActiveFilters(filters: TaskFilterState) {
     filters.creator !== ALL ||
     filters.mine ||
     filters.createdByMe ||
-    filters.needsMe
+    filters.needsMe ||
+    filters.related
   );
 }
 
@@ -179,6 +183,7 @@ export function filterTasks(
   filters: TaskFilterState,
   view: "active" | "archived",
   ctx: TaskAccessContext,
+  isRelated?: (task: TaskRow) => boolean,
 ): TaskRow[] {
   const keyword = filters.search.trim().toLowerCase();
   return tasks.filter((task) => {
@@ -228,6 +233,12 @@ export function filterTasks(
     if (filters.mine && !(ctx.userId && task.assignee_id === ctx.userId)) return false;
     if (filters.createdByMe && !(ctx.userId && task.created_by === ctx.userId)) return false;
     if (filters.needsMe && !needsAttention(task, ctx)) return false;
+    if (filters.related) {
+      const related = isRelated
+        ? isRelated(task)
+        : Boolean(ctx.userId && task.assignee_id === ctx.userId);
+      if (!related) return false;
+    }
     return true;
   });
 }
