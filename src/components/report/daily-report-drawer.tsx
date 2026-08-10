@@ -205,7 +205,7 @@ export function DailyReportDrawer({
               id="report-note"
               label="Ghi chú / Ý kiến cá nhân"
               required={noteRequired}
-              hint="Bạn có thể ghi thêm tình hình, vướng mắc, đề xuất hỗ trợ hoặc ý kiến cá nhân."
+              helperText="Bạn có thể ghi thêm tình hình, vướng mắc, đề xuất hỗ trợ hoặc ý kiến cá nhân."
               error={errors["note"] ?? errors["tasks"] ?? errors["reviewer"]}
             >
               {(control) => (
