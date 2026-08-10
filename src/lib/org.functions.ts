@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS, roleRequiresTeam } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
+import { getAdminClient } from "@/lib/db/admin-client.server";
 
 /**
  * CEN 1.0 — M1.4 server functions
@@ -49,7 +50,7 @@ const createMemberSchema = z.object({
 
 
 export const createMemberAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => createMemberSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MEMBERS_CREATE);
@@ -59,7 +60,7 @@ export const createMemberAccount = createServerFn({ method: "POST" })
       throw new Error("Vai trò Leader và Member bắt buộc thuộc một Team chính.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
 
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
@@ -109,7 +110,7 @@ export const createMemberAccount = createServerFn({ method: "POST" })
   });
 
 export const setMemberRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z.object({ userId: z.string().uuid(), role: roleEnum }).parse(input),
   )
@@ -133,7 +134,7 @@ export const setMemberRole = createServerFn({ method: "POST" })
         throw new Error("Phải gán Team chính trước khi chuyển sang vai trò Leader hoặc Member.");
       }
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
 
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     const { error } = await supabaseAdmin
@@ -144,7 +145,7 @@ export const setMemberRole = createServerFn({ method: "POST" })
   });
 
 export const setMemberStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z.object({ userId: z.string().uuid(), status: z.enum(["active", "locked"]) }).parse(input),
   )
@@ -159,7 +160,7 @@ export const setMemberStatus = createServerFn({ method: "POST" })
       throw new Error("Không thể tự khóa tài khoản của chính mình.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     const locked = data.status === "locked";
 
     // Ban ở tầng Auth: chặn đăng nhập và vô hiệu hóa phiên khi token làm mới.
@@ -184,7 +185,7 @@ export const setMemberStatus = createServerFn({ method: "POST" })
  * người gọi, nên không thể vượt qua bằng cách gọi thẳng API.
  */
 export const lockMemberAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({ userId: z.string().uuid(), reason: z.string().trim().min(3).max(500) })
@@ -197,7 +198,7 @@ export const lockMemberAccount = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message.replace(/^.*?:\s*/, ""));
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     // Ban ở tầng Auth: chặn đăng nhập và vô hiệu hóa phiên hiện tại.
     const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: "876000h",
@@ -210,13 +211,13 @@ export const lockMemberAccount = createServerFn({ method: "POST" })
 
 /** MEMBER-LOCK-01 — khôi phục tài khoản đã lưu trữ (chỉ Admin, kiểm tra trong RPC). */
 export const unlockMemberAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("member_unlock", { _user: data.userId });
     if (error) throw new Error(error.message.replace(/^.*?:\s*/, ""));
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
     const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: "none",
     });
@@ -254,7 +255,7 @@ function generateTemporaryPassword(): string {
 }
 
 export const issueTemporaryPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(
@@ -267,7 +268,7 @@ export const issueTemporaryPassword = createServerFn({ method: "POST" })
       throw new Error("Không thể tự cấp mật khẩu tạm cho chính mình.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getAdminClient();
 
     const logAudit = async (result: "success" | "failed", reason?: string) => {
       await supabaseAdmin.from("audit_logs").insert({

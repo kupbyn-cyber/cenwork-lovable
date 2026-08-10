@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { resolveCallerRole } from "@/lib/permission-guard";
 import type { DashboardData } from "@/lib/dashboard";
 
@@ -9,7 +9,7 @@ import type { DashboardData } from "@/lib/dashboard";
  * Vai trò và phạm vi dữ liệu do server quyết định; client không tự mở rộng phạm vi.
  */
 export const getDashboard = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: { from: string; to: string; teamId?: string | null }) => input)
   .handler(async ({ data, context }): Promise<DashboardData> => {
     const role = await resolveCallerRole(context.supabase, context.userId);

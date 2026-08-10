@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 import { publishAnnouncementCore, resolveAudienceUserIds } from "@/lib/announcement.server";
@@ -11,7 +11,7 @@ import { publishAnnouncementCore, resolveAudienceUserIds } from "@/lib/announcem
  * Phát hành phải chạy ở backend: chốt danh sách người nhận và kiểm tra lại phạm vi gửi.
  */
 export const publishAnnouncement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z.object({ announcementId: z.string().uuid() }).parse(input),
   )
@@ -25,7 +25,7 @@ export const publishAnnouncement = createServerFn({ method: "POST" })
  * Chỉ người có quyền phát hành thông báo mới được kích hoạt; database tự chống trùng.
  */
 export const enqueueAnnouncementReminders = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .handler(async ({ context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.ANNOUNCEMENTS_CREATE);
     const { error } = await context.supabase.rpc("announcement_enqueue_reminders");
@@ -38,7 +38,7 @@ export const enqueueAnnouncementReminders = createServerFn({ method: "POST" })
  * Con số chỉ mang tính dự kiến: khi phát hành sẽ tính lại tại thời điểm đó.
  */
 export const estimateAnnouncementRecipients = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireCenAuth])
   .inputValidator((input: unknown) =>
     z
       .object({

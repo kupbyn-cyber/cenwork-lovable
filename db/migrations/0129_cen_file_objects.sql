@@ -51,4 +51,4 @@ CREATE INDEX IF NOT EXISTS file_objects_owner_idx ON public.file_objects (owner_
 DROP TRIGGER IF EXISTS file_objects_set_updated_at ON public.file_objects;
 CREATE TRIGGER file_objects_set_updated_at
   BEFORE UPDATE ON public.file_objects
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

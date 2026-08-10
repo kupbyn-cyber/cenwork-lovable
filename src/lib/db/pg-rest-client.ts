@@ -19,6 +19,20 @@ import {
 
 type AnyRecord = Record<string, unknown>;
 
+/**
+ * Kênh gửi query plan xuống PostgreSQL. Mặc định đi qua server function
+ * (trình duyệt); phía máy chủ có thể truyền kênh chạy thẳng trên pool.
+ */
+export interface CenTransport {
+  query(plan: QueryPlan): Promise<DbWireResponse>;
+  rpc(plan: RpcPlan): Promise<DbWireResponse>;
+}
+
+const defaultTransport: CenTransport = {
+  query: (plan) => cenDbQuery({ data: plan }) as Promise<DbWireResponse>,
+  rpc: (plan) => cenDbRpc({ data: plan }) as Promise<DbWireResponse>,
+};
+
 function parseFilterOperator(raw: string): { operator: FilterOperator; negate: boolean } {
   const negate = raw.startsWith("not.");
   const operator = (negate ? raw.slice(4) : raw) as FilterOperator;
@@ -28,9 +42,11 @@ function parseFilterOperator(raw: string): { operator: FilterOperator; negate: b
 class CenQueryBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
   private plan: QueryPlan;
   private shouldThrow = false;
+  private transport: CenTransport;
 
-  constructor(table: string) {
+  constructor(table: string, transport: CenTransport) {
     this.plan = { table, action: "select", conditions: [], order: [] };
+    this.transport = transport;
   }
 
   private push(condition: PlanCondition): this {
@@ -183,7 +199,7 @@ class CenQueryBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
   }
 
   async execute(): Promise<RestResponse<T>> {
-    const response = (await cenDbQuery({ data: this.plan })) as DbWireResponse;
+    const response = await this.transport.query(this.plan);
     if (this.shouldThrow && response.error) throw new Error(response.error.message);
     return response as RestResponse<T>;
   }
@@ -199,9 +215,11 @@ class CenQueryBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
 class CenRpcBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
   private plan: RpcPlan;
   private shouldThrow = false;
+  private transport: CenTransport;
 
-  constructor(fn: string, args: AnyRecord) {
+  constructor(fn: string, args: AnyRecord, transport: CenTransport) {
     this.plan = { fn, args, conditions: [], order: [] };
+    this.transport = transport;
   }
 
   private push(condition: PlanCondition): this {
@@ -254,7 +272,7 @@ class CenRpcBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
   }
 
   async execute(): Promise<RestResponse<T>> {
-    const response = (await cenDbRpc({ data: this.plan })) as DbWireResponse;
+    const response = await this.transport.rpc(this.plan);
     if (this.shouldThrow && response.error) throw new Error(response.error.message);
     return response as RestResponse<T>;
   }
@@ -267,13 +285,13 @@ class CenRpcBuilder<T = unknown> implements PromiseLike<RestResponse<T>> {
   }
 }
 
-export function createCenDataClient() {
+export function createCenDataClient(transport: CenTransport = defaultTransport) {
   return {
     from<T = unknown>(table: string) {
-      return new CenQueryBuilder<T>(table);
+      return new CenQueryBuilder<T>(table, transport);
     },
     rpc<T = unknown>(fn: string, args: AnyRecord = {}) {
-      return new CenRpcBuilder<T>(fn, args);
+      return new CenRpcBuilder<T>(fn, args, transport);
     },
   };
 }

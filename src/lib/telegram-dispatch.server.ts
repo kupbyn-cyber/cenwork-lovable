@@ -3,6 +3,7 @@
  * Dùng chung cho worker tự động (cron) và thao tác thủ công của Admin.
  * Không log Bot Token; lỗi lưu dạng chuỗi đã rút gọn.
  */
+import { getAdminClient } from "@/lib/db/admin-client.server";
 export const MAX_ATTEMPTS = 5;
 export const BATCH_SIZE = 20;
 
@@ -38,7 +39,7 @@ export async function dispatchOutbox(options: {
   const { readTelegramConfig, sendTelegramMessage, TELEGRAM_TOKEN_MISSING } = await import(
     "@/lib/telegram.server"
   );
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const supabaseAdmin = await getAdminClient();
 
   const config = await readTelegramConfig();
   if (!config.botToken) throw new Error(TELEGRAM_TOKEN_MISSING);
