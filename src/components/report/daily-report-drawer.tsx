@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
+import { DailyReportSections } from "@/components/report/daily-report-sections";
 
 import { useReviewerDirectory } from "@/hooks/use-reviewer-directory";
 import {
@@ -170,79 +171,55 @@ export function DailyReportDrawer({
           )}
         </FormField>
 
-        <section className="rounded-card border border-border-default bg-surface-subtle p-3">
-          <p className="text-label font-semibold text-text-primary">
-            1. Task đã hoàn thành hôm nay
-          </p>
-          <p className="mt-1 text-helper text-text-muted">
-            Tự động lấy từ Task bạn là người phụ trách chính và đã hoàn thành trong ngày.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            {snapshotQuery.isLoading ? (
-              <p className="text-helper text-text-muted">Đang tổng hợp…</p>
-            ) : (snapshot?.completed.length ?? 0) === 0 ? (
-              <p className="text-helper text-text-muted">
-                Không có Task hoàn thành trong ngày này.
-              </p>
-            ) : (
-              snapshot!.completed.map((task) => (
-                <div key={task.id} className="flex min-w-0 flex-col">
-                  <span className="break-words text-body text-text-primary">{task.name}</span>
-                  <span className="break-words text-helper text-text-muted">{task.result}</span>
-                </div>
-              ))
-            )}
-          </div>
-          {snapshot && snapshot.missingResult.length > 0 ? (
-            <div className="mt-3 rounded-card border border-state-error/40 bg-state-error/5 p-3">
-              <p className="text-label font-semibold text-state-error">
-                Có Task đã hoàn thành nhưng chưa cập nhật kết quả. Vui lòng cập nhật kết quả trước
-                khi gửi báo cáo.
-              </p>
-              <ul className="mt-2 list-disc pl-5 text-helper text-text-secondary">
-                {snapshot.missingResult.map((task) => (
-                  <li key={task.id}>{task.name}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="rounded-card border border-border-default bg-surface-subtle p-3">
-          <p className="text-label font-semibold text-text-primary">2. Tổng quan số lượng</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {[
-              { label: "Task còn mở", value: snapshot?.openCount ?? 0 },
-              { label: "Task quá hạn", value: snapshot?.overdueCount ?? 0 },
-              { label: "Chờ kiểm tra", value: snapshot?.reviewCount ?? 0 },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-card border border-border-default bg-surface-default p-2 text-center"
-              >
-                <p className="text-h3 font-semibold text-text-primary">{item.value}</p>
-                <p className="text-helper text-text-muted">{item.label}</p>
+        <DailyReportSections
+          loading={snapshotQuery.isLoading}
+          items={(snapshot?.completed ?? []).map((task) => ({
+            name: task.name,
+            result: task.result,
+            projectName: task.projectName,
+            completedAt: task.completedAt,
+          }))}
+          counts={{
+            open: snapshot?.openCount ?? 0,
+            overdue: snapshot?.overdueCount ?? 0,
+            review: snapshot?.reviewCount ?? 0,
+          }}
+          completedHint="Tự động lấy từ Task bạn là người phụ trách chính và đã hoàn thành trong ngày."
+          completedFooter={
+            snapshot && snapshot.missingResult.length > 0 ? (
+              <div className="mt-3 rounded-card border border-state-error/40 bg-state-error/5 p-3">
+                <p className="text-label font-semibold text-state-error">
+                  Có Task đã hoàn thành nhưng chưa cập nhật kết quả. Vui lòng cập nhật kết quả
+                  trước khi gửi báo cáo.
+                </p>
+                <ul className="mt-2 list-disc pl-5 text-helper text-text-secondary">
+                  {snapshot.missingResult.map((task) => (
+                    <li key={task.id}>{task.name}</li>
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <FormField
-          id="report-note"
-          label="3. Ghi chú / Vướng mắc / Đề xuất hỗ trợ"
-          required={noteRequired}
-          error={errors["note"] ?? errors["tasks"] ?? errors["reviewer"]}
-        >
-          {(control) => (
-            <Textarea
-              {...control}
-              rows={4}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Ví dụ: Hôm nay chưa hoàn thành Task vì..., đang vướng..., cần Leader hỗ trợ..., kế hoạch xử lý tiếp theo là..."
-            />
-          )}
-        </FormField>
+            ) : null
+          }
+          noteSlot={
+            <FormField
+              id="report-note"
+              label="Ghi chú / Ý kiến cá nhân"
+              required={noteRequired}
+              hint="Bạn có thể ghi thêm tình hình, vướng mắc, đề xuất hỗ trợ hoặc ý kiến cá nhân."
+              error={errors["note"] ?? errors["tasks"] ?? errors["reviewer"]}
+            >
+              {(control) => (
+                <Textarea
+                  {...control}
+                  rows={4}
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Ví dụ: hôm nay còn vướng ở khâu..., cần Leader hỗ trợ..."
+                />
+              )}
+            </FormField>
+          }
+        />
       </div>
     </Modal>
 
