@@ -7,6 +7,8 @@
  *
  * Mọi module nghiệp vụ chỉ import `supabase` từ đây — không import trực tiếp SDK.
  */
+// Chỉ là tham chiếu lười (Proxy): ở chế độ postgres không thuộc tính nào bị chạm
+// nên client Supabase không bao giờ được khởi tạo và không cần biến môi trường.
 import { supabase as legacyClient } from "@/integrations/supabase/client";
 import {
   cenCurrentUser,
