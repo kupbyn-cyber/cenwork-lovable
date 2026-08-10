@@ -363,6 +363,7 @@ function ProjectsPage() {
     setOwnerFilter(ALL);
     setTeamFilter(ALL);
     setFacilityFilter(ALL);
+    setMineOnly(false);
   };
 
   const toggleExpand = (id: string) =>
