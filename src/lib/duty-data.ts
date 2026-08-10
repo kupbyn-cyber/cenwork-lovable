@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 import type { Database } from "@/integrations/supabase/types";
 import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 

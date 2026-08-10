@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 /**
  * NAP-05 — Bình luận và nhắc tên trong Yêu cầu phê duyệt.

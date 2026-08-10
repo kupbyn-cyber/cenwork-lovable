@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 import { isSystemAdminRole } from "@/lib/permissions";
 
 /**

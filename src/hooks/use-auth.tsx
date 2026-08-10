@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 /**
  * CEN 1.0 — Auth context (M1.3)

@@ -14,7 +14,7 @@ import { AvatarUploader } from "@/components/settings/avatar-uploader";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { logSelfAuditEvent } from "@/lib/audit-data";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
