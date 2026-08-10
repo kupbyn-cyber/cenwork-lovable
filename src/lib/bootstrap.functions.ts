@@ -18,8 +18,8 @@ const bootstrapInputSchema = z.object({
 });
 
 export const getBootstrapStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { createSupabaseAuthAdapter } = await import("@/lib/auth-adapter.server");
-  const adapter = createSupabaseAuthAdapter();
+  const { resolveAuthAdapter } = await import("@/lib/auth-adapter.server");
+  const adapter = await resolveAuthAdapter();
   const state = await adapter.readBootstrapState();
   return {
     setup_required: state.bootstrapEnabled && !state.hasSystemOwner && !state.hasActiveAdmin,
@@ -29,9 +29,9 @@ export const getBootstrapStatus = createServerFn({ method: "GET" }).handler(asyn
 export const createBootstrapAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => bootstrapInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const { createSupabaseAuthAdapter, verifyBootstrapToken, bootstrapTokenConfigured } =
+    const { resolveAuthAdapter, verifyBootstrapToken, bootstrapTokenConfigured } =
       await import("@/lib/auth-adapter.server");
-    const adapter = createSupabaseAuthAdapter();
+    const adapter = await resolveAuthAdapter();
 
     if (!bootstrapTokenConfigured()) {
       throw new Error("Thiết lập ban đầu chưa được bật trên máy chủ.");

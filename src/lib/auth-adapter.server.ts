@@ -64,6 +64,23 @@ export function verifyBootstrapToken(candidate: string): boolean {
 }
 
 export function createSupabaseAuthAdapter(): AuthAdapter {
+  return createSupabaseAuthAdapterImpl();
+}
+
+/**
+ * CEN-MB-01 — Chọn hạ tầng Auth theo môi trường:
+ * có DATABASE_URL → PostgreSQL tự quản (Mắt Bão); ngược lại giữ hạ tầng hiện tại.
+ */
+export async function resolveAuthAdapter(): Promise<AuthAdapter> {
+  const url = process.env["DATABASE_URL"];
+  if (typeof url === "string" && url.trim().length > 0) {
+    const { createPostgresAuthAdapter } = await import("@/lib/auth/pg-auth.server");
+    return createPostgresAuthAdapter();
+  }
+  return createSupabaseAuthAdapterImpl();
+}
+
+function createSupabaseAuthAdapterImpl(): AuthAdapter {
   return {
     async readBootstrapState() {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
