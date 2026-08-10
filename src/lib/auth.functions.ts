@@ -20,6 +20,44 @@ const changePasswordSchema = z.object({
     .refine((v) => /[A-Za-z]/.test(v) && /[0-9]/.test(v), "Mật khẩu phải gồm cả chữ và số."),
 });
 
+const setPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, "Mật khẩu tối thiểu 8 ký tự.")
+    .max(72)
+    .refine((v) => /[A-Za-z]/.test(v) && /[0-9]/.test(v), "Mật khẩu phải gồm cả chữ và số."),
+});
+
+const displayNameSchema = z.object({
+  displayName: z.string().trim().min(1, "Vui lòng nhập tên hiển thị.").max(80),
+});
+
+export const cenSetPassword = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => setPasswordSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { getCookie } = await import("@tanstack/react-start/server");
+    const { resolveSession, SESSION_COOKIE } = await import("@/lib/auth/session.server");
+    const { setOwnPassword } = await import("@/lib/auth/pg-auth.server");
+
+    const session = await resolveSession(getCookie(SESSION_COOKIE));
+    if (!session) throw new Error("Phiên đăng nhập đã hết hạn.");
+    await setOwnPassword(session.userId, data.password);
+    return { ok: true as const };
+  });
+
+export const cenSetDisplayName = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => displayNameSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { getCookie } = await import("@tanstack/react-start/server");
+    const { resolveSession, SESSION_COOKIE } = await import("@/lib/auth/session.server");
+    const { setOwnDisplayName } = await import("@/lib/auth/pg-auth.server");
+
+    const session = await resolveSession(getCookie(SESSION_COOKIE));
+    if (!session) throw new Error("Phiên đăng nhập đã hết hạn.");
+    await setOwnDisplayName(session.userId, data.displayName);
+    return { ok: true as const };
+  });
+
 export const cenLogin = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => loginSchema.parse(input))
   .handler(async ({ data }) => {
