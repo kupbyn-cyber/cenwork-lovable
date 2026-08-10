@@ -6,6 +6,7 @@ import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
 import { CEN_TIMEZONE, formatHanoiDate, hanoiStartOfDayMs } from "@/lib/datetime";
 import { maskName, primeLockedIdentity } from "@/lib/member-identity";
+import { NO_NOTE_TEXT, formatDailyItemLine } from "@/lib/daily-report-content";
 
 /**
  * CEN 1.0 — M4 Reports data layer.
