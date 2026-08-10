@@ -39,6 +39,42 @@ export async function verifyCredentials(
   return { userId: found.id };
 }
 
+/**
+ * Đặt lại mật khẩu cho chính người dùng đang đăng nhập (đã xác thực bằng phiên).
+ * Không hủy phiên hiện tại để người dùng không bị đăng xuất giữa chừng.
+ */
+export async function setOwnPassword(userId: string, nextPassword: string): Promise<void> {
+  const encrypted = await hashPassword(nextPassword);
+  await withPrivileged(async (client) => {
+    await client.query(
+      "UPDATE auth.users SET encrypted_password = $2, updated_at = now() WHERE id = $1",
+      [userId, encrypted],
+    );
+    await client.query(
+      "UPDATE public.profiles SET must_change_password = false, updated_at = now() WHERE id = $1",
+      [userId],
+    );
+  });
+}
+
+/** Cập nhật tên hiển thị của chính người dùng đang đăng nhập. */
+export async function setOwnDisplayName(userId: string, displayName: string): Promise<void> {
+  await withPrivileged(async (client) => {
+    await client.query(
+      "UPDATE public.profiles SET display_name = $2, updated_at = now() WHERE id = $1",
+      [userId, displayName],
+    );
+    await client.query(
+      `UPDATE auth.users
+          SET raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+                                   || jsonb_build_object('display_name', $2::text),
+              updated_at = now()
+        WHERE id = $1`,
+      [userId, displayName],
+    );
+  });
+}
+
 export async function changePassword(
   userId: string,
   currentPassword: string,
