@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 import { EMPTY_REVIEWER_DIRECTORY, type ReviewerDirectory } from "@/lib/report-data";
 
 interface DirectoryRow {

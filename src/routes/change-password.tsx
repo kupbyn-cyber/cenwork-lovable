@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { cenToast } from "@/components/ui/toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 /**
  * CEN WORK — Đổi mật khẩu bắt buộc sau lần đăng nhập đầu tiên.

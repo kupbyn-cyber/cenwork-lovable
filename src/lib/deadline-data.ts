@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 /**
  * CEN 1.0 — Yêu cầu thay đổi deadline (Task và Dự án).

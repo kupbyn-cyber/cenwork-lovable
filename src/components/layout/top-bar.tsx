@@ -21,7 +21,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cenToast } from "@/components/ui/toast";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
 import { logSelfAuditEvent } from "@/lib/audit-data";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/cen/client";
 
 /**
  * CEN 1.0 — Top Bar (M1.2 + M1.3)

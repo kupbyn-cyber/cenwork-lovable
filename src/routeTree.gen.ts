@@ -39,6 +39,7 @@ import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_au
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks.index'
 import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenticated/tasks.$taskId'
+import { Route as ApiFilesSplatRouteImport } from './routes/api/files.$'
 import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
 import { Route as AuthenticatedReportsDocReportIdRouteImport } from './routes/_authenticated/reports.doc.$reportId'
 import { Route as AuthenticatedReportsWeeklyReportIdRouteImport } from './routes/_authenticated/reports.weekly.$reportId'
@@ -208,6 +209,11 @@ const AuthenticatedTasksTaskIdRoute =
     path: '/tasks/$taskId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
+  id: '/api/files/$',
+  path: '/api/files/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedReportsDailyReportIdRoute =
   AuthenticatedReportsDailyReportIdRouteImport.update({
     id: '/reports/daily/$reportId',
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/files/$': typeof ApiFilesSplatRoute
   '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
@@ -291,6 +298,7 @@ export interface FileRoutesByTo {
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/files/$': typeof ApiFilesSplatRoute
   '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
   '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/files/$': typeof ApiFilesSplatRoute
   '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
@@ -365,6 +374,7 @@ export interface FileRouteTypes {
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/api/files/$'
     | '/announcements/'
     | '/approvals/'
     | '/documents/'
@@ -400,6 +410,7 @@ export interface FileRouteTypes {
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/api/files/$'
     | '/announcements'
     | '/approvals'
     | '/documents'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mvp/$cycleId'
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
+    | '/api/files/$'
     | '/_authenticated/announcements/'
     | '/_authenticated/approvals/'
     | '/_authenticated/documents/'
@@ -454,6 +466,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiPublicHooksTelegramDispatchRoute: typeof ApiPublicHooksTelegramDispatchRoute
 }
 
@@ -669,6 +682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTasksTaskIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/files/$': {
+      id: '/api/files/$'
+      path: '/api/files/$'
+      fullPath: '/api/files/$'
+      preLoaderRoute: typeof ApiFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/reports/daily/$reportId': {
       id: '/_authenticated/reports/daily/$reportId'
       path: '/reports/daily/$reportId'
@@ -775,18 +795,9 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiPublicHooksTelegramDispatchRoute: ApiPublicHooksTelegramDispatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
