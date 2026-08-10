@@ -7,7 +7,6 @@
  *
  * Mọi module nghiệp vụ chỉ import `supabase` từ đây — không import trực tiếp SDK.
  */
-import { supabase as legacyClient } from "@/integrations/supabase/client";
 import {
   cenCurrentUser,
   cenLogin,
