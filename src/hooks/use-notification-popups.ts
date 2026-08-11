@@ -24,7 +24,6 @@ export function useNotificationPopups() {
   const userId = user?.id ?? null;
 
   const [items, setItems] = React.useState<PopupItem[]>([]);
-  const [overflow, setOverflow] = React.useState(0);
 
   // Bộ nhớ theo phiên: đã popup rồi thì không popup lại (remount, đổi trang,
   // refetch, reconnect đều dùng chung ref này).
@@ -36,7 +35,6 @@ export function useNotificationPopups() {
     seen.current = new Set();
     baseline.current = null;
     setItems([]);
-    setOverflow(0);
   }, [userId]);
 
   const query = useQuery({
@@ -78,7 +76,7 @@ export function useNotificationPopups() {
     setItems((prev) => prev.filter((item) => item.row.id !== id));
   }, []);
 
-  const clearOverflow = React.useCallback(() => setOverflow(0), []);
+  const dismissAll = React.useCallback(() => setItems([]), []);
 
-  return { items, overflow, setOverflow, dismiss, clearOverflow };
+  return { items, dismiss, dismissAll };
 }
