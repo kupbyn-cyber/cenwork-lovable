@@ -461,6 +461,25 @@ function MembersPage() {
         }
       />
 
+      {/* WORKDAY-02: tab Ngày làm việc chỉ hiện với vai trò quản lý nhân sự (Leader/CMO/Admin). */}
+      {access.isSystemAdmin || access.isLeader ? (
+        <Tabs value={mainTab} onValueChange={(value) => setMainTab(value as "list" | "workday")}>
+          <TabsList>
+            <TabsTrigger value="list">Danh sách</TabsTrigger>
+            <TabsTrigger value="workday">Ngày làm việc</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
+
+      {mainTab === "workday" && (access.isSystemAdmin || access.isLeader) ? (
+        <WorkdayStatsPanel
+          teams={teams}
+          canFilterTeam={access.isSystemAdmin}
+          canAdjust={access.isSystemAdmin || access.isLeader}
+          defaultTeamId={access.leaderTeamId}
+        />
+      ) : (
+        <>
       {access.isAdmin ? (
         <Tabs value={tab} onValueChange={(value) => setTab(value as "active" | "archived")}>
           <TabsList>
