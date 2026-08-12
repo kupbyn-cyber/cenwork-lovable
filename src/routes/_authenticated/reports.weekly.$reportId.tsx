@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ReviewActions } from "@/components/report/review-actions";
+import { ReportReviewBlock } from "@/components/report/report-review-block";
 import { WeeklyReportDrawer } from "@/components/report/weekly-report-drawer";
 import { RecognitionStatsPanel } from "@/components/recognition/recognition-stats-panel";
 
@@ -23,11 +23,13 @@ import {
   addDays,
   canEditWeekly,
   canReviewWeekly,
+  canTakeoverReview,
   dailyReportsQuery,
   formatWeekLabel,
   formatWeekTitle,
   weeklyReportTitle,
   reportHistoryQuery,
+  resolveWeeklyReviewerId,
   reviewWeeklyReport,
   weeklyReportQuery,
 } from "@/lib/report-data";
@@ -106,6 +108,12 @@ function WeeklyReportDetail() {
   };
   const editable = canEditWeekly(report, ctx);
   const reviewable = canReviewWeekly(report, ctx, directory);
+  const takeover = canTakeoverReview(report, ctx, reviewable);
+  const reviewerId = resolveWeeklyReviewerId(report, directory);
+  const assignedReviewerName =
+    report.reviewerName ??
+    directory.members.find((member) => member.id === reviewerId)?.display_name ??
+    null;
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -183,16 +191,19 @@ function WeeklyReportDetail() {
             <CardContent className="flex flex-col gap-3">
               <Block title="Người duyệt" value={report.reviewerName} />
               <Block title="Nhận xét" value={report.review_note} />
-              {reviewable ? (
-                <ReviewActions
-                  onReview={(decision, note) => reviewWeeklyReport(report.id, decision, note)}
-                  invalidateKeys={[
-                    ["weekly-report", report.id],
-                    ["weekly-reports"],
-                    ["report-history", "weekly_report", report.id],
-                  ]}
-                />
-              ) : null}
+              <ReportReviewBlock
+                kind="weekly"
+                reportId={report.id}
+                reviewable={reviewable}
+                takeover={takeover}
+                reviewerName={assignedReviewerName}
+                onReview={(decision, note) => reviewWeeklyReport(report.id, decision, note)}
+                invalidateKeys={[
+                  ["weekly-report", report.id],
+                  ["weekly-reports"],
+                  ["report-history", "weekly_report", report.id],
+                ]}
+              />
             </CardContent>
           </Card>
         </div>
