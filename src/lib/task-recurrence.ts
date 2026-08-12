@@ -5,8 +5,29 @@
  */
 import { queryOptions } from "@tanstack/react-query";
 
-import { supabase } from "@/integrations/cen/client";
+import { supabase as typedClient } from "@/integrations/cen/client";
 import type { TaskPriority, TaskReviewerKind } from "@/lib/task-data";
+
+/** Bảng/RPC lịch lặp mới chưa có trong types sinh tự động. */
+const supabase = typedClient as unknown as {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (
+        column: string,
+        value: string,
+      ) => {
+        maybeSingle: () => Promise<{
+          data: Record<string, unknown> | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
 
 export type TaskRecurrenceFreq = "daily" | "weekly" | "monthly";
 export type TaskRecurrenceStatus = "active" | "stopped" | "archived";
@@ -99,7 +120,7 @@ export async function fetchTaskRecurrence(ruleId: string): Promise<TaskRecurrenc
     .eq("id", ruleId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapRule(data as Record<string, unknown>) : null;
+  return data ? mapRule(data) : null;
 }
 
 export const taskRecurrenceQuery = (ruleId: string | null) =>
