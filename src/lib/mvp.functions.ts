@@ -128,10 +128,10 @@ export const setCycleStatus = createServerFn({ method: "POST" })
 
     // MVP-FIX-02: chốt ảnh chụp lần cuối TRƯỚC khi khóa dữ liệu.
     // Nếu bước này lỗi, kỳ không được chuyển sang trạng thái khóa.
-    let lockSnapshot: Record<string, unknown> | null = null;
+    let lockSnapshot: string | null = null;
     if (data.status === "reviewing" && !cycle.data_locked_at) {
       const result = await syncCycleTaskSnapshot(context.supabase, cycle as Record<string, unknown>);
-      lockSnapshot = { ...result };
+      lockSnapshot = JSON.stringify(result);
     }
 
     const voteCloses = new Date();
