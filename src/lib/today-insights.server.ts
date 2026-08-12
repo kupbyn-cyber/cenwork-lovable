@@ -203,11 +203,10 @@ export async function buildTodayInsights(
   wave.push(source("daily_reports", async () => {
     const { data, error } = await supabase
       .from("daily_reports")
-      .select("author_id,status")
+      .select("author_id,status,report_date")
       .gte("report_date", rangeStartDate)
       .lt("report_date", rangeEndDate)
-      .limit(5000)
-      .select("author_id,status,report_date");
+      .limit(5000);
     check(error);
     dailyRangeRows = (data ?? []) as DailyRow[];
     for (const row of dailyRangeRows) {
