@@ -22,7 +22,6 @@ import { AnnouncementAckCard } from "@/components/announcement/announcement-ack-
 import { SystemNotificationCard } from "@/components/announcement/system-notification-card";
 import { AnnouncementModuleTabs } from "@/components/announcement/module-tabs";
 import { ModuleCreateActions } from "@/components/announcement/module-create-actions";
-import { ApprovalFormDrawer } from "@/components/approval/approval-form-drawer";
 import { NapStatsCards } from "@/components/announcement/nap-stats-cards";
 
 import { EmptyState } from "@/components/ui/empty-state";
@@ -95,7 +94,6 @@ function AnnouncementsPage() {
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [approvalOpen, setApprovalOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AnnouncementRow | null>(null);
   const [openCardId, setOpenCardId] = React.useState<string | null>(null);
   const [detailRow, setDetailRow] = React.useState<InboxRow | null>(null);
@@ -453,7 +451,6 @@ function AnnouncementsPage() {
         announcement={editing}
       />
 
-      <ApprovalFormDrawer open={approvalOpen} onOpenChange={setApprovalOpen} />
 
       <AnnouncementDetailModal
         row={detailRow}
