@@ -783,13 +783,21 @@ export function proposeMvpAwards(candidates: MvpAwardCandidate[]): MvpAwardPropo
   ];
 
   return rules.map((rule) => {
-    const best = pickBest(eligible, rule.metric);
+    // Danh hiệu MVP (Chiến binh MVP) chỉ đề xuất khi đạt ngưỡng tối thiểu.
+    const pool =
+      rule.awardType === "mvp"
+        ? eligible.filter((candidate) => candidate.totalScore >= MVP_ELIGIBLE_THRESHOLD)
+        : eligible;
+    const best = pickBest(pool, rule.metric);
     if (!best) {
       return {
         awardType: rule.awardType,
         recipientId: null,
         awardScore: null,
-        reason: "Không đủ dữ liệu hợp lệ để trao danh hiệu kỳ này",
+        reason:
+          rule.awardType === "mvp"
+            ? `Chưa có nhân sự đạt tối thiểu ${MVP_ELIGIBLE_THRESHOLD} điểm để trao Chiến binh MVP`
+            : "Không đủ dữ liệu hợp lệ để trao danh hiệu kỳ này",
       };
     }
     return {
