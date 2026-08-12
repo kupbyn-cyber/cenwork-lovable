@@ -162,7 +162,7 @@ function ProjectsPage() {
   const isMobile = useIsMobile();
 
   const projectsResult = useQuery(projectsQuery());
-  const tasksResult = useQuery(tasksQuery());
+  const overviewResult = useQuery(projectTaskOverviewQuery());
   const approvalsResult = useQuery(allProjectApprovalsQuery());
   const teamsResult = useQuery(teamsQuery());
   const facilitiesResult = useQuery(facilitiesQuery());
@@ -199,7 +199,6 @@ function ProjectsPage() {
   const [taskDeleteTarget, setTaskDeleteTarget] = React.useState<TaskRow | null>(null);
 
   const projects = React.useMemo(() => projectsResult.data ?? [], [projectsResult.data]);
-  const allTasks = React.useMemo(() => tasksResult.data ?? [], [tasksResult.data]);
   const teams = teamsResult.data ?? [];
   const facilities = facilitiesResult.data ?? [];
   const people = peopleResult.data ?? [];
@@ -213,9 +212,15 @@ function ProjectsPage() {
     [access.userId, access.leaderTeamId, myPrimaryTeamId],
   );
 
-  /** KPI Task và Task con: tính từ MỘT query tasks duy nhất (không N+1). */
-  const statsByProject = React.useMemo(() => buildProjectTaskStats(allTasks), [allTasks]);
-  const tasksByProject = React.useMemo(() => groupTasksByProject(allTasks), [allTasks]);
+  /**
+   * CEN-PERF-05 — KPI Task lấy từ một aggregate ở database (không tải Task rows).
+   * Task chi tiết chỉ được tải khi người dùng mở rộng từng dự án.
+   */
+  const statsByProject = overviewResult.data?.stats ?? {};
+  const mineProjectIds = React.useMemo(
+    () => overviewResult.data?.mineProjectIds ?? new Set<string>(),
+    [overviewResult.data],
+  );
 
   const ctx: ProjectAccessContext = {
     userId: access.userId,
@@ -226,8 +231,16 @@ function ProjectsPage() {
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["projects"] });
-    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["project-approvals-all"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+  };
+
+  /** Sau mutation Task: chỉ làm mới Task của đúng dự án đó và bảng tổng hợp KPI. */
+  const refreshProjectTasks = (projectId: string | null | undefined) => {
+    if (projectId) void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
     void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
