@@ -20,6 +20,8 @@ import {
  * Helper quyền ở đây chỉ để UI ẩn/disable đúng, không thay thế kiểm tra backend.
  */
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
+import { normalizeTaskWeight, type TaskWorkWeight } from "@/lib/task-weight";
+
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];
 export type TaskApprovalStatus = Database["public"]["Enums"]["task_approval_status"];
 
@@ -87,6 +89,8 @@ export interface TaskRow {
   start_date: string | null;
   deadline: string;
   priority: TaskPriority;
+  /** MVP-FIX-03 — Trọng số công việc (1/2/3/5), độc lập với Mức ưu tiên. */
+  work_weight: TaskWorkWeight;
   status: TaskStatus;
   is_archived: boolean;
   completed_at: string | null;
@@ -172,7 +176,7 @@ export const taskReviewerOptionsQuery = (projectId: string | null) =>
  * nhưng không còn 7 truy vấn con chạy lại cho từng dòng.
  */
 const SELECT = `
-  id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
+  id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,work_weight,status,
   is_archived,completed_at,manually_archived_at,manually_archived_by,
   cancelled_at,cancelled_by,cancel_reason,
   result_text,result_updated_at,result_updated_by,
@@ -245,6 +249,7 @@ function mapTask(raw: RawTask, participantMap?: ParticipantMap): TaskRow {
     start_date: (raw["start_date"] as string | null) ?? null,
     deadline: raw["deadline"] as string,
     priority: raw["priority"] as TaskPriority,
+    work_weight: normalizeTaskWeight(raw["work_weight"]),
     status: raw["status"] as TaskStatus,
     is_archived: Boolean(raw["is_archived"]),
     completed_at: (raw["completed_at"] as string | null) ?? null,
@@ -583,6 +588,7 @@ export interface TaskSubmissionInput {
   startDate: string | null;
   deadline: string;
   priority: TaskPriority;
+  workWeight: TaskWorkWeight;
   participantIds: string[];
   reviewerType: TaskReviewerKind;
   reviewerId: string;
@@ -600,6 +606,7 @@ export async function submitTaskForApproval(input: TaskSubmissionInput) {
     _start_date: (input.startDate ?? null) as unknown as string,
     _deadline: input.deadline,
     _priority: input.priority,
+    _work_weight: input.workWeight,
     _participants: input.participantIds,
     _reviewer_type: input.reviewerType,
     _reviewer: input.reviewerId,
@@ -640,6 +647,7 @@ export interface TaskInput {
   startDate: string | null;
   deadline: string;
   priority: TaskPriority;
+  workWeight: TaskWorkWeight;
   status: TaskStatus;
   reviewerType?: TaskReviewerKind | null;
   reviewerId?: string | null;
@@ -657,6 +665,7 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
       start_date: input.startDate,
       deadline: input.deadline,
       priority: input.priority,
+      work_weight: input.workWeight,
       status: input.status,
       created_by: input.createdBy,
       reviewer_type: input.reviewerType ?? null,
@@ -680,6 +689,7 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
   if (input.startDate !== undefined) payload.start_date = input.startDate;
   if (input.deadline !== undefined) payload.deadline = input.deadline;
   if (input.priority !== undefined) payload.priority = input.priority;
+  if (input.workWeight !== undefined) payload.work_weight = input.workWeight;
   if (input.status !== undefined) payload.status = input.status;
   if (input.reviewerType !== undefined) payload.reviewer_type = input.reviewerType;
   if (input.reviewerId !== undefined) payload.reviewer_id = input.reviewerId;
