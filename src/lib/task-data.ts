@@ -116,6 +116,9 @@ export interface TaskRow {
   cancelled_at: string | null;
   cancelled_by: string | null;
   cancel_reason: string | null;
+  /** TASK-RECUR-01 — Task được sinh tự động từ lịch lặp. */
+  recurrence_rule_id: string | null;
+  occurrence_date: string | null;
 }
 
 /* ================= Người duyệt Task ================= */
@@ -168,7 +171,7 @@ const SELECT = `
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
-  reviewer_type,reviewer_id,
+  reviewer_type,reviewer_id,recurrence_rule_id,occurrence_date,
   project:projects(id,name,owner_id,manually_archived_at,responsible_team_id),
   assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
   creator:profiles!tasks_created_by_fkey(id,display_name),
@@ -262,6 +265,8 @@ function mapTask(raw: RawTask): TaskRow {
     cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
     cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
     cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
+    recurrence_rule_id: (raw["recurrence_rule_id"] as string | null) ?? null,
+    occurrence_date: (raw["occurrence_date"] as string | null) ?? null,
   };
 }
 
@@ -275,7 +280,7 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     .or("approval_status.eq.approved,cancelled_at.not.is.null")
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
 }
 
 /**
@@ -292,7 +297,7 @@ export async function fetchTaskApprovals(): Promise<TaskRow[]> {
     .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
 }
 
 export const taskApprovalsQuery = () =>
@@ -307,7 +312,7 @@ export async function fetchTask(id: string): Promise<TaskRow | null> {
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapTask(data as RawTask) : null;
+  return data ? mapTask(data as unknown as RawTask) : null;
 }
 
 export const tasksQuery = () => queryOptions({ queryKey: ["tasks"], queryFn: fetchTasks });

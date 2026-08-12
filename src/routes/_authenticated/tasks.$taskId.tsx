@@ -48,6 +48,7 @@ import {
 import { TaskCompleteDialog } from "@/components/task/task-complete-dialog";
 import { TaskCancelDialog } from "@/components/task/task-cancel-dialog";
 import { TaskFormDrawer } from "@/components/task/task-form-drawer";
+import { TaskRecurrenceBlock } from "@/components/task/task-recurrence-block";
 import { cn } from "@/lib/utils";
 import { useFlashHighlight } from "@/hooks/use-flash-highlight";
 import { useOrgAccess } from "@/hooks/use-org-access";
@@ -341,6 +342,8 @@ function TaskDetailPage() {
       />
 
       <TaskNextActionsCard actions={nextActions} />
+
+      {task.recurrence_rule_id ? <TaskRecurrenceBlock ruleId={task.recurrence_rule_id} /> : null}
 
       <TaskOverviewCard
         task={task}
