@@ -154,6 +154,37 @@ function projectBucket(project: ProjectRow): ProjectView {
   return "active";
 }
 
+/**
+ * CEN-PERF-05 — Task của một dự án, tải khi accordion mở (component chỉ mount lúc đó).
+ * Lỗi hoặc loading chỉ ảnh hưởng trong phạm vi accordion này.
+ */
+function ProjectTaskSection({
+  projectId,
+  render,
+}: {
+  projectId: string;
+  render: (tasks: TaskRow[]) => React.ReactNode;
+}) {
+  const result = useQuery(projectTasksQuery(projectId));
+  if (result.isPending) {
+    return (
+      <div className="flex flex-col gap-2 py-1">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    );
+  }
+  if (result.isError) {
+    return (
+      <ErrorState
+        title="Không tải được công việc của dự án"
+        onRetry={() => void result.refetch()}
+      />
+    );
+  }
+  return <>{render(result.data ?? [])}</>;
+}
+
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
