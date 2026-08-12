@@ -283,8 +283,7 @@ export async function buildTodayHub(
       const canReview =
         task.status === "review" &&
         task.assignee_id !== userId &&
-        (task.created_by === userId ||
-          (leaderTeamId !== null && task.team_id === leaderTeamId));
+        (task.created_by === userId || (leaderTeamId !== null && task.team_id === leaderTeamId));
       if (canReview) {
         rows.push(
           item({
@@ -326,8 +325,7 @@ export async function buildTodayHub(
           module: "project",
           objectId: project.id,
           title: project.name,
-          summary:
-            stage === "leader" ? "Chờ duyệt ở bước Leader." : "Chờ duyệt ở bước CMO.",
+          summary: stage === "leader" ? "Chờ duyệt ở bước Leader." : "Chờ duyệt ở bước CMO.",
           reason: "awaiting_my_approval",
           createdAt: project.submitted_at ?? project.created_at,
           route: `/projects/${project.id}`,
@@ -394,10 +392,9 @@ export async function buildTodayHub(
     }
 
     if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY) && !privileged) {
-      const mineToday = list.find(
-        (row) => row.author_id === userId && row.report_date === today,
-      );
-      const done = mineToday && (mineToday.status === "submitted" || mineToday.status === "approved");
+      const mineToday = list.find((row) => row.author_id === userId && row.report_date === today);
+      const done =
+        mineToday && (mineToday.status === "submitted" || mineToday.status === "approved");
       if (!done && !(mineToday && mineToday.status === "changes_requested")) {
         rows.push(
           item({
@@ -465,9 +462,7 @@ export async function buildTodayHub(
     }
 
     if (leaderTeamId && can(PERMISSIONS.REPORTS_SUBMIT_WEEKLY)) {
-      const mine = list.find(
-        (row) => row.team_id === leaderTeamId && row.week_start === thisWeek,
-      );
+      const mine = list.find((row) => row.team_id === leaderTeamId && row.week_start === thisWeek);
       const done = mine && (mine.status === "submitted" || mine.status === "approved");
       if (!done && !(mine && mine.status === "changes_requested")) {
         rows.push(

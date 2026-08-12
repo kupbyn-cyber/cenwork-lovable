@@ -16,11 +16,7 @@ export const getTodayInsights = createServerFn({ method: "POST" })
     // PERF-02: vai trò và Team phụ trách là hai truy vấn độc lập — chạy song song.
     const [role, leaderTeam] = await Promise.all([
       resolveCallerRole(context.supabase, context.userId),
-      context.supabase
-        .from("teams")
-        .select("id")
-        .eq("leader_id", context.userId)
-        .maybeSingle(),
+      context.supabase.from("teams").select("id").eq("leader_id", context.userId).maybeSingle(),
     ]);
     return buildTodayInsights(context.supabase, context.userId, role, leaderTeam.data?.id ?? null, {
       start: new Date(data.startISO).getTime(),
