@@ -335,10 +335,19 @@ function ProjectsPage() {
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
       if (teamFilter !== ALL && !project.teamIds.includes(teamFilter)) return false;
       if (facilityFilter !== ALL && !project.facilityIds.includes(facilityFilter)) return false;
-      if (mineOnly && !isProjectMine(project, mineScope, allTasks)) return false;
+      if (mineOnly && !isProjectMine(project, mineScope, mineProjectIds)) return false;
       return true;
     },
-    [search, statusFilter, ownerFilter, teamFilter, facilityFilter, mineOnly, mineScope, allTasks],
+    [
+      search,
+      statusFilter,
+      ownerFilter,
+      teamFilter,
+      facilityFilter,
+      mineOnly,
+      mineScope,
+      mineProjectIds,
+    ],
   );
 
   const counts = React.useMemo(() => {
