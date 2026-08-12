@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/select";
 import { cenToast } from "@/components/ui/toast";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { RecurrenceFields, defaultSchedule } from "@/components/task/recurrence-fields";
+import {
+  RECURRENCE_FREQ_LABEL,
+  RECURRENCE_FREQ_ORDER,
+  createTaskRecurrence,
+  type RecurrenceSchedule,
+  type TaskRecurrenceFreq,
+} from "@/lib/task-recurrence";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
 import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
@@ -144,6 +152,12 @@ export function TaskFormDrawer({
   );
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  /** TASK-RECUR-01 — chỉ mở khi tạo mới theo luồng thường; mặc định Không lặp. */
+  const [repeat, setRepeat] = React.useState<"none" | TaskRecurrenceFreq>("none");
+  const [schedule, setSchedule] = React.useState<RecurrenceSchedule>(() =>
+    defaultSchedule("daily", "", "17:00"),
+  );
+  const [recurError, setRecurError] = React.useState<string | undefined>(undefined);
   /** Dòng thông báo "Đã áp dụng từ bộ lọc": ẩn sau khi người dùng xóa giá trị tự điền. */
   const [prefillApplied, setPrefillApplied] = React.useState(false);
   const nameWarning = getTaskNameWarning(form.name);
@@ -154,6 +168,8 @@ export function TaskFormDrawer({
       setPrefillApplied(task === null && hasPrefill(prefill));
       setErrors({});
       setFormError(null);
+      setRepeat("none");
+      setRecurError(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task, lockedProjectId]);
@@ -263,6 +279,22 @@ export function TaskFormDrawer({
       }
 
       if (isCreate) {
+        if (repeat !== "none") {
+          const created = await createTaskRecurrence({
+            name: payload.name,
+            description: payload.description,
+            projectId: payload.projectId,
+            assigneeId: payload.assigneeId,
+            teamId: payload.teamId,
+            participantIds: state.participantIds,
+            priority: payload.priority,
+            reviewerType: selectedReviewer?.kind ?? null,
+            reviewerId: selectedReviewer?.userId ?? null,
+            ...schedule,
+            freq: repeat,
+          });
+          return created.taskId ?? "";
+        }
         const id = await createTask({
           ...payload,
           createdBy: ctx.userId!,
@@ -350,8 +382,36 @@ export function TaskFormDrawer({
     event.preventDefault();
     if (mutation.isPending) return;
     setFormError(null);
+    setRecurError(undefined);
     const nextErrors = validate(form);
     setErrors(nextErrors);
+    if (repeat !== "none") {
+      // Deadline của Task lặp do lịch quyết định → bỏ qua lỗi ngày deadline một lần.
+      delete nextErrors.deadlineDate;
+      if (!schedule.startDate) {
+        setRecurError("Chọn ngày bắt đầu lịch lặp.");
+        return;
+      }
+      if (!schedule.deadlineTime) {
+        setRecurError("Chọn giờ deadline mỗi kỳ.");
+        return;
+      }
+      if (repeat === "weekly" && schedule.weekdays.length === 0) {
+        setRecurError("Chọn ít nhất một thứ trong tuần.");
+        return;
+      }
+      if (
+        repeat === "monthly" &&
+        (schedule.monthDay === null || schedule.monthDay < 1 || schedule.monthDay > 31)
+      ) {
+        setRecurError("Chọn ngày lặp trong tháng (1–31).");
+        return;
+      }
+      if (schedule.endDate && schedule.endDate < schedule.startDate) {
+        setRecurError("Ngày kết thúc không được trước ngày bắt đầu.");
+        return;
+      }
+    }
     if (Object.keys(nextErrors).length > 0) return;
     if (missingTeam) {
       setFormError("Dự án chưa có Team phụ trách. Vui lòng liên hệ Admin/CMO để cập nhật.");
@@ -718,6 +778,54 @@ export function TaskFormDrawer({
               />
             )}
           </FormField>
+        ) : null}
+
+        {isCreate && !memberFlow ? (
+          <div className="flex flex-col gap-4">
+            <FormField
+              id="task-repeat"
+              label="Lặp lại"
+              helperText="Công việc lặp sẽ được CEN tạo tự động theo từng kỳ."
+            >
+              {(control) => (
+                <Select
+                  value={repeat}
+                  onValueChange={(value) => {
+                    const next = value as "none" | TaskRecurrenceFreq;
+                    setRepeat(next);
+                    setRecurError(undefined);
+                    if (next !== "none") {
+                      setSchedule((prev) => ({
+                        ...prev,
+                        freq: next,
+                        startDate: prev.startDate || form.startDate || form.deadlineDate,
+                        deadlineTime: prev.deadlineTime || form.deadlineTime || "17:00",
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger {...control} aria-label="Lặp lại">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Không lặp</SelectItem>
+                    {RECURRENCE_FREQ_ORDER.map((freq) => (
+                      <SelectItem key={freq} value={freq}>
+                        {RECURRENCE_FREQ_LABEL[freq]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormField>
+            {repeat !== "none" ? (
+              <RecurrenceFields
+                value={{ ...schedule, freq: repeat }}
+                onChange={setSchedule}
+                error={recurError}
+              />
+            ) : null}
+          </div>
         ) : null}
       </form>
     </Modal>
