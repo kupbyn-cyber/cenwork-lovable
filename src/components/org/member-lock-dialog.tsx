@@ -38,6 +38,8 @@ export function MemberLockDialog({
     onSuccess: () => {
       resetLockedIdentity();
       void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: ["active-people"] });
+      void queryClient.invalidateQueries({ queryKey: ["reviewer-directory"] });
       cenToast.success("Đã khóa và chuyển tài khoản vào lưu trữ.");
       onOpenChange(false);
     },
