@@ -51,6 +51,7 @@ import {
   syncTaskParticipants,
   taskReviewerOptionsQuery,
   updateTask,
+  invalidateProjectTaskScope,
   type TaskAccessContext,
   type TaskPriority,
   type TaskReviewerKind,
