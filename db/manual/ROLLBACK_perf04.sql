@@ -1,0 +1,11 @@
+-- MANUAL-ONLY — KHÔNG nằm trong luồng auto-apply (db/migrations, db/repair).
+-- Rollback ĐẦY ĐỦ CEN-PERF-04 / PERF-04.1 phải gồm CẢ HAI bước:
+--   1) tasks_select_scoped        -> bản 0136 (db/repair/0007)
+--   2) task_participants_visible  -> bản 0135 (db/repair/0006)
+-- Chạy db/repair/0007 một mình KHÔNG phải rollback hoàn chỉnh:
+-- nó chỉ khôi phục policy, không khôi phục function participant.
+-- Index idx_task_participants_user có thể giữ lại (không đổi semantics).
+--
+-- Cách chạy thủ công trên production:
+--   psql "$DATABASE_URL" -f db/repair/0007_tasks_select_policy_fast.sql
+--   psql "$DATABASE_URL" -f db/repair/0006_task_participants_visible.sql
