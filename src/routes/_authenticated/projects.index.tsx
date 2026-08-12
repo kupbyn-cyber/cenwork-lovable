@@ -791,8 +791,9 @@ function ProjectsPage() {
     return renderTaskList(project);
   };
 
-  const loading = projectsResult.isLoading || tasksResult.isLoading;
-  const errored = projectsResult.isError || tasksResult.isError;
+  // Danh sách dự án không chờ Task: KPI đến sau vẫn không chặn hiển thị.
+  const loading = projectsResult.isLoading;
+  const errored = projectsResult.isError;
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -916,7 +917,7 @@ function ProjectsPage() {
           title="Không tải được danh sách dự án"
           onRetry={() => {
             void projectsResult.refetch();
-            void tasksResult.refetch();
+            void overviewResult.refetch();
           }}
         />
       ) : visibleRows.length === 0 ? (
