@@ -243,7 +243,8 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase
         .from("mvp_cycle_tasks")
         .select(
-          "task_id,user_id,weight,is_committed,original_deadline,final_status,final_completed_at",
+          "task_id,user_id,weight,is_committed,original_deadline,final_status,final_completed_at," +
+            "task:tasks(id,name)",
         )
         .eq("cycle_id", cycleId)
         .is("excluded_at", null),
@@ -267,7 +268,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase.from("mvp_votes").select("votee_id").eq("cycle_id", cycleId).eq("is_valid", true),
       supabase
         .from("mvp_manual_reviews")
-        .select("subject_id,quality_score,proactive_score,impact_score,teamwork_score")
+        .select(
+          "subject_id,reviewer_id,quality_score,proactive_score,impact_score,teamwork_score," +
+            "reason,evidence,submitted_at,reviewer:profiles!mvp_manual_reviews_reviewer_id_fkey(id,display_name)",
+        )
         .eq("cycle_id", cycleId)
         .eq("status", "submitted"),
       // Bonus đóng góp đặc biệt: chỉ tính phần đã được CMO duyệt.
@@ -333,7 +337,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     const completedAt = (raw["final_completed_at"] as string | null) ?? null;
     const deadline = raw["original_deadline"] as string;
     if (status === "done" && !completedAt) doneWithoutCompletedAt += 1;
+    const task = raw["task"] as { name?: string } | null;
     list.push({
+      taskId: raw["task_id"] as string,
+      ...(task?.name ? { title: task.name } : {}),
       weight: Number(raw["weight"] ?? 1),
       status,
       deadline,
@@ -376,12 +383,30 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     string,
     { quality: number; proactive: number; impact: number; teamwork: number }
   >();
+  const reviewMetaByUser = new Map<
+    string,
+    {
+      reviewerId: string | null;
+      reviewerName: string | null;
+      reason: string | null;
+      evidence: string | null;
+      submittedAt: string | null;
+    }
+  >();
   for (const row of (reviews.data ?? []) as Record<string, unknown>[]) {
     reviewByUser.set(row["subject_id"] as string, {
       quality: Number(row["quality_score"] ?? 0),
       proactive: Number(row["proactive_score"] ?? 0),
       impact: Number(row["impact_score"] ?? 0),
       teamwork: Number(row["teamwork_score"] ?? 0),
+    });
+    const reviewer = row["reviewer"] as { display_name?: string } | null;
+    reviewMetaByUser.set(row["subject_id"] as string, {
+      reviewerId: (row["reviewer_id"] as string | null) ?? null,
+      reviewerName: reviewer?.display_name ?? null,
+      reason: (row["reason"] as string | null) ?? null,
+      evidence: (row["evidence"] as string | null) ?? null,
+      submittedAt: (row["submitted_at"] as string | null) ?? null,
     });
   }
 
@@ -606,6 +631,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
+      reviewMeta: reviewMetaByUser.get(profile.id) ?? null,
       bonusScore: bonusByUser.get(profile.id) ?? 0,
       announcements: announcementsByUser.get(profile.id) ?? [],
       announcementLockAt,
@@ -629,6 +655,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     });
 
     for (const component of result.components) {
+      const computedAt = new Date().toISOString();
       componentRows.push({
         cycle_id: cycleId,
         user_id: profile.id,
@@ -636,7 +663,13 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         max_points: component.maxPoints,
         earned_points: component.earnedPoints,
         formula: component.formula,
-        source_data: component.sourceData,
+        source_data: {
+          ...component.sourceData,
+          // MVP-FIX-05 — trạng thái dữ liệu và mốc chốt để UI giải thích, không đổi công thức.
+          dataState: component.dataState ?? (component.isApplicable ? "ok" : "missing"),
+          computedAt,
+          lockedCycle: Boolean((cycle as Record<string, unknown>)["data_locked_at"]),
+        },
         is_applicable: component.isApplicable,
         not_applicable_reason: component.notApplicableReason,
       });

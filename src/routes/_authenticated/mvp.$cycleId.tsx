@@ -503,6 +503,15 @@ function MvpCycleDetailPage() {
         userId={detailFor?.user_id ?? null}
         userName={detailFor?.userName ?? ""}
         totalScore={detailFor?.total_score ?? 0}
+        teamName={detailFor?.teamName ?? null}
+        cycleLabel={
+          data ? `${formatHanoiDate(data.week_start)} – ${formatHanoiDate(data.week_end)}` : null
+        }
+        isLocked={Boolean(data?.data_locked_at)}
+        dataCompleteness={detailFor?.data_completeness ?? 0}
+        isEligible={detailFor?.is_eligible ?? true}
+        ineligibleReason={detailFor?.ineligible_reason ?? null}
+        penaltyScore={detailFor?.penalty_score ?? 0}
       />
     </div>
   );
