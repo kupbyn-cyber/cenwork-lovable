@@ -340,7 +340,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     const task = raw["task"] as { name?: string } | null;
     list.push({
       taskId: raw["task_id"] as string,
-      title: task?.name ?? null,
+      ...(task?.name ? { title: task.name } : {}),
       weight: Number(raw["weight"] ?? 1),
       status,
       deadline,
@@ -383,12 +383,30 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     string,
     { quality: number; proactive: number; impact: number; teamwork: number }
   >();
+  const reviewMetaByUser = new Map<
+    string,
+    {
+      reviewerId: string | null;
+      reviewerName: string | null;
+      reason: string | null;
+      evidence: string | null;
+      submittedAt: string | null;
+    }
+  >();
   for (const row of (reviews.data ?? []) as Record<string, unknown>[]) {
     reviewByUser.set(row["subject_id"] as string, {
       quality: Number(row["quality_score"] ?? 0),
       proactive: Number(row["proactive_score"] ?? 0),
       impact: Number(row["impact_score"] ?? 0),
       teamwork: Number(row["teamwork_score"] ?? 0),
+    });
+    const reviewer = row["reviewer"] as { display_name?: string } | null;
+    reviewMetaByUser.set(row["subject_id"] as string, {
+      reviewerId: (row["reviewer_id"] as string | null) ?? null,
+      reviewerName: reviewer?.display_name ?? null,
+      reason: (row["reason"] as string | null) ?? null,
+      evidence: (row["evidence"] as string | null) ?? null,
+      submittedAt: (row["submitted_at"] as string | null) ?? null,
     });
   }
 
@@ -613,6 +631,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
+      reviewMeta: reviewMetaByUser.get(profile.id) ?? null,
       bonusScore: bonusByUser.get(profile.id) ?? 0,
       announcements: announcementsByUser.get(profile.id) ?? [],
       announcementLockAt,
