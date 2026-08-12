@@ -113,7 +113,7 @@ export const setCycleStatus = createServerFn({ method: "POST" })
 
     const { data: cycle, error: readError } = await context.supabase
       .from("mvp_cycles")
-      .select("id,status")
+      .select("id,status,week_start,week_end,data_locked_at")
       .eq("id", data.cycleId)
       .single();
     if (readError || !cycle) throw new Error(readError?.message ?? "Không tìm thấy kỳ MVP.");
@@ -125,6 +125,15 @@ export const setCycleStatus = createServerFn({ method: "POST" })
     }
 
     const now = new Date().toISOString();
+
+    // MVP-FIX-02: chốt ảnh chụp lần cuối TRƯỚC khi khóa dữ liệu.
+    // Nếu bước này lỗi, kỳ không được chuyển sang trạng thái khóa.
+    let lockSnapshot: Record<string, unknown> | null = null;
+    if (data.status === "reviewing" && !cycle.data_locked_at) {
+      const result = await syncCycleTaskSnapshot(context.supabase, cycle as Record<string, unknown>);
+      lockSnapshot = { ...result };
+    }
+
     const voteCloses = new Date();
     voteCloses.setDate(voteCloses.getDate() + 2);
     const patch = {
@@ -147,6 +156,14 @@ export const setCycleStatus = createServerFn({ method: "POST" })
         .from("mvp_cycle_tasks")
         .update({ is_locked: true })
         .eq("cycle_id", data.cycleId);
+      await context.supabase.rpc("write_audit", {
+        _action: "mvp.lock_cycle_data",
+        _entity_type: "mvp_cycle",
+        _entity_id: data.cycleId,
+        _before: null,
+        _after: { data_locked_at: now, snapshot: lockSnapshot },
+        _metadata: { locked_by: context.userId },
+      });
     }
 
     if (data.status === "published") {
