@@ -20,5 +20,7 @@ export function useOpsAlerts(enabled: boolean) {
     queryFn: () => fetchAlerts({ data: { startISO, endISO } }),
     enabled: enabled && Boolean(user?.id),
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

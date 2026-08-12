@@ -4,19 +4,10 @@ import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
   /**
-   * PERF-02: dữ liệu nghiệp vụ CEN không cần realtime từng giây.
-   * staleTime 60s + không refetch khi focus lại cửa sổ để bỏ các request trùng;
-   * client tạo mới theo từng request nên không có cache dùng chung giữa người dùng.
+   * PERF-02.1: giữ nguyên default của React Query cho toàn hệ thống.
+   * Cấu hình cache/refetch của PERF-02 đặt tại từng query Trang chủ.
    */
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60_000,
-        refetchOnWindowFocus: false,
-        retry: 1,
-      },
-    },
-  });
+  const queryClient = new QueryClient();
 
   const router = createRouter({
     routeTree,
