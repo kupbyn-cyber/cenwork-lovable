@@ -334,10 +334,10 @@ function ProjectsPage() {
 
   /* ---------- Mutation Task ---------- */
   const taskArchiveMutation = useMutation({
-    mutationFn: (input: { id: string; archived: boolean }) =>
+    mutationFn: (input: { id: string; archived: boolean; projectId: string | null }) =>
       setManualArchive("task", input.id, input.archived),
     onSuccess: (_data, input) => {
-      refresh();
+      refreshProjectTasks(input.projectId);
       setTaskArchiveTarget(null);
       setTaskRestoreTarget(null);
       cenToast.success(
@@ -349,8 +349,8 @@ function ProjectsPage() {
 
   const taskDeleteMutation = useMutation({
     mutationFn: (task: TaskRow) => softDeleteEntity("task", task.id),
-    onSuccess: () => {
-      refresh();
+    onSuccess: (_data, task) => {
+      refreshProjectTasks(task.project_id);
       setTaskDeleteTarget(null);
       cenToast.success("Đã xóa công việc khỏi danh sách vận hành.");
     },
@@ -1002,7 +1002,7 @@ function ProjectsPage() {
               prev.includes(taskProject.id) ? prev : [...prev, taskProject.id],
             );
             setTaskProject(null);
-            refresh();
+            refreshProjectTasks(taskProject.id);
           }}
         />
       ) : null}
@@ -1070,7 +1070,7 @@ function ProjectsPage() {
           if (!open) setTaskCompleteTarget(null);
         }}
         onCompleted={() => {
-          refresh();
+          refreshProjectTasks(taskCompleteTarget?.project_id ?? null);
           setTaskCompleteTarget(null);
         }}
       />
@@ -1084,7 +1084,11 @@ function ProjectsPage() {
         loading={taskArchiveMutation.isPending}
         onConfirm={() =>
           taskArchiveTarget &&
-          taskArchiveMutation.mutate({ id: taskArchiveTarget.id, archived: true })
+          taskArchiveMutation.mutate({
+            id: taskArchiveTarget.id,
+            archived: true,
+            projectId: taskArchiveTarget.project_id,
+          })
         }
       />
 
@@ -1097,7 +1101,11 @@ function ProjectsPage() {
         loading={taskArchiveMutation.isPending}
         onConfirm={() =>
           taskRestoreTarget &&
-          taskArchiveMutation.mutate({ id: taskRestoreTarget.id, archived: false })
+          taskArchiveMutation.mutate({
+            id: taskRestoreTarget.id,
+            archived: false,
+            projectId: taskRestoreTarget.project_id,
+          })
         }
       />
 
