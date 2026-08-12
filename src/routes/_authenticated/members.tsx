@@ -168,6 +168,8 @@ function MembersPage() {
     onSuccess: () => {
       resetLockedIdentity();
       void queryClient.invalidateQueries({ queryKey: ["members"] });
+      void queryClient.invalidateQueries({ queryKey: ["active-people"] });
+      void queryClient.invalidateQueries({ queryKey: ["reviewer-directory"] });
       cenToast.success("Đã khôi phục tài khoản.");
       setRestoreTarget(null);
     },

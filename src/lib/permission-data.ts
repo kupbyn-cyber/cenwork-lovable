@@ -153,6 +153,8 @@ export const permissionChangeSetsQuery = () =>
 export const systemOwnersQuery = () =>
   queryOptions({
     queryKey: ["system-owners"],
+    // PERF-03: danh sách chủ hệ thống hầu như không đổi; cache ngắn để không gọi lại mỗi trang.
+    staleTime: 30_000,
     queryFn: async (): Promise<string[]> => {
       const rows = unwrap(await supabase.from("system_owners").select("user_id"));
       return (rows as { user_id: string }[]).map((row) => row.user_id);

@@ -103,17 +103,36 @@ export async function fetchMembers(): Promise<MemberRow[]> {
   }));
 }
 
-export const teamsQuery = () => queryOptions({ queryKey: ["teams"], queryFn: fetchTeams });
-export const membersQuery = () => queryOptions({ queryKey: ["members"], queryFn: fetchMembers });
+/**
+ * PERF-03 — dữ liệu tham chiếu dùng chung giữa nhiều màn hình.
+ * Giữ cache "tươi" trong 60s để chuyển trang không gọi lại RPC danh bạ;
+ * mọi thao tác tạo/sửa/khóa thành viên và Team đều đã invalidate theo prefix key.
+ */
+const REFERENCE_STALE_MS = 60_000;
 
-/** Chỉ tài khoản đang hoạt động — dùng cho mọi ô chọn người phụ trách / Leader / người nhận. */
+export const teamsQuery = () =>
+  queryOptions({ queryKey: ["teams"], queryFn: fetchTeams, staleTime: REFERENCE_STALE_MS });
+export const membersQuery = () =>
+  queryOptions({ queryKey: ["members"], queryFn: fetchMembers, staleTime: REFERENCE_STALE_MS });
+
+/**
+ * Chỉ tài khoản đang hoạt động — dùng cho mọi ô chọn người phụ trách / Leader / người nhận.
+ * PERF-03: dùng chung cache với `membersQuery` (cùng queryKey) rồi lọc ở client,
+ * thay vì gọi lại danh bạ lần hai khi một màn hình dùng cả hai danh sách.
+ */
 export const activeMembersQuery = () =>
   queryOptions({
-    queryKey: ["members", "active"],
-    queryFn: async () => (await fetchMembers()).filter((member) => member.status === "active"),
+    queryKey: ["members"],
+    queryFn: fetchMembers,
+    staleTime: REFERENCE_STALE_MS,
+    select: (rows: MemberRow[]) => rows.filter((member) => member.status === "active"),
   });
 export const facilitiesQuery = () =>
-  queryOptions({ queryKey: ["facilities"], queryFn: fetchFacilities });
+  queryOptions({
+    queryKey: ["facilities"],
+    queryFn: fetchFacilities,
+    staleTime: REFERENCE_STALE_MS,
+  });
 
 /** Vai trò + Team đang làm Leader của người dùng hiện tại. */
 export async function fetchMyAccess(userId: string) {
@@ -132,6 +151,8 @@ export const myAccessQuery = (userId: string | undefined) =>
     queryKey: ["my-access", userId],
     queryFn: () => fetchMyAccess(userId!),
     enabled: Boolean(userId),
+    // Quyền vẫn do backend/RLS quyết định; cache ngắn chỉ để tránh gọi lại mỗi lần đổi trang.
+    staleTime: 30_000,
   });
 
 /** Cập nhật hồ sơ (không gồm vai trò và trạng thái — hai thao tác đó chạy ở backend). */

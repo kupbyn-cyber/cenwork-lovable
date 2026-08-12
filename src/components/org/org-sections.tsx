@@ -80,6 +80,9 @@ export function TeamsSection() {
       void queryClient.invalidateQueries({ queryKey: ["teams"] });
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: ["telegram-teams"] });
+      // PERF-03: đổi Leader ảnh hưởng cache my-access và danh bạ người duyệt.
+      void queryClient.invalidateQueries({ queryKey: ["my-access"] });
+      void queryClient.invalidateQueries({ queryKey: ["reviewer-directory"] });
       cenToast.success(editing ? "Đã cập nhật Team." : "Đã tạo Team mới.");
       setOpen(false);
     },

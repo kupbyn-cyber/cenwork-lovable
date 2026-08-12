@@ -231,7 +231,8 @@ export const projectScopePeopleQuery = (projectId: string | null) =>
   });
 
 export const activePeopleQuery = () =>
-  queryOptions({ queryKey: ["active-people"], queryFn: fetchActivePeople });
+  // PERF-03: danh sách nhân sự cho dropdown dùng lại giữa Task/Dự án/Báo cáo.
+  queryOptions({ queryKey: ["active-people"], queryFn: fetchActivePeople, staleTime: 60_000 });
 
 /* ================= Quyền (mirror của RLS/trigger) ================= */
 
