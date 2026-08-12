@@ -145,7 +145,6 @@ function DashboardBody() {
       <RecognitionReceivedCard userId={access.userId} />
       {/* Hàng 1 */}
       <TodayBanner name={displayName || "bạn"} prompt={prompt} />
-      <WorkdayCard />
 
       {/* Hàng 2 */}
       <TodayKpiRow items={buildKpis(viewRole, metrics, range)} />
@@ -198,6 +197,9 @@ function DashboardBody() {
           </>
         )}
       </div>
+
+      {/* WORKDAY-UI-FIX-01: thẻ ngày làm việc là block cuối cùng của CEN Today. */}
+      <WorkdayCard />
     </div>
   );
 }
