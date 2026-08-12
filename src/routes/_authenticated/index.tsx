@@ -18,20 +18,16 @@ import {
   TeamHealthWidget,
 } from "@/components/home/today-widgets";
 import { TodayRangeProvider, useTodayRange } from "@/hooks/use-today-range";
+import { useAuth, getDisplayName } from "@/hooks/use-auth";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { useOpsAlerts } from "@/hooks/use-ops-alerts";
 import { useTodayHub } from "@/hooks/use-today-hub";
 import { useTodayInsights } from "@/hooks/use-today-insights";
-import { membersQuery } from "@/lib/org-data";
-import { projectsQuery } from "@/lib/project-data";
 import { recognitionsQuery } from "@/lib/recognition-data";
-import { dailyReportsQuery, hanoiToday, weeklyReportsQuery } from "@/lib/report-data";
-import { tasksQuery } from "@/lib/task-data";
 import {
-  buildTodayMetrics,
   buildTodayPrompt,
   scopeActionItems,
-  type TodayScope,
+  type TodayMetrics,
   type TodayViewRole,
 } from "@/lib/today-metrics";
 import { inRange } from "@/lib/today-range";
@@ -73,73 +69,45 @@ function Dashboard() {
 
 function DashboardBody() {
   const access = useOrgAccess();
+  const { user } = useAuth();
   const { range, bounds } = useTodayRange();
 
   const hub = useTodayHub();
-  const insights = useTodayInsights();
+  // PERF-02: KPI/widget đọc số tổng hợp từ server, không tải full danh sách về trình duyệt.
+  const insights = useTodayInsights(range, bounds);
   const opsAlerts = useOpsAlerts(access.isSystemAdmin);
-  const projectsResult = useQuery(projectsQuery());
-  const tasksResult = useQuery(tasksQuery());
-  const dailyResult = useQuery(dailyReportsQuery());
-  const weeklyResult = useQuery(weeklyReportsQuery());
-  const membersResult = useQuery(membersQuery());
   const recognitionsResult = useQuery(recognitionsQuery({ limit: 10 }));
 
-  const today = hanoiToday();
   const viewRole: TodayViewRole = access.isSystemAdmin
     ? "admin"
     : access.isLeader
       ? "leader"
       : "member";
-  const scope: TodayScope = {
-    role: viewRole,
-    userId: access.userId,
-    leaderTeamId: access.leaderTeamId,
-  };
 
   const actionItems = React.useMemo(
     () => scopeActionItems(hub.data?.items ?? [], bounds),
     [hub.data?.items, bounds],
   );
 
-  const metrics = React.useMemo(
-    () =>
-      buildTodayMetrics({
-        scope,
-        bounds,
-        tasks: tasksResult.data ?? [],
-        projects: projectsResult.data ?? [],
-        dailies: dailyResult.data ?? [],
-        weeklies: weeklyResult.data ?? [],
-        actionItems,
-        todayDate: today,
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      viewRole,
-      access.userId,
-      access.leaderTeamId,
-      bounds,
-      tasksResult.data,
-      projectsResult.data,
-      dailyResult.data,
-      weeklyResult.data,
-      actionItems,
-      today,
-    ],
+  const summary = insights.data?.metrics;
+  const metrics: TodayMetrics = React.useMemo(
+    () => ({
+      open_count: summary?.open_count ?? 0,
+      active_projects: summary?.active_projects ?? 0,
+      due_in_range_count: summary?.due_in_range_count ?? 0,
+      overdue_count: summary?.overdue_count ?? 0,
+      completed_in_range_count: summary?.completed_in_range_count ?? 0,
+      pending_report_count: summary?.pending_report_count ?? 0,
+      pending_action_count: actionItems.length,
+    }),
+    [summary, actionItems.length],
   );
 
-  const me = (membersResult.data ?? []).find((member) => member.id === access.userId);
+  const displayName = insights.data?.display_name ?? getDisplayName(user);
   const prompt = buildTodayPrompt(metrics, range);
 
-  const dailies = dailyResult.data ?? [];
-  const weeklies = weeklyResult.data ?? [];
-  const pendingDaily = dailies.filter(
-    (row) => row.status === "submitted" && inRange(row.report_date, bounds),
-  ).length;
-  const pendingWeekly = weeklies.filter(
-    (row) => row.status === "submitted" && inRange(row.submitted_at ?? null, bounds),
-  ).length;
+  const pendingDaily = insights.data?.reports.pending_daily ?? 0;
+  const pendingWeekly = insights.data?.reports.pending_weekly ?? 0;
   const missingDaily = insights.data?.team?.missing_daily.length ?? 0;
 
   const recognitions = React.useMemo(
@@ -169,7 +137,7 @@ function DashboardBody() {
     <div className="flex min-w-0 flex-col gap-4">
       <RecognitionReceivedCard userId={access.userId} />
       {/* Hàng 1 */}
-      <TodayBanner name={me?.display_name ?? "bạn"} prompt={prompt} />
+      <TodayBanner name={displayName || "bạn"} prompt={prompt} />
 
       {/* Hàng 2 */}
       <TodayKpiRow items={buildKpis(viewRole, metrics, range)} />

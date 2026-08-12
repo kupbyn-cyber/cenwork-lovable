@@ -12,11 +12,10 @@ export const getTodayHub = createServerFn({ method: "POST" })
   .middleware([requireCenAuth])
   .handler(async ({ context }): Promise<TodayHubResult> => {
     const { buildTodayHub } = await import("@/lib/today.server");
-    const role = await resolveCallerRole(context.supabase, context.userId);
-    const { data: leaderTeam } = await context.supabase
-      .from("teams")
-      .select("id")
-      .eq("leader_id", context.userId)
-      .maybeSingle();
-    return buildTodayHub(context.supabase, context.userId, role, leaderTeam?.id ?? null);
+    // PERF-02: vai trò và Team phụ trách là hai truy vấn độc lập — chạy song song.
+    const [role, leaderTeam] = await Promise.all([
+      resolveCallerRole(context.supabase, context.userId),
+      context.supabase.from("teams").select("id").eq("leader_id", context.userId).maybeSingle(),
+    ]);
+    return buildTodayHub(context.supabase, context.userId, role, leaderTeam.data?.id ?? null);
   });

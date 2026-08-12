@@ -77,27 +77,42 @@ export async function buildTodayHub(
   const privileged = isSystemAdminRole(role);
 
   // ROLE-01: quyền hiệu lực đọc từ database, fail closed khi không tải được.
+  // PERF-02: nạp song song với các nguồn khác; nguồn nào cần quyền thì chờ đúng promise này.
   const permissionSet = new Set<string>();
-  try {
-    const perms = await supabase.rpc("perm_effective_for", { _user: userId });
-    for (const row of (perms.data ?? []) as { permission_key: string; enabled: boolean }[]) {
-      if (row.enabled) permissionSet.add(row.permission_key);
+  const permissionsReady = (async () => {
+    try {
+      const perms = await supabase.rpc("perm_effective_for", { _user: userId });
+      for (const row of (perms.data ?? []) as { permission_key: string; enabled: boolean }[]) {
+        if (row.enabled) permissionSet.add(row.permission_key);
+      }
+    } catch (error) {
+      console.error("[today-hub] permissions", error);
     }
-  } catch (error) {
-    console.error("[today-hub] permissions", error);
-  }
+  })();
   const can = (permission: string) => permissionSet.has(permission);
 
-  const rows: ActionItem[] = [];
   const failedSources: string[] = [];
 
-  async function source(name: string, run: () => Promise<void>) {
-    try {
-      await run();
-    } catch (error) {
-      console.error(`[today-hub] ${name}`, error);
-      failedSources.push(name);
-    }
+  /**
+   * PERF-02: mỗi nguồn vẫn cô lập lỗi như cũ (partial result), nhưng chạy song song.
+   * Kết quả từng nguồn gom vào mảng riêng rồi ghép theo thứ tự cố định để đầu ra không đổi.
+   */
+  const pending: Promise<void>[] = [];
+  const buckets: ActionItem[][] = [];
+
+  function source(name: string, run: (out: ActionItem[]) => Promise<void>) {
+    const out: ActionItem[] = [];
+    buckets.push(out);
+    pending.push(
+      (async () => {
+        try {
+          await run(out);
+        } catch (error) {
+          console.error(`[today-hub] ${name}`, error);
+          failedSources.push(name);
+        }
+      })(),
+    );
   }
 
   function check(error: { message: string } | null) {
@@ -105,7 +120,7 @@ export async function buildTodayHub(
   }
 
   // 1 + 7. Thông báo nội bộ bắt buộc xác nhận (quá hạn = khóa thao tác).
-  await source("announcements", async () => {
+  source("announcements", async (rows) => {
     const { data, error } = await supabase
       .from("announcement_recipients")
       .select(
@@ -145,7 +160,7 @@ export async function buildTodayHub(
   });
 
   // NAP-05. Yêu cầu phê duyệt đang chờ chính mình xử lý (chỉ phiên bản hiện tại).
-  await source("approvals", async () => {
+  source("approvals", async (rows) => {
     const { data, error } = await supabase
       .from("approval_decisions")
       .select(
@@ -186,7 +201,7 @@ export async function buildTodayHub(
 
   // 8. Nhắc tên và trả lời bình luận chưa đọc.
 
-  await source("mentions", async () => {
+  source("mentions", async (rows) => {
     const { data, error } = await supabase
       .from("notifications")
       .select("id,title,body,entity_id,link,created_at,event_type")
@@ -215,7 +230,7 @@ export async function buildTodayHub(
   });
 
   // 2 + 4 + 6 + 3(Task chờ kiểm tra). Một truy vấn duy nhất cho Task (không N+1).
-  await source("tasks", async () => {
+  source("tasks", async (rows) => {
     const { data, error } = await supabase
       .from("tasks")
       .select(
@@ -268,8 +283,7 @@ export async function buildTodayHub(
       const canReview =
         task.status === "review" &&
         task.assignee_id !== userId &&
-        (task.created_by === userId ||
-          (leaderTeamId !== null && task.team_id === leaderTeamId));
+        (task.created_by === userId || (leaderTeamId !== null && task.team_id === leaderTeamId));
       if (canReview) {
         rows.push(
           item({
@@ -289,7 +303,7 @@ export async function buildTodayHub(
   });
 
   // 3. Dự án đang chờ đúng bước duyệt của người dùng.
-  await source("projects", async () => {
+  source("projects", async (rows) => {
     const { data, error } = await supabase
       .from("projects")
       .select("id,name,objective,status,responsible_team_id,created_by,submitted_at,created_at")
@@ -311,8 +325,7 @@ export async function buildTodayHub(
           module: "project",
           objectId: project.id,
           title: project.name,
-          summary:
-            stage === "leader" ? "Chờ duyệt ở bước Leader." : "Chờ duyệt ở bước CMO.",
+          summary: stage === "leader" ? "Chờ duyệt ở bước Leader." : "Chờ duyệt ở bước CMO.",
           reason: "awaiting_my_approval",
           createdAt: project.submitted_at ?? project.created_at,
           route: `/projects/${project.id}`,
@@ -323,22 +336,21 @@ export async function buildTodayHub(
   });
 
   // 2 + 5 + 3. Báo cáo ngày: bị yêu cầu sửa, đến hạn hôm nay, chờ duyệt.
-  await source("daily_reports", async () => {
+  source("daily_reports", async (rows) => {
     // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày.
     const exemptAuthors = new Set<string>();
-    const { data: exemptRows } = await supabase
-      .from("user_roles")
-      .select("user_id,role")
-      .in("role", ["admin", "cmo"])
-      .limit(1000);
-    for (const row of exemptRows ?? []) exemptAuthors.add(row.user_id);
-
-    const { data, error } = await supabase
-      .from("daily_reports")
-      .select("id,report_date,author_id,team_id,status,created_at,updated_at")
-      .or(`author_id.eq.${userId},status.eq.submitted`)
-      .gte("report_date", thisWeek)
-      .limit(300);
+    const [exempt, reportsResult] = await Promise.all([
+      supabase.from("user_roles").select("user_id,role").in("role", ["admin", "cmo"]).limit(1000),
+      supabase
+        .from("daily_reports")
+        .select("id,report_date,author_id,team_id,status,created_at,updated_at")
+        .or(`author_id.eq.${userId},status.eq.submitted`)
+        .gte("report_date", thisWeek)
+        .limit(300),
+      permissionsReady,
+    ]);
+    for (const row of exempt.data ?? []) exemptAuthors.add(row.user_id);
+    const { data, error } = reportsResult;
     check(error);
     const list = data ?? [];
 
@@ -380,10 +392,9 @@ export async function buildTodayHub(
     }
 
     if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY) && !privileged) {
-      const mineToday = list.find(
-        (row) => row.author_id === userId && row.report_date === today,
-      );
-      const done = mineToday && (mineToday.status === "submitted" || mineToday.status === "approved");
+      const mineToday = list.find((row) => row.author_id === userId && row.report_date === today);
+      const done =
+        mineToday && (mineToday.status === "submitted" || mineToday.status === "approved");
       if (!done && !(mineToday && mineToday.status === "changes_requested")) {
         rows.push(
           item({
@@ -403,12 +414,15 @@ export async function buildTodayHub(
   });
 
   // 2 + 5 + 3. Báo cáo tuần của Team.
-  await source("weekly_reports", async () => {
-    const { data, error } = await supabase
-      .from("weekly_reports")
-      .select("id,week_start,team_id,leader_id,status,created_at,updated_at")
-      .gte("week_start", weekStartOf(hanoiToday(new Date(now.getTime() - 7 * DAY_MS))))
-      .limit(200);
+  source("weekly_reports", async (rows) => {
+    const [{ data, error }] = await Promise.all([
+      supabase
+        .from("weekly_reports")
+        .select("id,week_start,team_id,leader_id,status,created_at,updated_at")
+        .gte("week_start", weekStartOf(hanoiToday(new Date(now.getTime() - 7 * DAY_MS))))
+        .limit(200),
+      permissionsReady,
+    ]);
     check(error);
     const list = data ?? [];
 
@@ -448,9 +462,7 @@ export async function buildTodayHub(
     }
 
     if (leaderTeamId && can(PERMISSIONS.REPORTS_SUBMIT_WEEKLY)) {
-      const mine = list.find(
-        (row) => row.team_id === leaderTeamId && row.week_start === thisWeek,
-      );
+      const mine = list.find((row) => row.team_id === leaderTeamId && row.week_start === thisWeek);
       const done = mine && (mine.status === "submitted" || mine.status === "approved");
       if (!done && !(mine && mine.status === "changes_requested")) {
         rows.push(
@@ -468,6 +480,8 @@ export async function buildTodayHub(
     }
   });
 
+  await Promise.all(pending);
+  const rows: ActionItem[] = buckets.flat();
   const items = mergeActionItems(rows);
   const counts = { critical: 0, high: 0, medium: 0, low: 0 };
   for (const row of items) counts[row.priority] += 1;

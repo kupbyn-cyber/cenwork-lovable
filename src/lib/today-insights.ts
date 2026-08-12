@@ -77,8 +77,31 @@ export interface SystemFocus {
   announcements_overdue: number;
 }
 
+/**
+ * PERF-02 — chỉ số tổng hợp cho KPI/widget Trang chủ.
+ * Tính tại server theo đúng công thức cũ của `buildTodayMetrics`
+ * để Trang chủ không phải tải full danh sách Task/Dự án/Báo cáo.
+ */
+export interface TodayScopeMetrics {
+  open_count: number;
+  active_projects: number;
+  due_in_range_count: number;
+  overdue_count: number;
+  completed_in_range_count: number;
+  pending_report_count: number;
+}
+
+/** Số báo cáo đang chờ duyệt trong phạm vi thời gian đang chọn. */
+export interface ReportPulse {
+  pending_daily: number;
+  pending_weekly: number;
+}
+
 export interface TodayInsights {
   role: "admin" | "cmo" | "leader" | "member" | null;
+  display_name: string | null;
+  metrics: TodayScopeMetrics;
+  reports: ReportPulse;
   me: MyFocus;
   team: TeamFocus | null;
   marketing: MarketingFocus | null;
