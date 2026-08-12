@@ -110,7 +110,9 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
 
       supabase
         .from("mvp_cycle_tasks")
-        .select("task_id,user_id,weight,is_committed,tasks(status,deadline,updated_at)")
+        .select(
+          "task_id,user_id,weight,is_committed,original_deadline,tasks(status,deadline,completed_at)",
+        )
         .eq("cycle_id", cycleId),
       supabase.from("profiles").select("id,primary_team_id").eq("status", "active"),
       supabase.from("user_roles").select("user_id,role").eq("role", "leader"),
@@ -167,19 +169,33 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
 
 
   const tasksByUser = new Map<string, MvpTaskInput[]>();
+  /** Dữ liệu bất thường: Task done nhưng thiếu completed_at (không tự suy đoán). */
+  let doneWithoutCompletedAt = 0;
   for (const raw of (cycleTasks.data ?? []) as Record<string, unknown>[]) {
-    const task = raw["tasks"] as { status: string; deadline: string; updated_at: string } | null;
+    const task = raw["tasks"] as {
+      status: string;
+      deadline: string;
+      completed_at: string | null;
+    } | null;
     if (!task) continue;
     const userId = raw["user_id"] as string;
     const list = tasksByUser.get(userId) ?? [];
+    // Deadline chấm đúng hạn lấy từ snapshot của kỳ, không dùng deadline live.
+    const deadline = (raw["original_deadline"] as string | null) ?? task.deadline;
+    if (task.status === "done" && !task.completed_at) doneWithoutCompletedAt += 1;
     list.push({
       weight: Number(raw["weight"] ?? 1),
       status: task.status,
-      deadline: task.deadline,
-      completedAt: task.status === "done" ? task.updated_at : null,
+      deadline,
+      completedAt: task.status === "done" ? (task.completed_at ?? null) : null,
       isCommitted: Boolean(raw["is_committed"]),
     });
     tasksByUser.set(userId, list);
+  }
+  if (doneWithoutCompletedAt > 0) {
+    console.warn(
+      `[mvp] Kỳ ${cycleId}: ${doneWithoutCompletedAt} công việc done nhưng thiếu completed_at — không tính đúng hạn.`,
+    );
   }
 
   const leaderIds = new Set(
