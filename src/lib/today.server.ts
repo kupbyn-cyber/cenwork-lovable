@@ -88,16 +88,28 @@ export async function buildTodayHub(
   }
   const can = (permission: string) => permissionSet.has(permission);
 
-  const rows: ActionItem[] = [];
   const failedSources: string[] = [];
 
-  async function source(name: string, run: () => Promise<void>) {
-    try {
-      await run();
-    } catch (error) {
-      console.error(`[today-hub] ${name}`, error);
-      failedSources.push(name);
-    }
+  /**
+   * PERF-02: mỗi nguồn vẫn cô lập lỗi như cũ (partial result), nhưng chạy song song.
+   * Kết quả từng nguồn gom vào mảng riêng rồi ghép theo thứ tự cố định để đầu ra không đổi.
+   */
+  const pending: Promise<void>[] = [];
+  const buckets: ActionItem[][] = [];
+
+  function source(name: string, run: (out: ActionItem[]) => Promise<void>) {
+    const out: ActionItem[] = [];
+    buckets.push(out);
+    pending.push(
+      (async () => {
+        try {
+          await run(out);
+        } catch (error) {
+          console.error(`[today-hub] ${name}`, error);
+          failedSources.push(name);
+        }
+      })(),
+    );
   }
 
   function check(error: { message: string } | null) {
@@ -105,7 +117,7 @@ export async function buildTodayHub(
   }
 
   // 1 + 7. Thông báo nội bộ bắt buộc xác nhận (quá hạn = khóa thao tác).
-  await source("announcements", async () => {
+  source("announcements", async (rows) => {
     const { data, error } = await supabase
       .from("announcement_recipients")
       .select(
@@ -145,7 +157,7 @@ export async function buildTodayHub(
   });
 
   // NAP-05. Yêu cầu phê duyệt đang chờ chính mình xử lý (chỉ phiên bản hiện tại).
-  await source("approvals", async () => {
+  source("approvals", async (rows) => {
     const { data, error } = await supabase
       .from("approval_decisions")
       .select(
@@ -186,7 +198,7 @@ export async function buildTodayHub(
 
   // 8. Nhắc tên và trả lời bình luận chưa đọc.
 
-  await source("mentions", async () => {
+  source("mentions", async (rows) => {
     const { data, error } = await supabase
       .from("notifications")
       .select("id,title,body,entity_id,link,created_at,event_type")
@@ -215,7 +227,7 @@ export async function buildTodayHub(
   });
 
   // 2 + 4 + 6 + 3(Task chờ kiểm tra). Một truy vấn duy nhất cho Task (không N+1).
-  await source("tasks", async () => {
+  source("tasks", async (rows) => {
     const { data, error } = await supabase
       .from("tasks")
       .select(
@@ -289,7 +301,7 @@ export async function buildTodayHub(
   });
 
   // 3. Dự án đang chờ đúng bước duyệt của người dùng.
-  await source("projects", async () => {
+  source("projects", async (rows) => {
     const { data, error } = await supabase
       .from("projects")
       .select("id,name,objective,status,responsible_team_id,created_by,submitted_at,created_at")
@@ -323,7 +335,7 @@ export async function buildTodayHub(
   });
 
   // 2 + 5 + 3. Báo cáo ngày: bị yêu cầu sửa, đến hạn hôm nay, chờ duyệt.
-  await source("daily_reports", async () => {
+  source("daily_reports", async (rows) => {
     // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày.
     const exemptAuthors = new Set<string>();
     const { data: exemptRows } = await supabase
@@ -403,7 +415,7 @@ export async function buildTodayHub(
   });
 
   // 2 + 5 + 3. Báo cáo tuần của Team.
-  await source("weekly_reports", async () => {
+  source("weekly_reports", async (rows) => {
     const { data, error } = await supabase
       .from("weekly_reports")
       .select("id,week_start,team_id,leader_id,status,created_at,updated_at")
@@ -468,6 +480,8 @@ export async function buildTodayHub(
     }
   });
 
+  await Promise.all(pending);
+  const rows: ActionItem[] = buckets.flat();
   const items = mergeActionItems(rows);
   const counts = { critical: 0, high: 0, medium: 0, low: 0 };
   for (const row of items) counts[row.priority] += 1;
