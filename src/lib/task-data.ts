@@ -378,6 +378,18 @@ export const projectTasksQuery = (projectId: string, enabled = true) =>
     refetchOnWindowFocus: false,
   });
 
+/**
+ * Sau mutation Task: chỉ làm mới Task của đúng dự án liên quan và bảng KPI tổng hợp.
+ * Không có project_id (Task độc lập) thì chỉ làm mới KPI.
+ */
+export function invalidateProjectTaskScope(
+  queryClient: { invalidateQueries: (filters: { queryKey: unknown[] }) => unknown },
+  projectId: string | null | undefined,
+) {
+  if (projectId) queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] });
+  queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
+}
+
 export const taskQuery = (id: string) =>
   queryOptions({ queryKey: ["task", id], queryFn: () => fetchTask(id) });
 
