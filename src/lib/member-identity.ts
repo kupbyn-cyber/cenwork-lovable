@@ -68,6 +68,11 @@ export function maskName<T extends string | null | undefined>(
   return name;
 }
 
+/** Tài khoản đã khóa — dùng khi danh bạ nội bộ không trả về tên (người dùng thường). */
+export function isLockedMember(userId: string | null | undefined): boolean {
+  return Boolean(userId && snapshot.ids.has(userId));
+}
+
 export interface ArchivedMemberRow {
   id: string;
   display_name: string;
