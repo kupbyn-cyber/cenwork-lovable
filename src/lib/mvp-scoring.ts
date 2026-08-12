@@ -5,8 +5,9 @@ import type { Database } from "@/integrations/supabase/types";
  * CEN 1.0 — M6 Bộ quy tắc chấm điểm MVP (thuần hàm, dùng chung UI + server).
  *
  * Cơ cấu 100 điểm:
- * - 75 điểm tự động từ dữ liệu hệ thống (công việc, đúng hạn, báo cáo, vote).
- * - 25 điểm đánh giá thực tế của người quản lý trực tiếp.
+ * - 65 điểm CEN Data + 10 điểm đồng đội (vote) = 75 điểm tự động.
+ * - 20 điểm đánh giá của Leader/CMO (4 tiêu chí × 5).
+ * - Tối đa +5 điểm bonus đóng góp đặc biệt sau khi CMO duyệt.
  * Không có giá trị nào viết cứng trong component: mọi trọng số nằm ở đây.
  */
 export type MvpCycleStatus = Database["public"]["Enums"]["mvp_cycle_status"];
@@ -135,6 +136,7 @@ export const MVP_CRITERIA = {
   VOTE: "vote",
   QUALITY: "quality",
   PROACTIVE: "proactive",
+  IMPACT: "impact",
   TEAMWORK: "teamwork",
 } as const;
 
@@ -146,8 +148,9 @@ export const MVP_CRITERION_MAX: Record<MvpCriterion, number> = {
   reporting: 13,
   announcement: 2,
   vote: 10,
-  quality: 10,
-  proactive: 10,
+  quality: 5,
+  proactive: 5,
+  impact: 5,
   teamwork: 5,
 };
 
@@ -157,9 +160,10 @@ export const MVP_CRITERION_LABEL: Record<MvpCriterion, string> = {
   reporting: "Kỷ luật báo cáo",
   announcement: "Xác nhận thông báo đúng hạn",
   vote: "Phiếu bầu đồng đội",
-  quality: "Chất lượng công việc",
-  proactive: "Tinh thần chủ động",
-  teamwork: "Phối hợp đồng đội",
+  quality: "Chất lượng đầu ra",
+  proactive: "Chủ động / Trách nhiệm",
+  impact: "Tác động đến kết quả chung",
+  teamwork: "Phối hợp / Đồng đội",
 };
 
 /**
@@ -180,32 +184,55 @@ export const MVP_AUTO_CRITERIA: MvpCriterion[] = [
   "announcement",
   "vote",
 ];
-export const MVP_REVIEW_CRITERIA: MvpCriterion[] = ["quality", "proactive", "teamwork"];
+export const MVP_REVIEW_CRITERIA: MvpCriterion[] = ["quality", "proactive", "impact", "teamwork"];
 
 
 export const MVP_AUTO_MAX = MVP_AUTO_CRITERIA.reduce((sum, c) => sum + MVP_CRITERION_MAX[c], 0);
 export const MVP_REVIEW_MAX = MVP_REVIEW_CRITERIA.reduce((sum, c) => sum + MVP_CRITERION_MAX[c], 0);
-export const MVP_TOTAL_MAX = MVP_AUTO_MAX + MVP_REVIEW_MAX;
+/** Bonus đóng góp đặc biệt: tối đa +5, chỉ cộng sau khi CMO duyệt. */
+export const MVP_BONUS_MAX = 5;
+export const MVP_BONUS_OPTIONS = [1, 2, 3] as const;
+export type MvpBonusPoints = (typeof MVP_BONUS_OPTIONS)[number];
+export type MvpBonusStatus = "pending" | "approved" | "rejected";
 
-/** Thang chấm tay: 5 mức cố định, tránh chấm cảm tính tùy tiện. */
-export const MVP_REVIEW_SCALE_LABEL = [
-  "Chưa đạt",
-  "Cần cải thiện",
-  "Đạt",
-  "Tốt",
-  "Xuất sắc",
-] as const;
+export const MVP_BONUS_STATUS_LABEL: Record<MvpBonusStatus, string> = {
+  pending: "Chờ CMO duyệt",
+  approved: "Đã duyệt",
+  rejected: "Từ chối",
+};
 
-export function reviewScaleOptions(max: number): { value: number; label: string }[] {
-  return MVP_REVIEW_SCALE_LABEL.map((label, index) => ({
-    value: Math.round((max / 4) * index * 100) / 100,
-    label: `${label} (${Math.round((max / 4) * index * 100) / 100})`,
-  }));
+export const MVP_BONUS_STATUS_TONE: Record<MvpBonusStatus, StatusTone> = {
+  pending: "warning",
+  approved: "success",
+  rejected: "error",
+};
+
+export const MVP_TOTAL_MAX = MVP_AUTO_MAX + MVP_REVIEW_MAX + MVP_BONUS_MAX;
+
+/** Ngưỡng đủ điều kiện xét Chiến binh MVP (điều kiện cần, không tự động trao). */
+export const MVP_ELIGIBLE_THRESHOLD = 80;
+
+/** Thang chấm tay: 6 mức cố định 0–5, không cho nhập số tự do. */
+export const MVP_REVIEW_LEVELS = [0, 1, 2, 3, 4, 5] as const;
+export type MvpReviewLevel = (typeof MVP_REVIEW_LEVELS)[number];
+
+export const MVP_REVIEW_LEVEL_LABEL: Record<MvpReviewLevel, string> = {
+  0: "Không đạt / không có cơ sở đánh giá",
+  1: "Rất yếu",
+  2: "Dưới kỳ vọng",
+  3: "Đạt yêu cầu",
+  4: "Tốt, có đóng góp rõ",
+  5: "Xuất sắc, vượt kỳ vọng",
+};
+
+/** Điểm từ 4 trở lên bắt buộc nhập lý do đánh giá. */
+export function requiresReason(value: number): boolean {
+  return value >= 4;
 }
 
-/** Mức đánh giá từ Tốt trở lên bắt buộc kèm bằng chứng. */
-export function requiresEvidence(value: number, max: number): boolean {
-  return value >= (max / 4) * 3;
+/** Điểm 5 bắt buộc có ít nhất một bằng chứng/link dữ liệu liên quan. */
+export function requiresEvidence(value: number): boolean {
+  return value >= 5;
 }
 
 /* ================= Phạt và điều kiện hợp lệ ================= */
@@ -446,7 +473,9 @@ export interface MvpScoreInput {
   votesReceived: number;
   /** Số phiếu của người được bầu nhiều nhất trong kỳ (chuẩn hóa tương đối). */
   topVotes: number;
-  review: { quality: number; proactive: number; teamwork: number } | null;
+  review: { quality: number; proactive: number; impact: number; teamwork: number } | null;
+  /** Tổng bonus đóng góp đặc biệt ĐÃ được CMO duyệt (tối đa +5). */
+  bonusScore?: number;
   /** Thông báo bắt buộc xác nhận gửi tới nhân sự trong kỳ. */
   announcements?: MvpAnnouncementInput[];
   /** Mốc khóa kỳ dùng để chấm thông báo chưa xác nhận. */
@@ -469,6 +498,7 @@ export interface MvpScoreResult {
   autoScore: number;
   reviewScore: number;
   voteScore: number;
+  bonusScore: number;
   penaltyScore: number;
   totalScore: number;
   dataCompleteness: number;
@@ -611,6 +641,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
   const reviewValues: Record<string, number> = {
     quality: review?.quality ?? 0,
     proactive: review?.proactive ?? 0,
+    impact: review?.impact ?? 0,
     teamwork: review?.teamwork ?? 0,
   };
   for (const criterion of MVP_REVIEW_CRITERIA) {
@@ -618,7 +649,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
       criterion,
       maxPoints: MVP_CRITERION_MAX[criterion],
       earnedPoints: round1(reviewValues[criterion] ?? 0),
-      formula: "Đánh giá của người quản lý trực tiếp theo thang 5 mức",
+      formula: "Đánh giá của người quản lý trực tiếp theo thang 0–5",
       sourceData: { hasReview: review !== null },
       isApplicable: review !== null,
       notApplicableReason: review !== null ? null : "Chưa có đánh giá của người quản lý trực tiếp",
@@ -637,12 +668,17 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
       .reduce((sum, c) => sum + c.earnedPoints, 0),
   );
   const penaltyScore = Math.min(overdueOpen * MVP_PENALTY_PER_OVERDUE, MVP_PENALTY_MAX);
-  const totalScore = Math.max(0, round1(autoScore + voteScore + reviewScore - penaltyScore));
+  // Bonus chỉ nhận phần đã được CMO duyệt và bị chặn trần +5.
+  const bonusScore = Math.min(Math.max(input.bonusScore ?? 0, 0), MVP_BONUS_MAX);
+  const totalScore = Math.max(
+    0,
+    Math.min(MVP_TOTAL_MAX, round1(autoScore + voteScore + reviewScore + bonusScore - penaltyScore)),
+  );
 
   const applicable = components.filter((c) => c.isApplicable);
   const dataCompleteness =
     Math.round(
-      (applicable.reduce((sum, c) => sum + c.maxPoints, 0) / MVP_TOTAL_MAX) * 10000,
+      (applicable.reduce((sum, c) => sum + c.maxPoints, 0) / (MVP_AUTO_MAX + MVP_REVIEW_MAX)) * 10000,
     ) / 100;
 
   let ineligibleReason: string | null = null;
@@ -657,6 +693,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
     autoScore,
     reviewScore,
     voteScore,
+    bonusScore,
     penaltyScore,
     totalScore,
     dataCompleteness,
@@ -725,12 +762,13 @@ export function proposeMvpAwards(candidates: MvpAwardCandidate[]): MvpAwardPropo
     {
       awardType: "proactive",
       metric: (c) => c.proactiveScore,
-      reason: (v) => `Điểm chủ động cao nhất: ${round1(v)}/10`,
+      reason: (v) => `Điểm chủ động cao nhất: ${round1(v)}/${MVP_CRITERION_MAX.proactive}`,
     },
     {
       awardType: "teamwork",
       metric: (c) => c.teamworkScore + c.voteScore,
-      reason: (v) => `Điểm đồng đội cộng phiếu bầu cao nhất: ${round1(v)}/15`,
+      reason: (v) =>
+        `Điểm đồng đội cộng phiếu bầu cao nhất: ${round1(v)}/${MVP_CRITERION_MAX.teamwork + MVP_CRITERION_MAX.vote}`,
     },
     {
       awardType: "progress",
@@ -745,13 +783,21 @@ export function proposeMvpAwards(candidates: MvpAwardCandidate[]): MvpAwardPropo
   ];
 
   return rules.map((rule) => {
-    const best = pickBest(eligible, rule.metric);
+    // Danh hiệu MVP (Chiến binh MVP) chỉ đề xuất khi đạt ngưỡng tối thiểu.
+    const pool =
+      rule.awardType === "mvp"
+        ? eligible.filter((candidate) => candidate.totalScore >= MVP_ELIGIBLE_THRESHOLD)
+        : eligible;
+    const best = pickBest(pool, rule.metric);
     if (!best) {
       return {
         awardType: rule.awardType,
         recipientId: null,
         awardScore: null,
-        reason: "Không đủ dữ liệu hợp lệ để trao danh hiệu kỳ này",
+        reason:
+          rule.awardType === "mvp"
+            ? `Chưa có nhân sự đạt tối thiểu ${MVP_ELIGIBLE_THRESHOLD} điểm để trao Chiến binh MVP`
+            : "Không đủ dữ liệu hợp lệ để trao danh hiệu kỳ này",
       };
     }
     return {

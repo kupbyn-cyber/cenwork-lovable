@@ -104,6 +104,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     weeklyReports,
     votes,
     reviews,
+    bonusApproved,
     announcementRecipients,
   ] = await Promise.all([
 
@@ -128,9 +129,15 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase.from("mvp_votes").select("votee_id").eq("cycle_id", cycleId).eq("is_valid", true),
       supabase
         .from("mvp_manual_reviews")
-        .select("subject_id,quality_score,proactive_score,teamwork_score")
+        .select("subject_id,quality_score,proactive_score,impact_score,teamwork_score")
         .eq("cycle_id", cycleId)
         .eq("status", "submitted"),
+      // Bonus đóng góp đặc biệt: chỉ tính phần đã được CMO duyệt.
+      supabase
+        .from("mvp_bonus_proposals")
+        .select("subject_id,points")
+        .eq("cycle_id", cycleId)
+        .eq("status", "approved"),
       // Thông báo bắt buộc xác nhận có hạn rơi trong kỳ — tái dùng dữ liệu M6.1/M6.2.
       supabase
         .from("announcement_recipients")
@@ -152,6 +159,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     weeklyReports,
     votes,
     reviews,
+    bonusApproved,
     announcementRecipients,
   ]) {
     if (result.error) throw new Error(result.error.message);
@@ -197,13 +205,22 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
   }
   const topVotes = Math.max(0, ...Array.from(voteCount.values()));
 
-  const reviewByUser = new Map<string, { quality: number; proactive: number; teamwork: number }>();
+  const reviewByUser = new Map<
+    string,
+    { quality: number; proactive: number; impact: number; teamwork: number }
+  >();
   for (const row of (reviews.data ?? []) as Record<string, unknown>[]) {
     reviewByUser.set(row["subject_id"] as string, {
       quality: Number(row["quality_score"] ?? 0),
       proactive: Number(row["proactive_score"] ?? 0),
+      impact: Number(row["impact_score"] ?? 0),
       teamwork: Number(row["teamwork_score"] ?? 0),
     });
+  }
+
+  const bonusByUser = new Map<string, number>();
+  for (const row of (bonusApproved.data ?? []) as { subject_id: string; points: number }[]) {
+    bonusByUser.set(row.subject_id, (bonusByUser.get(row.subject_id) ?? 0) + Number(row.points ?? 0));
   }
 
   /**
@@ -274,6 +291,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
+      bonusScore: bonusByUser.get(profile.id) ?? 0,
       announcements: announcementsByUser.get(profile.id) ?? [],
       announcementLockAt,
     });
@@ -285,6 +303,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       auto_score: result.autoScore,
       review_score: result.reviewScore,
       vote_score: result.voteScore,
+      bonus_score: result.bonusScore,
       penalty_score: result.penaltyScore,
       total_score: result.totalScore,
       data_completeness: result.dataCompleteness,

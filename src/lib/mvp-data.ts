@@ -7,6 +7,7 @@ import {
   type MvpAwardType,
   type MvpCriterion,
   type MvpCycleStatus,
+  type MvpBonusStatus,
   type MvpReviewStatus,
   type MvpScorecardStatus,
 } from "@/lib/mvp-scoring";
@@ -72,6 +73,7 @@ export interface MvpScorecardRow {
   auto_score: number;
   review_score: number;
   vote_score: number;
+  bonus_score: number;
   penalty_score: number;
   total_score: number;
   data_completeness: number;
@@ -82,7 +84,7 @@ export interface MvpScorecardRow {
 }
 
 const SCORECARD_SELECT = `
-  id,cycle_id,user_id,team_id,auto_score,review_score,vote_score,penalty_score,total_score,
+  id,cycle_id,user_id,team_id,auto_score,review_score,vote_score,bonus_score,penalty_score,total_score,
   data_completeness,is_eligible,ineligible_reason,status,computed_at,
   member:profiles!mvp_scorecards_user_id_fkey(id,display_name),
   team:teams(id,name)
@@ -101,6 +103,7 @@ function mapScorecard(raw: Record<string, unknown>): MvpScorecardRow {
     auto_score: Number(raw["auto_score"] ?? 0),
     review_score: Number(raw["review_score"] ?? 0),
     vote_score: Number(raw["vote_score"] ?? 0),
+    bonus_score: Number(raw["bonus_score"] ?? 0),
     penalty_score: Number(raw["penalty_score"] ?? 0),
     total_score: Number(raw["total_score"] ?? 0),
     data_completeness: Number(raw["data_completeness"] ?? 0),
@@ -112,13 +115,13 @@ function mapScorecard(raw: Record<string, unknown>): MvpScorecardRow {
 }
 
 export async function fetchScorecards(cycleId: string): Promise<MvpScorecardRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("mvp_scorecards")
     .select(SCORECARD_SELECT)
     .eq("cycle_id", cycleId)
     .order("total_score", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapScorecard(row as Record<string, unknown>));
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => mapScorecard(row));
 }
 
 export const mvpScorecardsQuery = (cycleId: string) =>
@@ -220,6 +223,14 @@ export async function updateCycleTaskWeight(id: string, weight: number) {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * MVP-REVIEW-01: cột `impact_score`, `bonus_score` và bảng `mvp_bonus_proposals`
+ * mới bổ sung nên bảng kiểu sinh tự động chưa có. Dùng client nới lỏng kiểu cho
+ * đúng các truy vấn này, phần còn lại vẫn giữ kiểu chặt.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as unknown as { from: (table: string) => any };
+
 /* ================= Đánh giá thực tế ================= */
 
 export interface MvpReviewRow {
@@ -230,6 +241,7 @@ export interface MvpReviewRow {
   reviewer_id: string;
   quality_score: number;
   proactive_score: number;
+  impact_score: number;
   teamwork_score: number;
   reason: string | null;
   evidence: string | null;
@@ -238,17 +250,16 @@ export interface MvpReviewRow {
 }
 
 export async function fetchReviews(cycleId: string): Promise<MvpReviewRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("mvp_manual_reviews")
     .select(
-      `id,cycle_id,subject_id,reviewer_id,quality_score,proactive_score,teamwork_score,
+      `id,cycle_id,subject_id,reviewer_id,quality_score,proactive_score,impact_score,teamwork_score,
        reason,evidence,status,submitted_at,
        subject:profiles!mvp_manual_reviews_subject_id_fkey(id,display_name)`,
     )
     .eq("cycle_id", cycleId);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((raw) => {
-    const row = raw as Record<string, unknown>;
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => {
     const subject = row["subject"] as { display_name: string } | null;
     return {
       id: row["id"] as string,
@@ -258,6 +269,7 @@ export async function fetchReviews(cycleId: string): Promise<MvpReviewRow[]> {
       reviewer_id: row["reviewer_id"] as string,
       quality_score: Number(row["quality_score"] ?? 0),
       proactive_score: Number(row["proactive_score"] ?? 0),
+      impact_score: Number(row["impact_score"] ?? 0),
       teamwork_score: Number(row["teamwork_score"] ?? 0),
       reason: (row["reason"] as string | null) ?? null,
       evidence: (row["evidence"] as string | null) ?? null,
@@ -276,6 +288,7 @@ export interface SaveReviewInput {
   reviewerId: string;
   quality: number;
   proactive: number;
+  impact: number;
   teamwork: number;
   reason: string;
   evidence: string;
@@ -290,14 +303,15 @@ export async function saveReview(input: SaveReviewInput) {
     reviewer_id: input.reviewerId,
     quality_score: input.quality,
     proactive_score: input.proactive,
+    impact_score: input.impact,
     teamwork_score: input.teamwork,
     reason: input.reason || null,
     evidence: input.evidence || null,
     status: (input.submit ? "submitted" : "draft") as MvpReviewStatus,
   };
   const query = input.existingId
-    ? supabase.from("mvp_manual_reviews").update(payload).eq("id", input.existingId)
-    : supabase.from("mvp_manual_reviews").insert(payload);
+    ? db.from("mvp_manual_reviews").update(payload).eq("id", input.existingId)
+    : db.from("mvp_manual_reviews").insert(payload);
   const { error } = await query;
   if (error) throw new Error(error.message);
 }
@@ -392,3 +406,104 @@ export async function fetchAwards(cycleId: string): Promise<MvpAwardRow[]> {
 
 export const mvpAwardsQuery = (cycleId: string) =>
   queryOptions({ queryKey: ["mvp-awards", cycleId], queryFn: () => fetchAwards(cycleId) });
+
+/* ================= Bonus đóng góp đặc biệt ================= */
+
+export interface MvpBonusRow {
+  id: string;
+  cycle_id: string;
+  subject_id: string;
+  subjectName: string | null;
+  proposer_id: string;
+  proposerName: string | null;
+  points: number;
+  reason: string;
+  evidence: string;
+  status: MvpBonusStatus;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+}
+
+export async function fetchBonusProposals(cycleId: string): Promise<MvpBonusRow[]> {
+  const { data, error } = await db
+    .from("mvp_bonus_proposals")
+    .select(
+      `id,cycle_id,subject_id,proposer_id,points,reason,evidence,status,
+       decided_by,decided_at,decision_note,created_at,
+       subject:profiles!mvp_bonus_proposals_subject_id_fkey(id,display_name),
+       proposer:profiles!mvp_bonus_proposals_proposer_id_fkey(id,display_name)`,
+    )
+    .eq("cycle_id", cycleId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => {
+    const subject = row["subject"] as { display_name: string } | null;
+    const proposer = row["proposer"] as { display_name: string } | null;
+    return {
+      id: row["id"] as string,
+      cycle_id: row["cycle_id"] as string,
+      subject_id: row["subject_id"] as string,
+      subjectName: subject?.display_name ?? null,
+      proposer_id: row["proposer_id"] as string,
+      proposerName: proposer?.display_name ?? null,
+      points: Number(row["points"] ?? 0),
+      reason: (row["reason"] as string) ?? "",
+      evidence: (row["evidence"] as string) ?? "",
+      status: row["status"] as MvpBonusStatus,
+      decided_by: (row["decided_by"] as string | null) ?? null,
+      decided_at: (row["decided_at"] as string | null) ?? null,
+      decision_note: (row["decision_note"] as string | null) ?? null,
+      created_at: row["created_at"] as string,
+    };
+  });
+}
+
+export const mvpBonusQuery = (cycleId: string) =>
+  queryOptions({
+    queryKey: ["mvp-bonus", cycleId],
+    queryFn: () => fetchBonusProposals(cycleId),
+  });
+
+export interface ProposeBonusInput {
+  cycleId: string;
+  subjectId: string;
+  proposerId: string;
+  points: number;
+  reason: string;
+  evidence: string;
+}
+
+export async function proposeBonus(input: ProposeBonusInput) {
+  const { error } = await db.from("mvp_bonus_proposals").insert({
+    cycle_id: input.cycleId,
+    subject_id: input.subjectId,
+    proposer_id: input.proposerId,
+    points: input.points,
+    reason: input.reason.trim(),
+    evidence: input.evidence.trim(),
+    status: "pending",
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function decideBonus(input: {
+  id: string;
+  approve: boolean;
+  note?: string;
+}) {
+  const { error } = await db
+    .from("mvp_bonus_proposals")
+    .update({
+      status: input.approve ? "approved" : "rejected",
+      decision_note: input.note?.trim() || null,
+    })
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+}
+
+export async function withdrawBonus(id: string) {
+  const { error } = await db.from("mvp_bonus_proposals").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
