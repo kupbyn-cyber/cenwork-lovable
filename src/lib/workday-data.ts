@@ -10,6 +10,17 @@ import { supabase } from "@/integrations/cen/client";
 export type WorkDayStatus = "working" | "day_off";
 export type WorkShift = "full_day" | "morning" | "afternoon" | "evening" | "custom";
 
+/**
+ * Bảng/RPC mới của WORKDAY-01 chưa có trong bộ type sinh tự động, nên gọi qua
+ * một cầu nối có kiểu tường minh thay vì nới lỏng toàn bộ client.
+ */
+type RpcBridge = (
+  fn: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+const callRpc = supabase.rpc as unknown as RpcBridge;
+
 export interface WorkDayRecord {
   id: string;
   user_id: string;
@@ -73,7 +84,7 @@ export function workDayTodayQuery(userId: string | null | undefined) {
   return queryOptions({
     queryKey: ["work-day-today", userId ?? "anon"],
     queryFn: async (): Promise<WorkDayToday> => {
-      const { data, error } = await supabase.rpc("work_day_today");
+      const { data, error } = await callRpc("work_day_today");
       if (error) throw new Error(error.message);
       return data as unknown as WorkDayToday;
     },
@@ -91,7 +102,7 @@ export async function setWorkDay(input: {
   userId?: string | null;
   source?: string;
 }): Promise<WorkDayRecord> {
-  const { data, error } = await supabase.rpc("work_day_set", {
+  const { data, error } = await callRpc("work_day_set", {
     _status: input.status,
     _shift: input.status === "working" ? (input.shift ?? "full_day") : null,
     _user: input.userId ?? null,
