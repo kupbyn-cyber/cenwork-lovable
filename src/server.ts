@@ -2,6 +2,14 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { startTelegramWorker } from "./lib/telegram-worker.server";
+
+// NOTI-FIX-01 — self-host không có pg_cron/crontab: bật worker Telegram trong tiến trình SSR.
+try {
+  startTelegramWorker();
+} catch (error) {
+  console.error("[telegram-worker] không khởi động được:", (error as Error).message);
+}
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
