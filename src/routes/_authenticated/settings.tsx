@@ -11,6 +11,7 @@ import { cenToast } from "@/components/ui/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSettingsSection } from "@/components/settings/admin-settings-section";
 import { AvatarUploader } from "@/components/settings/avatar-uploader";
+import { DevicePushSection } from "@/components/settings/device-push-section";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { logSelfAuditEvent } from "@/lib/audit-data";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
@@ -250,6 +251,7 @@ function SettingsPage() {
           <div className="grid min-w-0 gap-5 lg:grid-cols-2">
             <ProfileSection />
             <PasswordSection />
+            <DevicePushSection />
           </div>
         </TabsContent>
         {access.canManageSettings ? (
