@@ -335,6 +335,8 @@ export function TaskFormDrawer({
       void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
       void queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      invalidateProjectTaskScope(queryClient, task?.project_id ?? null);
+      invalidateProjectTaskScope(queryClient, form.projectId === NONE ? null : form.projectId);
       cenToast.success(
         memberFlow
           ? "Đã gửi công việc tới Leader phê duyệt."

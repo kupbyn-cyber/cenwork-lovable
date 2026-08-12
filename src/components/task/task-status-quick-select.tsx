@@ -19,6 +19,7 @@ import {
   type TaskAccessContext,
   type TaskRow,
   type TaskStatus,
+  invalidateProjectTaskScope,
 } from "@/lib/task-data";
 
 /**

@@ -6,7 +6,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
-import { cancelTask } from "@/lib/task-data";
+import { cancelTask, invalidateProjectTaskScope } from "@/lib/task-data";
 
 /**
  * TASK-RULE-XX — Hủy công việc.
@@ -16,6 +16,7 @@ import { cancelTask } from "@/lib/task-data";
 export interface TaskCancelTarget {
   id: string;
   name: string;
+  project_id?: string | null;
 }
 
 export function TaskCancelDialog({

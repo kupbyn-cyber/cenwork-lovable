@@ -6,7 +6,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
-import { completeTaskWithResult } from "@/lib/task-data";
+import { completeTaskWithResult, invalidateProjectTaskScope } from "@/lib/task-data";
 
 /**
  * CEN 1.0 — Hoàn thành công việc kèm Kết quả công việc.
@@ -18,6 +18,7 @@ export interface TaskCompleteTarget {
   id: string;
   name: string;
   result_text?: string | null;
+  project_id?: string | null;
 }
 
 export interface TaskCompleteDialogProps {
