@@ -657,6 +657,8 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
   const { data, error } = await supabase
     .from("tasks")
     .insert({
+      // work_weight: kiểu sinh tự động chưa có cột mới, ghi qua object mở rộng.
+      ...({ work_weight: input.workWeight } as Record<string, never>),
       name: input.name,
       description: input.description,
       project_id: input.projectId,
@@ -665,7 +667,6 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
       start_date: input.startDate,
       deadline: input.deadline,
       priority: input.priority,
-      work_weight: input.workWeight,
       status: input.status,
       created_by: input.createdBy,
       reviewer_type: input.reviewerType ?? null,
@@ -689,7 +690,9 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
   if (input.startDate !== undefined) payload.start_date = input.startDate;
   if (input.deadline !== undefined) payload.deadline = input.deadline;
   if (input.priority !== undefined) payload.priority = input.priority;
-  if (input.workWeight !== undefined) payload.work_weight = input.workWeight;
+  if (input.workWeight !== undefined) {
+    (payload as Record<string, unknown>)["work_weight"] = input.workWeight;
+  }
   if (input.status !== undefined) payload.status = input.status;
   if (input.reviewerType !== undefined) payload.reviewer_type = input.reviewerType;
   if (input.reviewerId !== undefined) payload.reviewer_id = input.reviewerId;
