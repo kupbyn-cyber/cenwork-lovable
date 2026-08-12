@@ -191,6 +191,12 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
   if (cycleError || !cycle) throw new Error(cycleError?.message ?? "Không tìm thấy kỳ MVP.");
   if (cycle.status === "published") throw new Error("Kỳ đã công bố, không thể tính lại điểm.");
 
+  // Kỳ chưa khóa: làm mới ảnh chụp trước khi chấm để dữ liệu preview khớp Task hiện tại.
+  // Kỳ đã khóa: chỉ đọc ảnh chụp, không đụng dữ liệu live.
+  if (!cycle.data_locked_at) {
+    await syncCycleTaskSnapshot(supabase, cycle as Record<string, unknown>);
+  }
+
   const ctx: ComputeContext = {
     weekStart: cycle.week_start as string,
     weekEnd: cycle.week_end as string,
@@ -215,9 +221,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase
         .from("mvp_cycle_tasks")
         .select(
-          "task_id,user_id,weight,is_committed,original_deadline,tasks(status,deadline,completed_at)",
+          "task_id,user_id,weight,is_committed,original_deadline,final_status,final_completed_at",
         )
-        .eq("cycle_id", cycleId),
+        .eq("cycle_id", cycleId)
+        .is("excluded_at", null),
       supabase.from("profiles").select("id,primary_team_id").eq("status", "active"),
       supabase.from("user_roles").select("user_id,role").eq("role", "leader"),
       supabase.from("teams").select("id,leader_id"),
@@ -276,22 +283,19 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
   /** Dữ liệu bất thường: Task done nhưng thiếu completed_at (không tự suy đoán). */
   let doneWithoutCompletedAt = 0;
   for (const raw of (cycleTasks.data ?? []) as Record<string, unknown>[]) {
-    const task = raw["tasks"] as {
-      status: string;
-      deadline: string;
-      completed_at: string | null;
-    } | null;
-    if (!task) continue;
     const userId = raw["user_id"] as string;
+    if (!userId) continue;
     const list = tasksByUser.get(userId) ?? [];
-    // Deadline chấm đúng hạn lấy từ snapshot của kỳ, không dùng deadline live.
-    const deadline = (raw["original_deadline"] as string | null) ?? task.deadline;
-    if (task.status === "done" && !task.completed_at) doneWithoutCompletedAt += 1;
+    // Toàn bộ dữ liệu chấm điểm Task lấy từ ảnh chụp của kỳ.
+    const status = raw["final_status"] as string;
+    const completedAt = (raw["final_completed_at"] as string | null) ?? null;
+    const deadline = raw["original_deadline"] as string;
+    if (status === "done" && !completedAt) doneWithoutCompletedAt += 1;
     list.push({
       weight: Number(raw["weight"] ?? 1),
-      status: task.status,
+      status,
       deadline,
-      completedAt: task.status === "done" ? (task.completed_at ?? null) : null,
+      completedAt: status === "done" ? completedAt : null,
       isCommitted: Boolean(raw["is_committed"]),
     });
     tasksByUser.set(userId, list);
