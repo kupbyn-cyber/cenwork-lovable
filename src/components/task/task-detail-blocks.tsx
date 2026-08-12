@@ -1,3 +1,4 @@
+import { taskWeightBadgeLabel } from "@/lib/task-weight";
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, CheckCircle2, CircleDashed, Clock3, FolderOpen } from "lucide-react";
@@ -207,6 +208,10 @@ export function TaskFactsCard({ task }: { task: TaskRow }) {
               tone={TASK_PRIORITY_TONE[task.priority]}
             />
           }
+        />
+        <FactCard
+          label="Trọng số công việc"
+          value={<StatusBadge label={taskWeightBadgeLabel(task.work_weight)} tone="neutral" />}
         />
         <FactCard label="Ngày bắt đầu" value={formatDate(task.start_date)} />
         <FactCard label="Team phụ trách" value={task.teamName ?? "—"} />

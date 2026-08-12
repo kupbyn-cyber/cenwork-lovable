@@ -1,3 +1,10 @@
+import {
+  TASK_WEIGHT_DEFAULT,
+  TASK_WEIGHT_HELPER,
+  taskWeightOptionLabel,
+  taskWeightOptions,
+  type TaskWorkWeight,
+} from "@/lib/task-weight";
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
@@ -99,6 +106,8 @@ interface FormState {
   /** Giờ deadline theo giờ Hà Nội (HH:mm). */
   deadlineTime: string;
   priority: TaskPriority;
+  /** MVP-FIX-03 — Trọng số công việc, độc lập với Mức ưu tiên. */
+  workWeight: TaskWorkWeight;
   status: TaskStatus;
   participantIds: string[];
   /** Loại người duyệt đã chọn: chủ dự án / leader của tôi / CMO. */
@@ -123,6 +132,7 @@ function initialState(
     deadlineDate: deadline.date || (applied?.deadlineDate ?? ""),
     deadlineTime: deadline.time || (task ? "" : "17:00"),
     priority: task?.priority ?? applied?.priority ?? "medium",
+    workWeight: task?.work_weight ?? TASK_WEIGHT_DEFAULT,
     status: task?.status ?? "not_started",
     participantIds: task?.participantIds ?? [],
     reviewerKind: task?.reviewer_type ?? "",
@@ -162,6 +172,11 @@ export function TaskFormDrawer({
   /** Dòng thông báo "Đã áp dụng từ bộ lọc": ẩn sau khi người dùng xóa giá trị tự điền. */
   const [prefillApplied, setPrefillApplied] = React.useState(false);
   const nameWarning = getTaskNameWarning(form.name);
+  /** Mức Trọng điểm (5) chỉ hiện với Leader/CMO/Admin; database chặn lại nếu gửi thẳng. */
+  const weightOptions = React.useMemo(
+    () => taskWeightOptions(ctx.role),
+    [ctx.role],
+  );
 
   React.useEffect(() => {
     if (open) {
@@ -261,6 +276,7 @@ export function TaskFormDrawer({
         startDate: state.startDate || null,
         deadline: hanoiToUtcISO(state.deadlineDate, state.deadlineTime)!,
         priority: state.priority,
+        workWeight: state.workWeight,
         status: state.status,
       };
 
@@ -272,6 +288,7 @@ export function TaskFormDrawer({
           startDate: payload.startDate,
           deadline: payload.deadline,
           priority: payload.priority,
+          workWeight: payload.workWeight,
           participantIds: state.participantIds,
           reviewerType: selectedReviewer!.kind,
           reviewerId: selectedReviewer!.userId,
@@ -289,6 +306,7 @@ export function TaskFormDrawer({
             teamId: payload.teamId,
             participantIds: state.participantIds,
             priority: payload.priority,
+            workWeight: payload.workWeight,
             reviewerType: selectedReviewer?.kind ?? null,
             reviewerId: selectedReviewer?.userId ?? null,
             ...schedule,
@@ -322,6 +340,7 @@ export function TaskFormDrawer({
               startDate: payload.startDate,
               deadline: payload.deadline,
               priority: payload.priority,
+              workWeight: payload.workWeight,
               status: payload.status,
             },
       );
@@ -734,6 +753,32 @@ export function TaskFormDrawer({
               </Select>
             )}
           </FormField>
+          <FormField
+            id="task-work-weight"
+            label="Trọng số công việc"
+            helperText={TASK_WEIGHT_HELPER}
+          >
+            {(control) => (
+              <Select
+                value={String(form.workWeight)}
+                onValueChange={(value) =>
+                  setForm({ ...form, workWeight: Number(value) as TaskWorkWeight })
+                }
+              >
+                <SelectTrigger {...control} aria-label="Trọng số công việc">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {weightOptions.map((weight) => (
+                    <SelectItem key={weight} value={String(weight)}>
+                      {taskWeightOptionLabel(weight)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FormField>
+
           {memberFlow ? null : (
             <FormField id="task-status" label="Trạng thái">
               {(control) => (

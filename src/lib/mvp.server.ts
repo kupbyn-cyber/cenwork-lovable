@@ -1,3 +1,4 @@
+import { normalizeTaskWeight } from "@/lib/task-weight";
 import {
   computeMvpScore,
   proposeMvpAwards,
@@ -19,7 +20,6 @@ type Db = {
   from: (table: string) => any;
 };
 
-const PRIORITY_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 /** `yyyy-MM-dd` giờ Hà Nội → mốc ISO UTC đầu/cuối ngày. */
 function hanoiDayBoundary(dateStr: string, end: boolean): string {
@@ -66,7 +66,7 @@ export async function syncCycleTaskSnapshot(
   const { data: tasks, error: taskError } = await supabase
     .from("tasks")
     .select(
-      "id,assignee_id,priority,deadline,status,completed_at,project_id,is_archived,deleted_at,cancelled_at,approval_status,project:projects(id,deleted_at)",
+      "id,assignee_id,work_weight,deadline,status,completed_at,project_id,is_archived,deleted_at,cancelled_at,approval_status,project:projects(id,deleted_at)",
     )
     .gte("deadline", from)
     .lte("deadline", to);
@@ -103,7 +103,8 @@ export async function syncCycleTaskSnapshot(
   for (const [taskId, task] of eligible) {
     const snapshot = {
       user_id: task["assignee_id"] as string,
-      weight: PRIORITY_WEIGHT[task["priority"] as string] ?? 1,
+      // MVP-FIX-03 — Trọng số lấy trực tiếp từ Task, không suy từ Mức ưu tiên.
+      weight: normalizeTaskWeight(task["work_weight"]),
       original_deadline: task["deadline"] as string,
       final_status: task["status"] as string,
       final_completed_at: (task["completed_at"] as string | null) ?? null,

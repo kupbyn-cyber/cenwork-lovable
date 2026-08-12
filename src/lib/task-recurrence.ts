@@ -1,3 +1,4 @@
+import type { TaskWorkWeight } from "@/lib/task-weight";
 /**
  * TASK-RECUR-01 — Lịch công việc lặp (ngày / tuần / tháng).
  * Cấu hình lưu ở bảng task_recurrence_rules; Task thật do scheduler sinh theo từng kỳ.
@@ -138,6 +139,7 @@ export interface CreateRecurrenceInput extends RecurrenceSchedule {
   teamId: string | null;
   participantIds: string[];
   priority: TaskPriority;
+  workWeight: TaskWorkWeight;
   reviewerType: TaskReviewerKind | null;
   reviewerId: string | null;
 }
@@ -151,6 +153,7 @@ export async function createTaskRecurrence(input: CreateRecurrenceInput) {
     _team: input.teamId as unknown as string,
     _participants: input.participantIds,
     _priority: input.priority,
+    _work_weight: input.workWeight,
     _reviewer_type: input.reviewerType as unknown as string,
     _reviewer: input.reviewerId as unknown as string,
     _freq: input.freq,
