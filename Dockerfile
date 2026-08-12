@@ -33,6 +33,9 @@ ENV NODE_ENV=production \
     NITRO_PRESET=node
 RUN bun run build
 
+# Migration runner đóng gói kèm pg để runner image không cần node_modules.
+RUN bun build scripts/migrate.mjs --target=node --outfile /app/migrate.bundle.mjs
+
 # ---------- Runner ----------
 FROM node:22-slim AS runner
 WORKDIR /app
@@ -44,6 +47,13 @@ ENV NODE_ENV=production \
 # Only the built SSR server + static client assets are shipped.
 COPY --from=builder /app/.output ./.output
 
+# Migration tự động lúc khởi động: runner + toàn bộ SQL self-host.
+COPY --from=builder /app/migrate.bundle.mjs ./scripts/migrate.mjs
+COPY --from=builder /app/db/migrations ./db/migrations
+COPY --from=builder /app/db/repair ./db/repair
+COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
+RUN chmod +x ./scripts/docker-entrypoint.sh
+
 USER node
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
