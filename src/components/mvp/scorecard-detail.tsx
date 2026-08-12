@@ -60,12 +60,12 @@ const DATA_STATE_LABEL: Record<DataState, string> = {
   error: "Lỗi dữ liệu",
 };
 
-const DATA_STATE_VARIANT: Record<DataState, "success" | "warning" | "neutral" | "info" | "danger"> = {
+const DATA_STATE_VARIANT: Record<DataState, "success" | "warning" | "neutral" | "info" | "error"> = {
   ok: "success",
   missing: "warning",
   not_applicable: "neutral",
   incomplete: "info",
-  error: "danger",
+  error: "error",
 };
 
 function num(source: Record<string, unknown>, key: string, fallback = 0): number {
