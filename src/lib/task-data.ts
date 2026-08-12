@@ -280,7 +280,7 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     .or("approval_status.eq.approved,cancelled_at.not.is.null")
     .order("deadline", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
 }
 
 /**
@@ -297,7 +297,7 @@ export async function fetchTaskApprovals(): Promise<TaskRow[]> {
     .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
 }
 
 export const taskApprovalsQuery = () =>
@@ -312,7 +312,7 @@ export async function fetchTask(id: string): Promise<TaskRow | null> {
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapTask(data as RawTask) : null;
+  return data ? mapTask(data as unknown as RawTask) : null;
 }
 
 export const tasksQuery = () => queryOptions({ queryKey: ["tasks"], queryFn: fetchTasks });
