@@ -95,7 +95,7 @@ import {
   formatDateTime,
   isTaskArchived,
   isTaskOverdue,
-  tasksQuery,
+  projectTasksQuery,
   type TaskAccessContext,
   type TaskRow,
 } from "@/lib/task-data";
