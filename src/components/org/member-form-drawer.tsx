@@ -125,6 +125,9 @@ export function MemberFormDrawer({ open, onOpenChange, member, teams }: MemberFo
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: ["teams"] });
+      // PERF-03: dropdown nhân sự dùng cache riêng, phải làm mới sau khi đổi hồ sơ/Team.
+      void queryClient.invalidateQueries({ queryKey: ["active-people"] });
+      void queryClient.invalidateQueries({ queryKey: ["reviewer-directory"] });
       cenToast.success(isCreate ? "Đã tạo tài khoản thành viên." : "Đã lưu thông tin thành viên.");
       onOpenChange(false);
     },
