@@ -451,7 +451,6 @@ function AnnouncementsPage() {
         announcement={editing}
       />
 
-
       <AnnouncementDetailModal
         row={detailRow}
         senderName={detailRow ? (nameById.get(detailRow.announcement.created_by) ?? "—") : "—"}

@@ -52,8 +52,7 @@ const TAB_PANEL_CLASS =
 
 const TITLE = "Đề xuất & Phê duyệt — CEN WORK";
 const DESCRIPTION = "Tạo, theo dõi và xử lý các yêu cầu phê duyệt nội bộ trong CEN WORK.";
-const SUBTITLE =
-  "Theo dõi thông báo nội bộ, các đề xuất bạn đã gửi và các yêu cầu cần phê duyệt.";
+const SUBTITLE = "Theo dõi thông báo nội bộ, các đề xuất bạn đã gửi và các yêu cầu cần phê duyệt.";
 
 export const Route = createFileRoute("/_authenticated/approvals/")({
   validateSearch: (search: Record<string, unknown>): { view?: ApprovalView } =>
@@ -275,7 +274,8 @@ function ApprovalsPage() {
   const history = filtered.filter((item) => item.myDecision?.decision_status !== "pending");
 
   const proposalStats = React.useMemo(() => {
-    const count = (predicate: (item: ApprovalListItem) => boolean) => scoped.filter(predicate).length;
+    const count = (predicate: (item: ApprovalListItem) => boolean) =>
+      scoped.filter(predicate).length;
     return [
       { key: "pending", label: "Đang chờ", value: count((item) => item.status === "pending") },
       {
