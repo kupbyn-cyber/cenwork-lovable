@@ -26,6 +26,7 @@ import { MemberFormDrawer } from "@/components/org/member-form-drawer";
 import { MemberDetailModal } from "@/components/org/member-detail-modal";
 import { TempPasswordModal } from "@/components/org/temp-password-modal";
 import { MemberLockDialog } from "@/components/org/member-lock-dialog";
+import { WorkdayStatsPanel } from "@/components/workday/workday-stats-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
 import { unlockMemberAccount } from "@/lib/org.functions";
 import {
@@ -95,6 +96,8 @@ function MembersPage() {
   const teamsResult = useQuery(teamsQuery());
   const archivedResult = useQuery(archivedMembersQuery(access.isAdmin));
   const [tab, setTab] = React.useState<"active" | "archived">("active");
+  // WORKDAY-02: tab phụ trong màn Thành viên, không thêm menu/sidebar mới.
+  const [mainTab, setMainTab] = React.useState<"list" | "workday">("list");
   const [restoreTarget, setRestoreTarget] = React.useState<ArchivedMemberRow | null>(null);
 
   const [search, setSearch] = React.useState("");
