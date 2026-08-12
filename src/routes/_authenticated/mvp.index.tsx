@@ -127,7 +127,7 @@ function MvpCyclesPage() {
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="MVP và danh hiệu"
-        description={`Mỗi kỳ chấm trên thang ${MVP_TOTAL_MAX} điểm: 75 điểm từ dữ liệu hệ thống và 25 điểm đánh giá thực tế.`}
+        description={`Mỗi kỳ chấm trên thang ${MVP_TOTAL_MAX} điểm: 75 điểm từ dữ liệu hệ thống, 20 điểm Leader/CMO đánh giá và tối đa +5 điểm thưởng đóng góp đặc biệt.`}
         actions={
           access.can(PERMISSIONS.MVP_MANAGE) ? (
             <Button onClick={() => setOpen(true)}>
