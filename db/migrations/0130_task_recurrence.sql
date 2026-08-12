@@ -203,7 +203,7 @@ BEGIN
   PERFORM public.write_audit('task_recurrence.created','task_recurrence', _rule, NULL,
     jsonb_build_object('name', btrim(_name), 'freq', _freq, 'start_date', _start_date,
       'end_date', _end_date, 'deadline_time', _deadline_time,
-      'weekdays', _weekdays, 'month_day', _month_day), '{}'::jsonb);
+      'weekdays', to_jsonb(_weekdays), 'month_day', _month_day), '{}'::jsonb);
 
   -- Kỳ của hôm nay (nếu đã tới) được sinh ngay để người phụ trách thấy việc.
   IF _start_date <= _today
