@@ -655,6 +655,7 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     });
 
     for (const component of result.components) {
+      const computedAt = new Date().toISOString();
       componentRows.push({
         cycle_id: cycleId,
         user_id: profile.id,
@@ -662,7 +663,13 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         max_points: component.maxPoints,
         earned_points: component.earnedPoints,
         formula: component.formula,
-        source_data: component.sourceData,
+        source_data: {
+          ...component.sourceData,
+          // MVP-FIX-05 — trạng thái dữ liệu và mốc chốt để UI giải thích, không đổi công thức.
+          dataState: component.dataState ?? (component.isApplicable ? "ok" : "missing"),
+          computedAt,
+          lockedCycle: Boolean((cycle as Record<string, unknown>)["data_locked_at"]),
+        },
         is_applicable: component.isApplicable,
         not_applicable_reason: component.notApplicableReason,
       });
