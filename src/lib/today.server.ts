@@ -418,11 +418,14 @@ export async function buildTodayHub(
 
   // 2 + 5 + 3. Báo cáo tuần của Team.
   source("weekly_reports", async (rows) => {
-    const { data, error } = await supabase
-      .from("weekly_reports")
-      .select("id,week_start,team_id,leader_id,status,created_at,updated_at")
-      .gte("week_start", weekStartOf(hanoiToday(new Date(now.getTime() - 7 * DAY_MS))))
-      .limit(200);
+    const [{ data, error }] = await Promise.all([
+      supabase
+        .from("weekly_reports")
+        .select("id,week_start,team_id,leader_id,status,created_at,updated_at")
+        .gte("week_start", weekStartOf(hanoiToday(new Date(now.getTime() - 7 * DAY_MS))))
+        .limit(200),
+      permissionsReady,
+    ]);
     check(error);
     const list = data ?? [];
 
