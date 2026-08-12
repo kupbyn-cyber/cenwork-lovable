@@ -12,7 +12,7 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DailyReportDrawer } from "@/components/report/daily-report-drawer";
 import { DailyReportSections } from "@/components/report/daily-report-sections";
-import { ReviewActions } from "@/components/report/review-actions";
+import { ReportReviewBlock } from "@/components/report/report-review-block";
 import {
   Collapsible,
   CollapsibleContent,
@@ -27,9 +27,11 @@ import {
   REPORT_STATUS_TONE,
   canEditDaily,
   canReviewDaily,
+  canTakeoverReview,
   dailyReportQuery,
   dailyTaskRefsQuery,
   reportHistoryQuery,
+  resolveDailyReviewerId,
   reviewDailyReport,
 } from "@/lib/report-data";
 import { TASK_STATUS_LABEL, TASK_STATUS_TONE, formatDateTime } from "@/lib/task-data";
@@ -99,6 +101,12 @@ function DailyReportDetail() {
   };
   const editable = canEditDaily(report, ctx);
   const reviewable = canReviewDaily(report, ctx, directory);
+  const takeover = canTakeoverReview(report, ctx, reviewable);
+  const reviewerId = resolveDailyReviewerId(report, directory);
+  const assignedReviewerName =
+    report.reviewerName ??
+    directory.members.find((member) => member.id === reviewerId)?.display_name ??
+    null;
   const content = parseDailyReportContent(report);
 
   return (
@@ -195,16 +203,19 @@ function DailyReportDetail() {
             <CardContent className="flex flex-col gap-3">
               <Block title="Người duyệt" value={report.reviewerName} />
               <Block title="Nhận xét" value={report.review_note} />
-              {reviewable ? (
-                <ReviewActions
-                  onReview={(decision, note) => reviewDailyReport(report.id, decision, note)}
-                  invalidateKeys={[
-                    ["daily-report", report.id],
-                    ["daily-reports"],
-                    ["report-history", "daily_report", report.id],
-                  ]}
-                />
-              ) : null}
+              <ReportReviewBlock
+                kind="daily"
+                reportId={report.id}
+                reviewable={reviewable}
+                takeover={takeover}
+                reviewerName={assignedReviewerName}
+                onReview={(decision, note) => reviewDailyReport(report.id, decision, note)}
+                invalidateKeys={[
+                  ["daily-report", report.id],
+                  ["daily-reports"],
+                  ["report-history", "daily_report", report.id],
+                ]}
+              />
             </CardContent>
           </Card>
         </div>
