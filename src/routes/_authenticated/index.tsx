@@ -76,7 +76,13 @@ function DashboardBody() {
   // PERF-02: KPI/widget đọc số tổng hợp từ server, không tải full danh sách về trình duyệt.
   const insights = useTodayInsights(range, bounds);
   const opsAlerts = useOpsAlerts(access.isSystemAdmin);
-  const recognitionsResult = useQuery(recognitionsQuery({ limit: 10 }));
+  // PERF-02.1: cache/refetch chỉ áp cho lần dùng ở Trang chủ, không đổi query dùng chung.
+  const recognitionsResult = useQuery({
+    ...recognitionsQuery({ limit: 10 }),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 
   const viewRole: TodayViewRole = access.isSystemAdmin
     ? "admin"

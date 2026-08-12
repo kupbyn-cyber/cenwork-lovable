@@ -16,5 +16,7 @@ export function useTodayHub() {
     queryFn: () => fetchHub(),
     enabled: Boolean(user?.id),
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

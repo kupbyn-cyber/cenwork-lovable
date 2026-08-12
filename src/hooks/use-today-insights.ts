@@ -20,5 +20,7 @@ export function useTodayInsights(range: TodayRange = "today", bounds?: RangeBoun
     queryFn: () => fetchInsights({ data: { startISO, endISO } }),
     enabled: Boolean(user?.id),
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
