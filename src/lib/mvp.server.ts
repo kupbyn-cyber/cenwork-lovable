@@ -243,7 +243,8 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase
         .from("mvp_cycle_tasks")
         .select(
-          "task_id,user_id,weight,is_committed,original_deadline,final_status,final_completed_at",
+          "task_id,user_id,weight,is_committed,original_deadline,final_status,final_completed_at," +
+            "task:tasks(id,name)",
         )
         .eq("cycle_id", cycleId)
         .is("excluded_at", null),
@@ -267,7 +268,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       supabase.from("mvp_votes").select("votee_id").eq("cycle_id", cycleId).eq("is_valid", true),
       supabase
         .from("mvp_manual_reviews")
-        .select("subject_id,quality_score,proactive_score,impact_score,teamwork_score")
+        .select(
+          "subject_id,reviewer_id,quality_score,proactive_score,impact_score,teamwork_score," +
+            "reason,evidence,submitted_at,reviewer:profiles!mvp_manual_reviews_reviewer_id_fkey(id,display_name)",
+        )
         .eq("cycle_id", cycleId)
         .eq("status", "submitted"),
       // Bonus đóng góp đặc biệt: chỉ tính phần đã được CMO duyệt.
@@ -333,7 +337,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     const completedAt = (raw["final_completed_at"] as string | null) ?? null;
     const deadline = raw["original_deadline"] as string;
     if (status === "done" && !completedAt) doneWithoutCompletedAt += 1;
+    const task = raw["task"] as { name?: string } | null;
     list.push({
+      taskId: raw["task_id"] as string,
+      title: task?.name ?? null,
       weight: Number(raw["weight"] ?? 1),
       status,
       deadline,
