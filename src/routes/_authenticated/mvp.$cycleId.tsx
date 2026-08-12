@@ -13,7 +13,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cenToast } from "@/components/ui/toast";
-import { ReviewDrawer } from "@/components/mvp/review-drawer";
+import { TeamReviewWorkspace } from "@/components/mvp/team-review-workspace";
 import { ScorecardDetail } from "@/components/mvp/scorecard-detail";
 import { VotePanel } from "@/components/mvp/vote-panel";
 import { useOrgAccess } from "@/hooks/use-org-access";
@@ -26,7 +26,6 @@ import {
   mvpScorecardsQuery,
   type MvpAwardRow,
   type MvpCycleTaskRow,
-  type MvpReviewRow,
   type MvpScorecardRow,
 } from "@/lib/mvp-data";
 import {
@@ -94,7 +93,6 @@ function MvpCycleDetailPage() {
   });
 
   const [detailFor, setDetailFor] = React.useState<MvpScorecardRow | null>(null);
-  const [reviewFor, setReviewFor] = React.useState<MvpScorecardRow | null>(null);
 
   const collect = useServerFn(collectCycleData);
   const recompute = useServerFn(recomputeCycleScores);
@@ -110,6 +108,7 @@ function MvpCycleDetailPage() {
       ["mvp-awards", cycleId],
       ["mvp-cycle-tasks", cycleId],
       ["mvp-reviews", cycleId],
+      ["mvp-bonus", cycleId],
     ]) {
       void queryClient.invalidateQueries({ queryKey: key });
     }
@@ -206,8 +205,8 @@ function MvpCycleDetailPage() {
       className: "min-w-[240px]",
       cell: (row: MvpScorecardRow) => (
         <span className="text-helper text-text-muted">
-          Tự động {row.auto_score} · Vote {row.vote_score} · Đánh giá {row.review_score} · Trừ{" "}
-          {row.penalty_score}
+          Tự động {row.auto_score} · Vote {row.vote_score} · Đánh giá {row.review_score} · Bonus +
+          {row.bonus_score} · Trừ {row.penalty_score}
         </span>
       ),
     },
@@ -237,10 +236,10 @@ function MvpCycleDetailPage() {
           <Button variant="ghost" size="sm" onClick={() => setDetailFor(row)}>
             Xem chi tiết
           </Button>
-          {access.can(PERMISSIONS.MVP_REVIEW) && !isPublished && row.user_id !== access.userId ? (
-            <Button variant="secondary" size="sm" onClick={() => setReviewFor(row)}>
-              {reviewBySubject.get(row.user_id)?.status === "submitted" ? "Xem đánh giá" : "Chấm điểm"}
-            </Button>
+          {reviewBySubject.get(row.user_id)?.status === "submitted" ? (
+            <Badge variant="success" size="sm">
+              Đã có đánh giá
+            </Badge>
           ) : null}
         </div>
       ),
@@ -368,6 +367,9 @@ function MvpCycleDetailPage() {
           <TabsTrigger value="scores">Bảng điểm</TabsTrigger>
           <TabsTrigger value="awards">Danh hiệu</TabsTrigger>
           <TabsTrigger value="vote">Bỏ phiếu</TabsTrigger>
+          {access.can(PERMISSIONS.MVP_REVIEW) ? (
+            <TabsTrigger value="review">Đánh giá Team</TabsTrigger>
+          ) : null}
           {access.can(PERMISSIONS.MVP_MANAGE) ? (
             <TabsTrigger value="data">Dữ liệu công việc</TabsTrigger>
           ) : null}
@@ -460,6 +462,12 @@ function MvpCycleDetailPage() {
           </div>
         </TabsContent>
 
+        {access.can(PERMISSIONS.MVP_REVIEW) ? (
+          <TabsContent value="review" className="mt-4">
+            <TeamReviewWorkspace cycleId={cycleId} isPublished={isPublished} />
+          </TabsContent>
+        ) : null}
+
         <TabsContent value="vote" className="mt-4">
           {data ? (
             <VotePanel
@@ -496,18 +504,6 @@ function MvpCycleDetailPage() {
         userName={detailFor?.userName ?? ""}
         totalScore={detailFor?.total_score ?? 0}
       />
-
-      {reviewFor && access.userId ? (
-        <ReviewDrawer
-          open
-          onOpenChange={(open) => !open && setReviewFor(null)}
-          cycleId={cycleId}
-          reviewerId={access.userId}
-          subjectId={reviewFor.user_id}
-          subjectName={reviewFor.userName ?? ""}
-          existing={reviewBySubject.get(reviewFor.user_id) as MvpReviewRow | undefined}
-        />
-      ) : null}
     </div>
   );
 }
