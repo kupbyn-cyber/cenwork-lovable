@@ -15,6 +15,7 @@ const JOBS = {
   "approval-overdue": "approval_mark_overdue",
   "duty-overdue": "duty_mark_overdue",
   "nap-reminders": "nap_run_reminders",
+  "task-recurrence": "task_recurrence_run",
 } as const;
 
 type JobName = keyof typeof JOBS;
