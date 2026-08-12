@@ -47,6 +47,7 @@ export function TaskCompleteDialog({ task, onOpenChange, onCompleted }: TaskComp
       void queryClient.invalidateQueries({ queryKey: ["task-results", input.id] });
       void queryClient.invalidateQueries({ queryKey: ["task-history", input.id] });
       void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+      invalidateProjectTaskScope(queryClient, task?.project_id);
       void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       cenToast.success("Đã hoàn thành công việc và lưu kết quả.");

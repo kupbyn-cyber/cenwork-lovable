@@ -48,6 +48,7 @@ export function TaskCancelDialog({
       void queryClient.invalidateQueries({ queryKey: ["task-approvals"] });
       void queryClient.invalidateQueries({ queryKey: ["task-history", input.id] });
       void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+      invalidateProjectTaskScope(queryClient, task?.project_id);
       void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
       void queryClient.invalidateQueries({ queryKey: ["today-insights"] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
