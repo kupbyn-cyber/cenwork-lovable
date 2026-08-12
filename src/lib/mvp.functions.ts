@@ -5,7 +5,12 @@ import { requireCenAuth } from "@/lib/auth/cen-auth-middleware";
 import { PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permission-guard";
 import { MVP_ANNOUNCEMENT_FORMULA_VERSION } from "@/lib/mvp-scoring";
-import { computeCycleScores, refreshAwardProposals, snapshotCycleTasks } from "@/lib/mvp.server";
+import {
+  computeCycleScores,
+  refreshAwardProposals,
+  snapshotCycleTasks,
+  syncCycleTaskSnapshot,
+} from "@/lib/mvp.server";
 import { canTransitionCycle, MVP_CYCLE_STATUS_LABEL } from "@/lib/mvp-scoring";
 
 /**
@@ -50,7 +55,16 @@ export const collectCycleData = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => cycleIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePermission(context.supabase, context.userId, PERMISSIONS.MVP_MANAGE);
-    return snapshotCycleTasks(context.supabase, data.cycleId);
+    const result = await snapshotCycleTasks(context.supabase, data.cycleId);
+    await context.supabase.rpc("write_audit", {
+      _action: "mvp.snapshot_sync",
+      _entity_type: "mvp_cycle",
+      _entity_id: data.cycleId,
+      _before: null,
+      _after: result,
+      _metadata: { locked: false },
+    });
+    return result;
   });
 
 export const recomputeCycleScores = createServerFn({ method: "POST" })
