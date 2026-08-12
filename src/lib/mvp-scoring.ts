@@ -648,25 +648,75 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
   const onTimeTasks = doneTasks.filter(
     (task) => task.completedAt !== null && task.completedAt <= task.deadline,
   );
-  const overdueOpen = committed.filter(
-    (task) => !isDone(task.status) && task.deadline < new Date().toISOString(),
-  ).length;
+  const nowIso = new Date().toISOString();
+  const overdueOpenTasks = committed.filter(
+    (task) => !isDone(task.status) && task.deadline < nowIso,
+  );
+  const overdueOpen = overdueOpenTasks.length;
+
+  /** MVP-FIX-05 — mô tả một công việc trong source_data để đối soát bằng tay. */
+  const describeTask = (task: MvpTaskInput) => {
+    const done = isDone(task.status);
+    const onTime = done && task.completedAt !== null && task.completedAt <= task.deadline;
+    const lateHours =
+      done && task.completedAt !== null && task.completedAt > task.deadline
+        ? Math.round(
+            ((new Date(task.completedAt).getTime() - new Date(task.deadline).getTime()) /
+              3_600_000) *
+              10,
+          ) / 10
+        : null;
+    return {
+      task_id: task.taskId ?? null,
+      title: task.title ?? null,
+      weight: task.weight,
+      status: task.status,
+      completed_at: task.completedAt,
+      deadline_snapshot: task.deadline,
+      is_completed: done,
+      on_time: done ? onTime : null,
+      late_hours: lateHours,
+      included: true,
+      warning:
+        done && task.completedAt === null
+          ? "Công việc đã hoàn thành nhưng thiếu mốc hoàn thành"
+          : !task.deadline
+            ? "Ảnh chụp thiếu hạn hoàn thành"
+            : null,
+    };
+  };
 
   const components: MvpComponentResult[] = [];
 
   // 1. Khối lượng hoàn thành theo trọng số.
   const hasTasks = committed.length >= MVP_MIN_COMMITTED_TASKS && totalWeight > 0;
+  const completionRatio = totalWeight > 0 ? Math.round((doneWeight / totalWeight) * 1000) / 1000 : 0;
   components.push({
     criterion: "completion",
     maxPoints: MVP_CRITERION_MAX.completion,
     earnedPoints: hasTasks ? round1((doneWeight / totalWeight) * MVP_CRITERION_MAX.completion) : 0,
     formula: "Tổng trọng số việc hoàn thành ÷ tổng trọng số việc nhận × 30",
-    sourceData: { doneWeight, totalWeight, taskCount: committed.length },
+    sourceData: {
+      taskCount: committed.length,
+      totalWeight,
+      completedTaskCount: doneTasks.length,
+      completedWeight: doneWeight,
+      doneWeight,
+      ratio: completionRatio,
+      earnedPoints: hasTasks
+        ? round1((doneWeight / totalWeight) * MVP_CRITERION_MAX.completion)
+        : 0,
+      maxPoints: MVP_CRITERION_MAX.completion,
+      items: committed.map(describeTask),
+    },
     isApplicable: hasTasks,
     notApplicableReason: hasTasks ? null : "Không có công việc được ghi nhận trong kỳ",
+    dataState: hasTasks ? "ok" : "not_applicable",
   });
 
   // 2. Đúng hạn.
+  const onTimeWeight = onTimeTasks.reduce((sum, task) => sum + task.weight, 0);
+  const lateWeight = doneWeight - onTimeWeight;
   components.push({
     criterion: "on_time",
     maxPoints: MVP_CRITERION_MAX.on_time,
@@ -675,9 +725,36 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
         ? round1((onTimeTasks.length / doneTasks.length) * MVP_CRITERION_MAX.on_time)
         : 0,
     formula: "Số việc hoàn thành đúng hạn ÷ số việc hoàn thành × 20",
-    sourceData: { onTime: onTimeTasks.length, done: doneTasks.length, overdueOpen },
+    sourceData: {
+      onTime: onTimeTasks.length,
+      done: doneTasks.length,
+      ratio:
+        doneTasks.length > 0 ? Math.round((onTimeTasks.length / doneTasks.length) * 1000) / 1000 : 0,
+      completedWeight: doneWeight,
+      onTimeWeight,
+      lateWeight,
+      earnedPoints:
+        doneTasks.length > 0
+          ? round1((onTimeTasks.length / doneTasks.length) * MVP_CRITERION_MAX.on_time)
+          : 0,
+      maxPoints: MVP_CRITERION_MAX.on_time,
+      items: doneTasks.map(describeTask),
+      overdueOpen,
+      penaltyPerOverdue: MVP_PENALTY_PER_OVERDUE,
+      penaltyPoints: Math.min(overdueOpen * MVP_PENALTY_PER_OVERDUE, MVP_PENALTY_MAX),
+      penaltyItems: overdueOpenTasks.map((task) => ({
+        task_id: task.taskId ?? null,
+        title: task.title ?? null,
+        weight: task.weight,
+        deadline_snapshot: task.deadline,
+        status: task.status,
+        reason: "Chưa hoàn thành sau hạn",
+        penalty: MVP_PENALTY_PER_OVERDUE,
+      })),
+    },
     isApplicable: doneTasks.length > 0,
     notApplicableReason: doneTasks.length > 0 ? null : "Chưa hoàn thành công việc nào trong kỳ",
+    dataState: doneTasks.length > 0 ? "ok" : committed.length > 0 ? "missing" : "not_applicable",
   });
 
   // 3. Nhóm Kỷ luật (15 điểm): báo cáo + xác nhận thông báo bắt buộc.
