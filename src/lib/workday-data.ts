@@ -100,13 +100,15 @@ export async function setWorkDay(input: {
   status: WorkDayStatus;
   shift?: WorkShift | null;
   userId?: string | null;
+  /** `yyyy-MM-dd`; bỏ trống là ngày hiện tại. RPC vẫn chặn ngày tương lai. */
+  day?: string | null;
   source?: string;
 }): Promise<WorkDayRecord> {
   const { data, error } = await callRpc("work_day_set", {
     _status: input.status,
     _shift: input.status === "working" ? (input.shift ?? "full_day") : null,
     _user: input.userId ?? null,
-    _day: null,
+    _day: input.day ?? null,
     _source: input.source ?? "popup",
   });
   if (error) throw new Error(error.message);
