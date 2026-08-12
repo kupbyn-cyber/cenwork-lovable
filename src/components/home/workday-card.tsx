@@ -116,7 +116,7 @@ export function WorkdayCard() {
             <Button
               type="button"
               size="sm"
-              variant={record ? "ghost" : "default"}
+              variant={record ? "ghost" : "primary"}
               onClick={() => openDialog()}
             >
               {record ? "Thay đổi" : "Xác nhận ngay"}
