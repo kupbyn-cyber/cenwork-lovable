@@ -1,3 +1,4 @@
+import { taskWeightBadgeLabel } from "@/lib/task-weight";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 
@@ -74,6 +75,7 @@ export function TaskQuickViewModal({ task, onOpenChange }: TaskQuickViewModalPro
               label={TASK_PRIORITY_LABEL[task.priority]}
               tone={TASK_PRIORITY_TONE[task.priority]}
             />
+            <StatusBadge label={taskWeightBadgeLabel(task.work_weight)} tone="neutral" />
             <DeadlineCountdown
               task={task}
               className={cn("text-body font-semibold", isTaskOverdue(task) && "text-state-danger")}
