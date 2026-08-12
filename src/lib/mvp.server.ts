@@ -6,6 +6,7 @@ import {
   type MvpAnnouncementInput,
   type MvpAwardCandidate,
   type MvpCriterion,
+  type MvpReportObligationInput,
   type MvpTaskInput,
 } from "@/lib/mvp-scoring";
 
@@ -24,6 +25,23 @@ type Db = {
 /** `yyyy-MM-dd` giờ Hà Nội → mốc ISO UTC đầu/cuối ngày. */
 function hanoiDayBoundary(dateStr: string, end: boolean): string {
   return new Date(`${dateStr}T${end ? "23:59:59.999" : "00:00:00.000"}+07:00`).toISOString();
+}
+
+/** Danh sách ngày `yyyy-MM-dd` trong khoảng (bao gồm hai đầu). */
+function dateRange(startStr: string, endStr: string): string[] {
+  const out: string[] = [];
+  const start = new Date(`${startStr}T00:00:00.000Z`);
+  const end = new Date(`${endStr}T00:00:00.000Z`);
+  for (let d = start; d.getTime() <= end.getTime(); d = new Date(d.getTime() + 86_400_000)) {
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+/** Thứ Hai–Thứ Sáu là ngày phải gửi báo cáo ngày theo quy tắc CEN hiện hành. */
+function isWorkingWeekday(dateStr: string): boolean {
+  const day = new Date(`${dateStr}T00:00:00.000Z`).getUTCDay();
+  return day >= 1 && day <= 5;
 }
 
 export interface SnapshotSyncResult {
@@ -217,6 +235,9 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     reviews,
     bonusApproved,
     announcementRecipients,
+    adminCmoRoles,
+    reportObligationRows,
+    nonWorkingDays,
   ] = await Promise.all([
 
       supabase
@@ -226,12 +247,15 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         )
         .eq("cycle_id", cycleId)
         .is("excluded_at", null),
-      supabase.from("profiles").select("id,primary_team_id").eq("status", "active"),
+      supabase
+        .from("profiles")
+        .select("id,primary_team_id,created_at,locked_at")
+        .eq("status", "active"),
       supabase.from("user_roles").select("user_id,role").eq("role", "leader"),
       supabase.from("teams").select("id,leader_id"),
       supabase
         .from("daily_reports")
-        .select("author_id,status")
+        .select("author_id,status,report_date")
         .gte("report_date", ctx.weekStart)
         .lte("report_date", ctx.weekEnd)
         .in("status", ["submitted", "approved"]),
@@ -261,6 +285,20 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
         )
         .gte("due_at", weekFrom)
         .lte("due_at", weekTo),
+      // Admin/CMO không thuộc diện gửi báo cáo ngày (Business Rule REPORT-FIX-01).
+      supabase.from("user_roles").select("user_id,role").in("role", ["admin", "cmo"]),
+      // Nguồn nghĩa vụ báo cáo chính thức nếu hệ thống đã sinh dữ liệu.
+      supabase
+        .from("report_obligations")
+        .select("user_id,report_type,period_key,due_at,is_exempt,exempt_reason,first_submitted_at")
+        .gte("period_key", ctx.weekStart)
+        .lte("period_key", `${ctx.weekEnd}z`),
+      // Ngày nghỉ/không làm việc đã được duyệt — không đưa vào mẫu số báo cáo.
+      supabase
+        .from("report_non_working_days")
+        .select("day,team_id,user_id,reason")
+        .gte("day", ctx.weekStart)
+        .lte("day", ctx.weekEnd),
 
     ]);
 
@@ -275,6 +313,9 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     reviews,
     bonusApproved,
     announcementRecipients,
+    adminCmoRoles,
+    reportObligationRows,
+    nonWorkingDays,
   ]) {
     if (result.error) throw new Error(result.error.message);
   }
@@ -315,9 +356,10 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     if (team.leader_id) teamOfLeader.set(team.leader_id, team.id);
   }
 
-  const dailyCount = new Map<string, number>();
-  for (const row of (dailyReports.data ?? []) as { author_id: string }[]) {
-    dailyCount.set(row.author_id, (dailyCount.get(row.author_id) ?? 0) + 1);
+  /** Ngày đã có báo cáo hợp lệ: `userId|yyyy-MM-dd`. */
+  const dailyDone = new Set<string>();
+  for (const row of (dailyReports.data ?? []) as { author_id: string; report_date: string }[]) {
+    dailyDone.add(`${row.author_id}|${String(row.report_date).slice(0, 10)}`);
   }
 
   const weeklyDone = new Set(
@@ -354,22 +396,74 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
    * Chỉ đọc dữ liệu M6 đang có, không sinh bảng hay trường mới.
    */
   const announcementsByUser = new Map<string, MvpAnnouncementInput[]>();
-  for (const raw of (announcementRecipients.data ?? []) as Record<string, unknown>[]) {
+  const recipientRows = (announcementRecipients.data ?? []) as Record<string, unknown>[];
+
+  /**
+   * MVP-FIX-04 — Lịch sử hạn xác nhận của người nhận.
+   * Dùng để phát hiện hạn bị đổi sau khi người nhận đã quá hạn theo hạn cũ.
+   */
+  const announcementIds = Array.from(
+    new Set(
+      recipientRows
+        .map((row) => (row["announcement"] as Record<string, unknown> | null)?.["id"] as string)
+        .filter(Boolean),
+    ),
+  );
+  const historyByPair = new Map<string, { dueAt: string; acknowledgedAt: string | null }[]>();
+  if (announcementIds.length > 0) {
+    const { data: historyRows, error: historyError } = await supabase
+      .from("announcement_recipient_history")
+      .select("announcement_id,user_id,version,due_at,acknowledged_at")
+      .in("announcement_id", announcementIds);
+    if (historyError) throw new Error(historyError.message);
+    for (const row of (historyRows ?? []) as Record<string, unknown>[]) {
+      const key = `${row["announcement_id"]}|${row["user_id"]}`;
+      const list = historyByPair.get(key) ?? [];
+      list.push({
+        dueAt: row["due_at"] as string,
+        acknowledgedAt: (row["acknowledged_at"] as string | null) ?? null,
+      });
+      historyByPair.set(key, list);
+    }
+  }
+
+  for (const raw of recipientRows) {
     const announcement = raw["announcement"] as Record<string, unknown> | null;
     if (!announcement) continue;
     if (announcement["status"] !== "published") continue;
     if (!announcement["due_at"]) continue;
     const userId = raw["user_id"] as string;
+    const currentDue = (raw["due_at"] as string | null) ?? null;
+    const ackAt = (raw["acknowledged_at"] as string | null) ?? null;
+    // Hạn cũ đã bị bỏ lỡ (chưa xác nhận tại thời điểm đó) và sau đó bị dời ra sau.
+    let missedHistoricalDue: string | null = null;
+    for (const past of historyByPair.get(`${announcement["id"]}|${userId}`) ?? []) {
+      if (!past.dueAt) continue;
+      if (currentDue && new Date(past.dueAt).getTime() >= new Date(currentDue).getTime()) continue;
+      const ackForThatVersion = past.acknowledgedAt ?? ackAt;
+      const missed =
+        !ackForThatVersion ||
+        new Date(ackForThatVersion).getTime() > new Date(past.dueAt).getTime();
+      if (!missed) continue;
+      if (
+        !missedHistoricalDue ||
+        new Date(past.dueAt).getTime() < new Date(missedHistoricalDue).getTime()
+      ) {
+        missedHistoricalDue = past.dueAt;
+      }
+    }
     const list = announcementsByUser.get(userId) ?? [];
     list.push({
       announcementId: announcement["id"] as string,
       title: (announcement["title"] as string) ?? "",
-      dueAt: (raw["due_at"] as string | null) ?? null,
+      dueAt: currentDue,
       receivedAt: (raw["created_at"] as string | null) ?? null,
-      acknowledgedAt: (raw["acknowledged_at"] as string | null) ?? null,
+      acknowledgedAt: ackAt,
       isRevoked: Boolean(announcement["revoked_at"]),
       isExempt: raw["status"] === "exempt",
       exemptReason: (raw["exempt_reason"] as string | null) ?? null,
+      dueChangedAfterOverdue: missedHistoricalDue !== null,
+      gradingDueAt: missedHistoricalDue,
     });
     announcementsByUser.set(userId, list);
   }
@@ -378,6 +472,101 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
     ((cycle as Record<string, unknown>)["data_locked_at"] as string | null) ??
     new Date().toISOString();
 
+  /* ===== MVP-FIX-04 — Nghĩa vụ báo cáo thực tế của từng nhân sự ===== */
+
+  const exemptFromReporting = new Set(
+    ((adminCmoRoles.data ?? []) as { user_id: string }[]).map((row) => row.user_id),
+  );
+
+  const nonWorkingGlobal = new Set<string>();
+  const nonWorkingTeam = new Map<string, string>();
+  const nonWorkingUser = new Map<string, string>();
+  for (const row of (nonWorkingDays.data ?? []) as Record<string, unknown>[]) {
+    const day = String(row["day"]).slice(0, 10);
+    const reason = (row["reason"] as string) ?? "Ngày không làm việc";
+    if (row["user_id"]) nonWorkingUser.set(`${row["user_id"]}|${day}`, reason);
+    else if (row["team_id"]) nonWorkingTeam.set(`${row["team_id"]}|${day}`, reason);
+    else nonWorkingGlobal.add(day);
+  }
+
+  /** Nghĩa vụ chính thức nếu report_obligations đã có dữ liệu cho kỳ. */
+  const officialByUser = new Map<string, MvpReportObligationInput[]>();
+  for (const row of (reportObligationRows.data ?? []) as Record<string, unknown>[]) {
+    const kind = row["report_type"] === "weekly" ? "weekly" : "daily";
+    if (row["report_type"] !== "daily" && row["report_type"] !== "weekly") continue;
+    const userId = row["user_id"] as string;
+    const list = officialByUser.get(userId) ?? [];
+    list.push({
+      kind,
+      periodKey: row["period_key"] as string,
+      dueAt: (row["due_at"] as string | null) ?? null,
+      state: row["is_exempt"]
+        ? "exempt"
+        : row["first_submitted_at"]
+          ? "completed"
+          : "missing",
+      exemptReason: (row["exempt_reason"] as string | null) ?? null,
+      source: "obligation",
+    });
+    officialByUser.set(userId, list);
+  }
+
+  const cycleDays = dateRange(ctx.weekStart, ctx.weekEnd);
+  const lockTime = new Date(announcementLockAt).getTime();
+
+  /**
+   * Suy nghĩa vụ báo cáo ngày khi hệ thống chưa sinh report_obligations:
+   * ngày làm việc trong kỳ, trừ ngày nghỉ đã duyệt, trừ thời gian trước khi
+   * tài khoản tồn tại hoặc sau khi bị khóa, và chỉ tính ngày đã qua tại mốc chốt.
+   */
+  function derivedObligations(profile: {
+    id: string;
+    primary_team_id: string | null;
+    created_at?: string | null;
+    locked_at?: string | null;
+  }): MvpReportObligationInput[] {
+    const items: MvpReportObligationInput[] = [];
+    if (!exemptFromReporting.has(profile.id)) {
+      const activeFrom = profile.created_at ? String(profile.created_at).slice(0, 10) : null;
+      const activeTo = profile.locked_at ? String(profile.locked_at).slice(0, 10) : null;
+      for (const day of cycleDays) {
+        if (!isWorkingWeekday(day)) continue;
+        if (activeFrom && day < activeFrom) continue;
+        if (activeTo && day > activeTo) continue;
+        if (new Date(hanoiDayBoundary(day, true)).getTime() > lockTime) continue;
+        const exemptReason =
+          nonWorkingUser.get(`${profile.id}|${day}`) ??
+          (profile.primary_team_id
+            ? nonWorkingTeam.get(`${profile.primary_team_id}|${day}`)
+            : undefined) ??
+          (nonWorkingGlobal.has(day) ? "Ngày nghỉ chung của công ty" : undefined);
+        items.push({
+          kind: "daily",
+          periodKey: day,
+          dueAt: hanoiDayBoundary(day, true),
+          state: exemptReason
+            ? "exempt"
+            : dailyDone.has(`${profile.id}|${day}`)
+              ? "completed"
+              : "missing",
+          exemptReason: exemptReason ?? null,
+          source: "derived",
+        });
+      }
+    }
+    const leaderTeam = teamOfLeader.get(profile.id) ?? null;
+    if (leaderIds.has(profile.id) && leaderTeam) {
+      items.push({
+        kind: "weekly",
+        periodKey: ctx.weekStart,
+        dueAt: hanoiDayBoundary(ctx.weekEnd, true),
+        state: weeklyDone.has(leaderTeam) ? "completed" : "missing",
+        exemptReason: null,
+        source: "derived",
+      });
+    }
+    return items;
+  }
 
   // Kỳ liền trước để xét danh hiệu Tiến bộ vượt bậc.
   const { data: previousCycle } = await supabase
@@ -406,13 +595,14 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
   for (const profile of (profiles.data ?? []) as {
     id: string;
     primary_team_id: string | null;
+    created_at?: string | null;
+    locked_at?: string | null;
   }[]) {
-    const isLeader = leaderIds.has(profile.id);
-    const leaderTeam = teamOfLeader.get(profile.id) ?? null;
+    const official = officialByUser.get(profile.id) ?? [];
+    const reportObligations = official.length > 0 ? official : derivedObligations(profile);
     const result = computeMvpScore({
       tasks: tasksByUser.get(profile.id) ?? [],
-      dailyReportsSubmitted: dailyCount.get(profile.id) ?? 0,
-      weeklyReportSubmitted: isLeader && leaderTeam ? weeklyDone.has(leaderTeam) : null,
+      reportObligations,
       votesReceived: voteCount.get(profile.id) ?? 0,
       topVotes,
       review: reviewByUser.get(profile.id) ?? null,
