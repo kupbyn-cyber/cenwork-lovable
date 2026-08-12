@@ -565,6 +565,9 @@ export function evaluateAnnouncements(
 /* ================= Đầu vào và kết quả tính điểm ================= */
 
 export interface MvpTaskInput {
+  /** MVP-FIX-05 — truy vết: id/tên công việc dùng để tạo ra điểm. */
+  taskId?: string;
+  title?: string;
   weight: number;
   status: string;
   deadline: string;
@@ -580,6 +583,14 @@ export interface MvpScoreInput {
   /** Số phiếu của người được bầu nhiều nhất trong kỳ (chuẩn hóa tương đối). */
   topVotes: number;
   review: { quality: number; proactive: number; impact: number; teamwork: number } | null;
+  /** Thông tin người đánh giá để giải thích 20 điểm Review. */
+  reviewMeta?: {
+    reviewerId: string | null;
+    reviewerName: string | null;
+    reason: string | null;
+    evidence: string | null;
+    submittedAt: string | null;
+  } | null;
   /** Tổng bonus đóng góp đặc biệt ĐÃ được CMO duyệt (tối đa +5). */
   bonusScore?: number;
   /** Thông báo bắt buộc xác nhận gửi tới nhân sự trong kỳ. */
