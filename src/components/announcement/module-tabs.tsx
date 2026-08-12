@@ -1,15 +1,23 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
 
 /**
- * NAP-02 — Tab điều hướng chung cho module "Thông báo & Phê duyệt".
- * Dùng Link nên chuyển tab không reload App Shell.
+ * NAP-UI-11 — Tab điều hướng chung: Thông báo | Đề xuất | Phê duyệt.
+ * "Đề xuất" và "Phê duyệt" dùng chung pathname /approvals, phân biệt bằng
+ * query param `view` nên active state phải tự tính, không dùng activeProps.
  */
 const TAB_CLASS =
   "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-control px-3 py-1.5 text-label font-medium text-text-muted transition-colors duration-fast hover:text-text-primary data-[status=active]:bg-surface-raised data-[status=active]:text-text-primary";
+const ACTIVE_CLASS = "bg-surface-raised text-text-primary";
 
 export function AnnouncementModuleTabs({ className }: { className?: string }) {
+  const location = useRouterState({ select: (state) => state.location });
+  const onApprovals = location.pathname.startsWith("/approvals");
+  const view = (location.search as { view?: string } | undefined)?.view;
+  const proposalActive = onApprovals && view === "proposal";
+  const approvalActive = onApprovals && !proposalActive;
+
   return (
     <nav
       aria-label="Thông báo và phê duyệt"
@@ -26,7 +34,20 @@ export function AnnouncementModuleTabs({ className }: { className?: string }) {
       >
         Thông báo
       </Link>
-      <Link to="/approvals" className={TAB_CLASS} activeProps={{ "aria-current": "page" }}>
+      <Link
+        to="/approvals"
+        search={{ view: "proposal" }}
+        className={cn(TAB_CLASS, proposalActive && ACTIVE_CLASS)}
+        {...(proposalActive ? { "aria-current": "page" as const } : {})}
+      >
+        Đề xuất
+      </Link>
+      <Link
+        to="/approvals"
+        search={{ view: "approval" }}
+        className={cn(TAB_CLASS, approvalActive && ACTIVE_CLASS)}
+        {...(approvalActive ? { "aria-current": "page" as const } : {})}
+      >
         Phê duyệt
       </Link>
     </nav>
