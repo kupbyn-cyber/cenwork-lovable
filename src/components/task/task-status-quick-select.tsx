@@ -19,6 +19,7 @@ import {
   type TaskAccessContext,
   type TaskRow,
   type TaskStatus,
+  invalidateProjectTaskScope,
 } from "@/lib/task-data";
 
 /**
@@ -45,6 +46,7 @@ export function TaskStatusQuickSelect({
       void queryClient.invalidateQueries({ queryKey: ["tasks"] });
       void queryClient.invalidateQueries({ queryKey: ["task", task.id] });
       void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+      invalidateProjectTaskScope(queryClient, task.project_id);
       void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
       cenToast.success("Đã cập nhật trạng thái công việc.");
     },

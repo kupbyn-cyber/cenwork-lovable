@@ -49,22 +49,19 @@ export function isTaskMine(
   return false;
 }
 
-/** Dự án liên quan trực tiếp tới người dùng hiện tại. */
+/**
+ * Dự án liên quan trực tiếp tới người dùng hiện tại.
+ * Định nghĩa không đổi; phần "có Task của tôi trong dự án" nay đến từ một tập
+ * project_id nhẹ do database tổng hợp (CEN-PERF-05) thay vì quét toàn bộ Task.
+ */
 export function isProjectMine(
   project: ProjectRow,
   scope: MineScope,
-  tasks: TaskRow[],
+  projectIdsWithMyTasks: ReadonlySet<string>,
 ): boolean {
   const me = scope.userId;
   if (!me) return false;
   if (project.owner_id === me || project.created_by === me) return true;
   if (shareTeam(scope, [project.responsible_team_id, ...project.teamIds])) return true;
-  return tasks.some(
-    (task) =>
-      task.project_id === project.id &&
-      (task.assignee_id === me ||
-        task.created_by === me ||
-        task.reviewer_id === me ||
-        task.participantIds.includes(me)),
-  );
+  return projectIdsWithMyTasks.has(project.id);
 }

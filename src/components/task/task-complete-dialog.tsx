@@ -6,7 +6,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { cenToast } from "@/components/ui/toast";
-import { completeTaskWithResult } from "@/lib/task-data";
+import { completeTaskWithResult, invalidateProjectTaskScope } from "@/lib/task-data";
 
 /**
  * CEN 1.0 — Hoàn thành công việc kèm Kết quả công việc.
@@ -18,6 +18,7 @@ export interface TaskCompleteTarget {
   id: string;
   name: string;
   result_text?: string | null;
+  project_id?: string | null;
 }
 
 export interface TaskCompleteDialogProps {
@@ -47,6 +48,7 @@ export function TaskCompleteDialog({ task, onOpenChange, onCompleted }: TaskComp
       void queryClient.invalidateQueries({ queryKey: ["task-results", input.id] });
       void queryClient.invalidateQueries({ queryKey: ["task-history", input.id] });
       void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+      invalidateProjectTaskScope(queryClient, task?.project_id);
       void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       cenToast.success("Đã hoàn thành công việc và lưu kết quả.");

@@ -60,7 +60,6 @@ import {
   activePeopleQuery,
   allProjectApprovalsQuery,
   approvalStage,
-  buildProjectTaskStats,
   canAddTaskToProject,
   canDecideProject,
   canEditProject,
@@ -70,7 +69,6 @@ import {
   canSubmitProject,
   decideProject,
   formatDate,
-  groupTasksByProject,
   isProjectApproved,
   isProjectArchived,
   isProjectManuallyArchived,
@@ -78,6 +76,7 @@ import {
   isProjectRejected,
   nextStatuses,
   projectsQuery,
+  projectTaskOverviewQuery,
   setProjectStatus,
   submitProject,
   type ProjectAccessContext,
@@ -96,7 +95,7 @@ import {
   formatDateTime,
   isTaskArchived,
   isTaskOverdue,
-  tasksQuery,
+  projectTasksQuery,
   type TaskAccessContext,
   type TaskRow,
 } from "@/lib/task-data";
@@ -155,6 +154,37 @@ function projectBucket(project: ProjectRow): ProjectView {
   return "active";
 }
 
+/**
+ * CEN-PERF-05 — Task của một dự án, tải khi accordion mở (component chỉ mount lúc đó).
+ * Lỗi hoặc loading chỉ ảnh hưởng trong phạm vi accordion này.
+ */
+function ProjectTaskSection({
+  projectId,
+  render,
+}: {
+  projectId: string;
+  render: (tasks: TaskRow[]) => React.ReactNode;
+}) {
+  const result = useQuery(projectTasksQuery(projectId));
+  if (result.isPending) {
+    return (
+      <div className="flex flex-col gap-2 py-1">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    );
+  }
+  if (result.isError) {
+    return (
+      <ErrorState
+        title="Không tải được công việc của dự án"
+        onRetry={() => void result.refetch()}
+      />
+    );
+  }
+  return <>{render(result.data ?? [])}</>;
+}
+
 function ProjectsPage() {
   const access = useOrgAccess();
   const navigate = useNavigate();
@@ -163,7 +193,7 @@ function ProjectsPage() {
   const isMobile = useIsMobile();
 
   const projectsResult = useQuery(projectsQuery());
-  const tasksResult = useQuery(tasksQuery());
+  const overviewResult = useQuery(projectTaskOverviewQuery());
   const approvalsResult = useQuery(allProjectApprovalsQuery());
   const teamsResult = useQuery(teamsQuery());
   const facilitiesResult = useQuery(facilitiesQuery());
@@ -200,7 +230,6 @@ function ProjectsPage() {
   const [taskDeleteTarget, setTaskDeleteTarget] = React.useState<TaskRow | null>(null);
 
   const projects = React.useMemo(() => projectsResult.data ?? [], [projectsResult.data]);
-  const allTasks = React.useMemo(() => tasksResult.data ?? [], [tasksResult.data]);
   const teams = teamsResult.data ?? [];
   const facilities = facilitiesResult.data ?? [];
   const people = peopleResult.data ?? [];
@@ -214,9 +243,15 @@ function ProjectsPage() {
     [access.userId, access.leaderTeamId, myPrimaryTeamId],
   );
 
-  /** KPI Task và Task con: tính từ MỘT query tasks duy nhất (không N+1). */
-  const statsByProject = React.useMemo(() => buildProjectTaskStats(allTasks), [allTasks]);
-  const tasksByProject = React.useMemo(() => groupTasksByProject(allTasks), [allTasks]);
+  /**
+   * CEN-PERF-05 — KPI Task lấy từ một aggregate ở database (không tải Task rows).
+   * Task chi tiết chỉ được tải khi người dùng mở rộng từng dự án.
+   */
+  const statsByProject = overviewResult.data?.stats ?? {};
+  const mineProjectIds = React.useMemo(
+    () => overviewResult.data?.mineProjectIds ?? new Set<string>(),
+    [overviewResult.data],
+  );
 
   const ctx: ProjectAccessContext = {
     userId: access.userId,
@@ -227,8 +262,16 @@ function ProjectsPage() {
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["projects"] });
-    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["project-approvals-all"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+  };
+
+  /** Sau mutation Task: chỉ làm mới Task của đúng dự án đó và bảng tổng hợp KPI. */
+  const refreshProjectTasks = (projectId: string | null | undefined) => {
+    if (projectId) void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
     void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
     void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
   };
@@ -291,10 +334,10 @@ function ProjectsPage() {
 
   /* ---------- Mutation Task ---------- */
   const taskArchiveMutation = useMutation({
-    mutationFn: (input: { id: string; archived: boolean }) =>
+    mutationFn: (input: { id: string; archived: boolean; projectId: string | null }) =>
       setManualArchive("task", input.id, input.archived),
     onSuccess: (_data, input) => {
-      refresh();
+      refreshProjectTasks(input.projectId);
       setTaskArchiveTarget(null);
       setTaskRestoreTarget(null);
       cenToast.success(
@@ -306,8 +349,8 @@ function ProjectsPage() {
 
   const taskDeleteMutation = useMutation({
     mutationFn: (task: TaskRow) => softDeleteEntity("task", task.id),
-    onSuccess: () => {
-      refresh();
+    onSuccess: (_data, task) => {
+      refreshProjectTasks(task.project_id);
       setTaskDeleteTarget(null);
       cenToast.success("Đã xóa công việc khỏi danh sách vận hành.");
     },
@@ -323,10 +366,19 @@ function ProjectsPage() {
       if (ownerFilter !== ALL && project.owner_id !== ownerFilter) return false;
       if (teamFilter !== ALL && !project.teamIds.includes(teamFilter)) return false;
       if (facilityFilter !== ALL && !project.facilityIds.includes(facilityFilter)) return false;
-      if (mineOnly && !isProjectMine(project, mineScope, allTasks)) return false;
+      if (mineOnly && !isProjectMine(project, mineScope, mineProjectIds)) return false;
       return true;
     },
-    [search, statusFilter, ownerFilter, teamFilter, facilityFilter, mineOnly, mineScope, allTasks],
+    [
+      search,
+      statusFilter,
+      ownerFilter,
+      teamFilter,
+      facilityFilter,
+      mineOnly,
+      mineScope,
+      mineProjectIds,
+    ],
   );
 
   const counts = React.useMemo(() => {
@@ -529,8 +581,7 @@ function ProjectsPage() {
     },
   ];
 
-  const renderTaskList = (project: ProjectRow) => {
-    const tasks = tasksByProject[project.id] ?? [];
+  const renderTaskRows = (tasks: TaskRow[]) => {
     if (tasks.length === 0) {
       return (
         <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
@@ -564,6 +615,11 @@ function ProjectsPage() {
       />
     );
   };
+
+  /** Task chỉ được tải khi dự án được mở rộng (accordion chỉ mount children khi mở). */
+  const renderTaskList = (project: ProjectRow) => (
+    <ProjectTaskSection projectId={project.id} render={renderTaskRows} />
+  );
 
   const renderApprovalHistory = (project: ProjectRow) => {
     const entries = (approvals[project.id] ?? []).slice(0, 5);
@@ -735,8 +791,9 @@ function ProjectsPage() {
     return renderTaskList(project);
   };
 
-  const loading = projectsResult.isLoading || tasksResult.isLoading;
-  const errored = projectsResult.isError || tasksResult.isError;
+  // Danh sách dự án không chờ Task: KPI đến sau vẫn không chặn hiển thị.
+  const loading = projectsResult.isLoading;
+  const errored = projectsResult.isError;
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -860,7 +917,7 @@ function ProjectsPage() {
           title="Không tải được danh sách dự án"
           onRetry={() => {
             void projectsResult.refetch();
-            void tasksResult.refetch();
+            void overviewResult.refetch();
           }}
         />
       ) : visibleRows.length === 0 ? (
@@ -945,7 +1002,7 @@ function ProjectsPage() {
               prev.includes(taskProject.id) ? prev : [...prev, taskProject.id],
             );
             setTaskProject(null);
-            refresh();
+            refreshProjectTasks(taskProject.id);
           }}
         />
       ) : null}
@@ -1013,7 +1070,7 @@ function ProjectsPage() {
           if (!open) setTaskCompleteTarget(null);
         }}
         onCompleted={() => {
-          refresh();
+          refreshProjectTasks(taskCompleteTarget?.project_id ?? null);
           setTaskCompleteTarget(null);
         }}
       />
@@ -1027,7 +1084,11 @@ function ProjectsPage() {
         loading={taskArchiveMutation.isPending}
         onConfirm={() =>
           taskArchiveTarget &&
-          taskArchiveMutation.mutate({ id: taskArchiveTarget.id, archived: true })
+          taskArchiveMutation.mutate({
+            id: taskArchiveTarget.id,
+            archived: true,
+            projectId: taskArchiveTarget.project_id,
+          })
         }
       />
 
@@ -1040,7 +1101,11 @@ function ProjectsPage() {
         loading={taskArchiveMutation.isPending}
         onConfirm={() =>
           taskRestoreTarget &&
-          taskArchiveMutation.mutate({ id: taskRestoreTarget.id, archived: false })
+          taskArchiveMutation.mutate({
+            id: taskRestoreTarget.id,
+            archived: false,
+            projectId: taskRestoreTarget.project_id,
+          })
         }
       />
 

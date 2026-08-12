@@ -53,6 +53,8 @@ export function TaskApprovalPanel({ ctx }: { ctx: TaskAccessContext }) {
     void queryClient.invalidateQueries({ queryKey: ["task-approvals"] });
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     void queryClient.invalidateQueries({ queryKey: ["project-task-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["project-task-overview"] });
     void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     void queryClient.invalidateQueries({ queryKey: ["today-hub"] });
     void queryClient.invalidateQueries({ queryKey: ["today-insights"] });
