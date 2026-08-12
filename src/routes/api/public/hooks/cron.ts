@@ -68,13 +68,22 @@ export const Route = createFileRoute("/api/public/hooks/cron")({
           }
         }
 
+        // NOTIFY-PUSH-01 — đẩy Web Push ngay sau các tác vụ (lỗi không chặn phần còn lại).
+        let push: unknown = { skipped: true };
+        try {
+          const { dispatchPushOutbox } = await import("@/lib/push.server");
+          push = await dispatchPushOutbox({});
+        } catch (error) {
+          push = { error: (error as Error).message };
+        }
+
         // Hàng đợi Telegram chạy ngay sau khi các tác vụ sinh tin nhắn.
         try {
           const { dispatchOutbox } = await import("@/lib/telegram-dispatch.server");
           const dispatched = await dispatchOutbox({ actorId: null });
-          return Response.json({ ok: true, jobs: results, telegram: dispatched });
+          return Response.json({ ok: true, jobs: results, telegram: dispatched, push });
         } catch (error) {
-          return Response.json({ ok: true, jobs: results, telegram: { error: (error as Error).message } });
+          return Response.json({ ok: true, jobs: results, telegram: { error: (error as Error).message }, push });
         }
       },
     },
