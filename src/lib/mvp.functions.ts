@@ -61,7 +61,7 @@ export const collectCycleData = createServerFn({ method: "POST" })
       _entity_type: "mvp_cycle",
       _entity_id: data.cycleId,
       _before: null,
-      _after: result,
+      _after: { ...result },
       _metadata: { locked: false },
     });
     return result;
