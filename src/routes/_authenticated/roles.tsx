@@ -99,6 +99,8 @@ function RoleAssignment() {
       void queryClient.invalidateQueries({ queryKey: ["members"] });
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       void queryClient.invalidateQueries({ queryKey: ["effective-permissions"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-access"] });
+      void queryClient.invalidateQueries({ queryKey: ["reviewer-directory"] });
       cenToast.success("Đã cập nhật vai trò hệ thống.");
       setPendingId(null);
     },
