@@ -73,6 +73,7 @@ export interface MvpScorecardRow {
   auto_score: number;
   review_score: number;
   vote_score: number;
+  bonus_score: number;
   penalty_score: number;
   total_score: number;
   data_completeness: number;
@@ -83,7 +84,7 @@ export interface MvpScorecardRow {
 }
 
 const SCORECARD_SELECT = `
-  id,cycle_id,user_id,team_id,auto_score,review_score,vote_score,penalty_score,total_score,
+  id,cycle_id,user_id,team_id,auto_score,review_score,vote_score,bonus_score,penalty_score,total_score,
   data_completeness,is_eligible,ineligible_reason,status,computed_at,
   member:profiles!mvp_scorecards_user_id_fkey(id,display_name),
   team:teams(id,name)
@@ -102,6 +103,7 @@ function mapScorecard(raw: Record<string, unknown>): MvpScorecardRow {
     auto_score: Number(raw["auto_score"] ?? 0),
     review_score: Number(raw["review_score"] ?? 0),
     vote_score: Number(raw["vote_score"] ?? 0),
+    bonus_score: Number(raw["bonus_score"] ?? 0),
     penalty_score: Number(raw["penalty_score"] ?? 0),
     total_score: Number(raw["total_score"] ?? 0),
     data_completeness: Number(raw["data_completeness"] ?? 0),
