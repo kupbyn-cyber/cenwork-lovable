@@ -231,13 +231,12 @@ function AnnouncementsPage() {
         description="Theo dõi thông báo nội bộ và các yêu cầu cần phê duyệt."
         actions={
           <ModuleCreateActions
-            canCreateAnnouncement={can(PERMISSIONS.ANNOUNCEMENTS_CREATE)}
-            canCreateApproval={can(PERMISSIONS.APPROVALS_CREATE)}
-            onCreateAnnouncement={() => {
+            context="announcement"
+            canCreate={can(PERMISSIONS.ANNOUNCEMENTS_CREATE)}
+            onCreate={() => {
               setEditing(null);
               setDrawerOpen(true);
             }}
-            onCreateApproval={() => setApprovalOpen(true)}
           />
         }
       >
