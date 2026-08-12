@@ -77,15 +77,18 @@ export async function buildTodayHub(
   const privileged = isSystemAdminRole(role);
 
   // ROLE-01: quyền hiệu lực đọc từ database, fail closed khi không tải được.
+  // PERF-02: nạp song song với các nguồn khác; nguồn nào cần quyền thì chờ đúng promise này.
   const permissionSet = new Set<string>();
-  try {
-    const perms = await supabase.rpc("perm_effective_for", { _user: userId });
-    for (const row of (perms.data ?? []) as { permission_key: string; enabled: boolean }[]) {
-      if (row.enabled) permissionSet.add(row.permission_key);
+  const permissionsReady = (async () => {
+    try {
+      const perms = await supabase.rpc("perm_effective_for", { _user: userId });
+      for (const row of (perms.data ?? []) as { permission_key: string; enabled: boolean }[]) {
+        if (row.enabled) permissionSet.add(row.permission_key);
+      }
+    } catch (error) {
+      console.error("[today-hub] permissions", error);
     }
-  } catch (error) {
-    console.error("[today-hub] permissions", error);
-  }
+  })();
   const can = (permission: string) => permissionSet.has(permission);
 
   const failedSources: string[] = [];
