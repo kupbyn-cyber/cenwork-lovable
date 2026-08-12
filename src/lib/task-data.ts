@@ -331,6 +331,53 @@ export async function fetchTask(id: string): Promise<TaskRow | null> {
 
 export const tasksQuery = () => queryOptions({ queryKey: ["tasks"], queryFn: fetchTasks });
 
+/* ---- CEN-PERF-05 — Task của MỘT dự án, chỉ tải khi accordion được mở ---- */
+
+async function fetchProjectParticipantMap(projectId: string): Promise<ParticipantMap> {
+  const map: ParticipantMap = new Map();
+  const { data, error } = await (
+    supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: { task_id: string; user_id: string }[] | null; error: unknown }>
+  )("task_participants_visible", { _project: projectId });
+  if (error) return map;
+  for (const row of data ?? []) {
+    if (!row.task_id || !row.user_id) continue;
+    const list = map.get(row.task_id);
+    if (list) list.push(row.user_id);
+    else map.set(row.task_id, [row.user_id]);
+  }
+  return map;
+}
+
+/** Cùng phạm vi/điều kiện với fetchTasks nhưng giới hạn theo một dự án; RLS vẫn quyết định. */
+export async function fetchProjectTasks(projectId: string): Promise<TaskRow[]> {
+  const context = primeTaskContext();
+  const participants = fetchProjectParticipantMap(projectId);
+  const request = supabase
+    .from("tasks")
+    .select(SELECT)
+    .eq("project_id", projectId)
+    .is("deleted_at", null)
+    .or("approval_status.eq.approved,cancelled_at.not.is.null")
+    .order("deadline", { ascending: true });
+  const [{ data, error }, participantMap] = await Promise.all([request, participants, context]);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask, participantMap));
+}
+
+export const projectTasksQuery = (projectId: string, enabled = true) =>
+  queryOptions({
+    queryKey: ["project-tasks", projectId],
+    queryFn: () => fetchProjectTasks(projectId),
+    enabled: enabled && projectId !== "",
+    // Cache ngắn: đóng rồi mở lại accordion không refetch ngay.
+    staleTime: 45_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
 export const taskQuery = (id: string) =>
   queryOptions({ queryKey: ["task", id], queryFn: () => fetchTask(id) });
 
