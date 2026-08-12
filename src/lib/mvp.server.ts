@@ -26,50 +26,154 @@ function hanoiDayBoundary(dateStr: string, end: boolean): string {
   return new Date(`${dateStr}T${end ? "23:59:59.999" : "00:00:00.000"}+07:00`).toISOString();
 }
 
-/** Ảnh chụp công việc thuộc kỳ: deadline rơi trong tuần và chưa lưu trữ. */
-export async function snapshotCycleTasks(supabase: Db, cycleId: string) {
+export interface SnapshotSyncResult {
+  added: number;
+  updated: number;
+  excluded: number;
+  restored: number;
+  total: number;
+  excludedReasons: Record<string, number>;
+}
+
+/**
+ * MVP-FIX-02 — Đồng bộ ảnh chụp công việc của kỳ.
+ * Chỉ chạy khi kỳ chưa khóa dữ liệu (data_locked_at). Sau khi khóa, ảnh chụp
+ * là nguồn dữ liệu duy nhất cho phần chấm điểm công việc.
+ */
+export async function snapshotCycleTasks(supabase: Db, cycleId: string): Promise<SnapshotSyncResult> {
   const { data: cycle, error: cycleError } = await supabase
     .from("mvp_cycles")
-    .select("id,week_start,week_end,status")
+    .select("id,week_start,week_end,status,data_locked_at")
     .eq("id", cycleId)
     .single();
   if (cycleError || !cycle) throw new Error(cycleError?.message ?? "Không tìm thấy kỳ MVP.");
   if (cycle.status === "published") throw new Error("Kỳ đã công bố, không thể thu thập lại.");
+  if (cycle.data_locked_at)
+    throw new Error("Kỳ đã khóa dữ liệu, ảnh chụp công việc không thể thay đổi.");
 
-  const from = hanoiDayBoundary(cycle.week_start as string, false);
-  const to = hanoiDayBoundary(cycle.week_end as string, true);
+  return syncCycleTaskSnapshot(supabase, cycle as Record<string, unknown>);
+}
+
+/** Đồng bộ thực tế — dùng chung cho thu thập thủ công và bước khóa kỳ. */
+export async function syncCycleTaskSnapshot(
+  supabase: Db,
+  cycle: Record<string, unknown>,
+): Promise<SnapshotSyncResult> {
+  const cycleId = cycle["id"] as string;
+  const from = hanoiDayBoundary(cycle["week_start"] as string, false);
+  const to = hanoiDayBoundary(cycle["week_end"] as string, true);
 
   const { data: tasks, error: taskError } = await supabase
     .from("tasks")
-    .select("id,assignee_id,priority,deadline,status")
-    .eq("is_archived", false)
-    .eq("approval_status", "approved")
+    .select(
+      "id,assignee_id,priority,deadline,status,completed_at,project_id,is_archived,deleted_at,cancelled_at,approval_status,project:projects(id,deleted_at)",
+    )
     .gte("deadline", from)
     .lte("deadline", to);
   if (taskError) throw new Error(taskError.message);
 
-  const { data: existing } = await supabase
-    .from("mvp_cycle_tasks")
-    .select("task_id")
-    .eq("cycle_id", cycleId);
-  const known = new Set(((existing ?? []) as { task_id: string }[]).map((row) => row.task_id));
+  const eligible = new Map<string, Record<string, unknown>>();
+  for (const task of (tasks ?? []) as Record<string, unknown>[]) {
+    const project = task["project"] as { deleted_at?: string | null } | null;
+    if (!task["assignee_id"]) continue;
+    if (task["is_archived"]) continue;
+    if (task["deleted_at"]) continue;
+    if (task["cancelled_at"]) continue;
+    if (task["approval_status"] && task["approval_status"] !== "approved") continue;
+    if (task["project_id"] && project?.deleted_at) continue;
+    eligible.set(task["id"] as string, task);
+  }
 
-  const rows = ((tasks ?? []) as Record<string, unknown>[])
-    .filter((task) => !known.has(task["id"] as string))
-    .map((task) => ({
-      cycle_id: cycleId,
-      task_id: task["id"] as string,
+  const { data: existingRows, error: existingError } = await supabase
+    .from("mvp_cycle_tasks")
+    .select(
+      "id,task_id,user_id,weight,original_deadline,final_status,final_completed_at,excluded_at",
+    )
+    .eq("cycle_id", cycleId);
+  if (existingError) throw new Error(existingError.message);
+  const existing = new Map<string, Record<string, unknown>>(
+    ((existingRows ?? []) as Record<string, unknown>[]).map((row) => [row["task_id"] as string, row]),
+  );
+
+  const now = new Date().toISOString();
+  const inserts: Record<string, unknown>[] = [];
+  let updated = 0;
+  let restored = 0;
+
+  for (const [taskId, task] of eligible) {
+    const snapshot = {
       user_id: task["assignee_id"] as string,
       weight: PRIORITY_WEIGHT[task["priority"] as string] ?? 1,
       original_deadline: task["deadline"] as string,
       final_status: task["status"] as string,
-    }));
+      final_completed_at: (task["completed_at"] as string | null) ?? null,
+    };
+    const current = existing.get(taskId);
+    if (!current) {
+      inserts.push({ cycle_id: cycleId, task_id: taskId, ...snapshot, snapshot_at: now });
+      continue;
+    }
+    const changed =
+      current["user_id"] !== snapshot.user_id ||
+      Number(current["weight"]) !== snapshot.weight ||
+      String(current["original_deadline"] ?? "") !== String(snapshot.original_deadline ?? "") ||
+      current["final_status"] !== snapshot.final_status ||
+      String(current["final_completed_at"] ?? "") !== String(snapshot.final_completed_at ?? "");
+    const wasExcluded = Boolean(current["excluded_at"]);
+    if (!changed && !wasExcluded) continue;
+    const { error } = await supabase
+      .from("mvp_cycle_tasks")
+      .update({ ...snapshot, snapshot_at: now, excluded_at: null, excluded_reason: null })
+      .eq("id", current["id"] as string);
+    if (error) throw new Error(error.message);
+    if (wasExcluded) restored += 1;
+    if (changed) updated += 1;
+  }
 
-  if (rows.length > 0) {
-    const { error } = await supabase.from("mvp_cycle_tasks").insert(rows);
+  if (inserts.length > 0) {
+    const { error } = await supabase.from("mvp_cycle_tasks").insert(inserts);
     if (error) throw new Error(error.message);
   }
-  return { added: rows.length, total: known.size + rows.length };
+
+  // Loại mềm các công việc không còn đủ điều kiện (giữ dấu vết, không xóa cứng).
+  const excludedReasons: Record<string, number> = {};
+  let excluded = 0;
+  const liveById = new Map(
+    ((tasks ?? []) as Record<string, unknown>[]).map((t) => [t["id"] as string, t]),
+  );
+  for (const [taskId, row] of existing) {
+    if (eligible.has(taskId)) continue;
+    const reason = exclusionReason(liveById.get(taskId));
+    excludedReasons[reason] = (excludedReasons[reason] ?? 0) + 1;
+    excluded += 1;
+    if (row["excluded_at"]) continue;
+    const { error } = await supabase
+      .from("mvp_cycle_tasks")
+      .update({ excluded_at: now, excluded_reason: reason, snapshot_at: now })
+      .eq("id", row["id"] as string);
+    if (error) throw new Error(error.message);
+  }
+
+  return {
+    added: inserts.length,
+    updated,
+    restored,
+    excluded,
+    total: eligible.size,
+    excludedReasons,
+  };
+}
+
+function exclusionReason(task: Record<string, unknown> | undefined): string {
+  if (!task) return "out_of_range_or_deleted";
+  if (task["deleted_at"]) return "deleted";
+  if (task["cancelled_at"]) return "cancelled";
+  if (task["is_archived"]) return "archived";
+  if (!task["assignee_id"]) return "no_assignee";
+  if (task["approval_status"] && task["approval_status"] !== "approved") return "not_approved";
+  const project = task["project"] as { deleted_at?: string | null } | null;
+  if (task["project_id"] && project?.deleted_at) return "project_deleted";
+  return "other";
 }
 
 interface ComputeContext {
