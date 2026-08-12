@@ -56,9 +56,8 @@ const SUBTITLE =
   "Theo dõi thông báo nội bộ, các đề xuất bạn đã gửi và các yêu cầu cần phê duyệt.";
 
 export const Route = createFileRoute("/_authenticated/approvals/")({
-  validateSearch: (search: Record<string, unknown>): { view: ApprovalView } => ({
-    view: search["view"] === "proposal" ? "proposal" : "approval",
-  }),
+  validateSearch: (search: Record<string, unknown>): { view?: ApprovalView } =>
+    search["view"] === "proposal" ? { view: "proposal" } : {},
   head: () => ({
     meta: [
       { title: TITLE },
@@ -194,7 +193,8 @@ function ApprovalCard({
 }
 
 function ApprovalsPage() {
-  const { view } = Route.useSearch();
+  const { view: rawView } = Route.useSearch();
+  const view: ApprovalView = rawView === "proposal" ? "proposal" : "approval";
   const { user } = useAuth();
   const { can } = useOrgAccess();
   const [status, setStatus] = React.useState("all");
