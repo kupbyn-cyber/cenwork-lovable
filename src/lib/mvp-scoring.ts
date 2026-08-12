@@ -241,8 +241,103 @@ export const MVP_PENALTY_PER_OVERDUE = 2;
 export const MVP_PENALTY_MAX = 10;
 export const MVP_MIN_COMPLETENESS = 60;
 export const MVP_MIN_COMMITTED_TASKS = 1;
+/**
+ * MVP-FIX-04 — Chỉ dùng khi hoàn toàn không xác định được nghĩa vụ báo cáo thực tế.
+ * Nghĩa vụ chuẩn lấy từ report_obligations hoặc lịch làm việc thực tế của từng người.
+ */
 export const MVP_EXPECTED_DAILY_REPORTS = 5;
 export const MVP_VOTE_MIN_REASON = 20;
+
+/* ========= Nghĩa vụ báo cáo (nhóm Kỷ luật) ========= */
+
+export const MVP_REPORTING_FORMULA_VERSION = "reporting-v2";
+
+export type MvpReportKind = "daily" | "weekly";
+export type MvpObligationState = "completed" | "missing" | "exempt";
+
+/** Một nghĩa vụ báo cáo cụ thể của nhân sự trong kỳ. */
+export interface MvpReportObligationInput {
+  kind: MvpReportKind;
+  /** Ngày/kỳ của nghĩa vụ, ví dụ `2026-08-10` hoặc `2026-W33`. */
+  periodKey: string;
+  dueAt: string | null;
+  state: MvpObligationState;
+  exemptReason?: string | null;
+  /** `obligation` = lấy từ report_obligations; `derived` = suy từ lịch làm việc thực tế. */
+  source: "obligation" | "derived";
+}
+
+export interface MvpReportingSummary {
+  version: string;
+  required: number;
+  completed: number;
+  missing: number;
+  exempt: number;
+  ratio: number;
+  score: number;
+  isApplicable: boolean;
+  notApplicableReason: string | null;
+  byKind: Record<MvpReportKind, { required: number; completed: number; exempt: number }>;
+  items: MvpReportObligationInput[];
+  sources: string[];
+}
+
+/**
+ * Chấm kỷ luật báo cáo theo nghĩa vụ thực tế.
+ * Mẫu số = số nghĩa vụ hợp lệ (đã trừ miễn trừ), không dùng con số cứng.
+ * Khi có cả báo cáo ngày và báo cáo tuần: ngày 70% + tuần 30% (giữ quy tắc cũ).
+ */
+export function evaluateReporting(
+  items: MvpReportObligationInput[],
+  maxPoints: number,
+): MvpReportingSummary {
+  const byKind: Record<MvpReportKind, { required: number; completed: number; exempt: number }> = {
+    daily: { required: 0, completed: 0, exempt: 0 },
+    weekly: { required: 0, completed: 0, exempt: 0 },
+  };
+  for (const item of items) {
+    const bucket = byKind[item.kind];
+    if (item.state === "exempt") {
+      bucket.exempt += 1;
+      continue;
+    }
+    bucket.required += 1;
+    if (item.state === "completed") bucket.completed += 1;
+  }
+
+  const required = byKind.daily.required + byKind.weekly.required;
+  const completed = byKind.daily.completed + byKind.weekly.completed;
+  const exempt = byKind.daily.exempt + byKind.weekly.exempt;
+  const dailyRatio = byKind.daily.required > 0 ? byKind.daily.completed / byKind.daily.required : null;
+  const weeklyRatio =
+    byKind.weekly.required > 0 ? byKind.weekly.completed / byKind.weekly.required : null;
+
+  let ratio = 0;
+  if (dailyRatio !== null && weeklyRatio !== null) ratio = dailyRatio * 0.7 + weeklyRatio * 0.3;
+  else if (dailyRatio !== null) ratio = dailyRatio;
+  else if (weeklyRatio !== null) ratio = weeklyRatio;
+
+  const sources = Array.from(new Set(items.map((item) => item.source)));
+  return {
+    version: MVP_REPORTING_FORMULA_VERSION,
+    required,
+    completed,
+    missing: required - completed,
+    exempt,
+    ratio: Math.round(ratio * 1000) / 1000,
+    score: required > 0 ? Math.round(ratio * maxPoints * 10) / 10 : 0,
+    isApplicable: required > 0,
+    notApplicableReason:
+      required > 0
+        ? null
+        : exempt > 0
+          ? "Toàn bộ nghĩa vụ báo cáo trong kỳ đã được miễn trừ hợp lệ"
+          : "Không có nghĩa vụ báo cáo trong kỳ",
+    byKind,
+    items,
+    sources,
+  };
+}
 
 /* ========= Xác nhận thông báo bắt buộc đúng hạn (nhóm Kỷ luật) ========= */
 
@@ -319,8 +414,13 @@ export interface MvpAnnouncementInput {
   /** Miễn trừ hợp lệ: nghỉ phép, lỗi hệ thống được Admin xác nhận… */
   isExempt: boolean;
   exemptReason: string | null;
-  /** Hạn bị đổi sau khi đã quá hạn — loại khỏi mẫu số. */
+  /**
+   * Hạn bị đổi sau khi người nhận đã quá hạn theo hạn cũ.
+   * Không loại khỏi mẫu số: vẫn chấm theo hạn lịch sử để giữ dấu vết trễ.
+   */
   dueChangedAfterOverdue?: boolean;
+  /** Hạn dùng để chấm (lấy từ lịch sử khi hạn bị đổi sau quá hạn). */
+  gradingDueAt?: string | null;
 }
 
 export interface MvpAnnouncementEvaluation {
@@ -333,6 +433,9 @@ export interface MvpAnnouncementEvaluation {
   bucket: MvpAnnouncementBucket;
   excluded: boolean;
   excludeReason: string | null;
+  /** Hạn thực tế đã dùng để chấm. */
+  gradingDueAt?: string | null;
+  dueChangedAfterOverdue?: boolean;
 }
 
 export interface MvpAnnouncementSummary {
@@ -361,11 +464,17 @@ export function evaluateAnnouncements(
   maxPoints: number = MVP_CRITERION_MAX.announcement,
 ): MvpAnnouncementSummary {
   const evaluations: MvpAnnouncementEvaluation[] = items.map((item) => {
+    // MVP-FIX-04 — Hạn chấm điểm: nếu hạn bị đổi sau khi đã quá hạn thì
+    // giữ hạn lịch sử để không xóa dấu vết trễ.
+    const gradingDue =
+      item.dueChangedAfterOverdue && item.gradingDueAt ? item.gradingDueAt : item.dueAt;
     const base = {
       announcementId: item.announcementId,
       title: item.title,
       dueAt: item.dueAt,
       acknowledgedAt: item.acknowledgedAt,
+      gradingDueAt: gradingDue,
+      dueChangedAfterOverdue: Boolean(item.dueChangedAfterOverdue),
     };
     const exclude = (reason: string): MvpAnnouncementEvaluation => ({
       ...base,
@@ -378,22 +487,21 @@ export function evaluateAnnouncements(
 
     if (item.isRevoked) return exclude("Thông báo đã bị thu hồi");
     if (item.isExempt) return exclude(item.exemptReason ?? "Được miễn trừ hợp lệ");
-    if (item.dueChangedAfterOverdue) return exclude("Hạn xác nhận bị thay đổi sau khi đã quá hạn");
-    if (!item.dueAt || Number.isNaN(new Date(item.dueAt).getTime())) {
+    if (!gradingDue || Number.isNaN(new Date(gradingDue).getTime())) {
       return exclude("Thiếu hoặc sai dữ liệu hạn xác nhận");
     }
     if (!item.receivedAt || Number.isNaN(new Date(item.receivedAt).getTime())) {
       return exclude("Thiếu hoặc sai dữ liệu thời điểm nhận");
     }
-    if (new Date(item.receivedAt).getTime() > new Date(item.dueAt).getTime()) {
+    if (new Date(item.receivedAt).getTime() > new Date(gradingDue).getTime()) {
       return exclude("Được thêm làm người nhận sau hạn xác nhận");
     }
-    const workHours = workingHoursBetween(item.receivedAt, item.dueAt);
+    const workHours = workingHoursBetween(item.receivedAt, gradingDue);
     if (workHours < MVP_ANNOUNCEMENT_MIN_WORK_HOURS) {
       return exclude(`Chỉ có ${workHours} giờ làm việc để xử lý (tối thiểu ${MVP_ANNOUNCEMENT_MIN_WORK_HOURS})`);
     }
 
-    const due = new Date(item.dueAt).getTime();
+    const due = new Date(gradingDue).getTime();
     const ack =
       item.acknowledgedAt && !Number.isNaN(new Date(item.acknowledgedAt).getTime())
         ? new Date(item.acknowledgedAt).getTime()
@@ -466,10 +574,8 @@ export interface MvpTaskInput {
 
 export interface MvpScoreInput {
   tasks: MvpTaskInput[];
-  /** Số báo cáo ngày đã gửi trong tuần (đếm cả đã duyệt). */
-  dailyReportsSubmitted: number;
-  /** Leader còn phải nộp báo cáo tuần; null nếu không thuộc diện. */
-  weeklyReportSubmitted: boolean | null;
+  /** Nghĩa vụ báo cáo thực tế của nhân sự trong kỳ (đã trừ miễn trừ). */
+  reportObligations?: MvpReportObligationInput[];
   votesReceived: number;
   /** Số phiếu của người được bầu nhiều nhất trong kỳ (chuẩn hóa tương đối). */
   topVotes: number;
@@ -490,6 +596,11 @@ export interface MvpComponentResult {
   sourceData: Record<string, unknown>;
   isApplicable: boolean;
   notApplicableReason: string | null;
+  /**
+   * `ok` = có nghĩa vụ và có dữ liệu; `missing` = có nghĩa vụ nhưng chưa có dữ liệu;
+   * `not_applicable` = không có nghĩa vụ hợp lệ (không làm giảm độ đầy đủ dữ liệu).
+   */
+  dataState?: "ok" | "missing" | "not_applicable";
 }
 
 
@@ -559,44 +670,66 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
   });
 
   // 3. Nhóm Kỷ luật (15 điểm): báo cáo + xác nhận thông báo bắt buộc.
-  // Chấm thông báo trước để biết có phải phân bổ lại điểm cho báo cáo hay không.
+  // Chấm cả hai trước để biết phần nào không áp dụng và phân bổ lại trong nhóm.
   const announcementLockAt = input.announcementLockAt ?? new Date().toISOString();
   const announcementSummary = evaluateAnnouncements(
     input.announcements ?? [],
     announcementLockAt,
     MVP_CRITERION_MAX.announcement,
   );
-  const reportingMax = announcementSummary.isApplicable
-    ? MVP_CRITERION_MAX.reporting
-    : MVP_DISCIPLINE_MAX;
+  const obligations = input.reportObligations ?? [];
+  const reportingProbe = evaluateReporting(obligations, MVP_CRITERION_MAX.reporting);
 
-  const dailyRatio = Math.min(input.dailyReportsSubmitted / MVP_EXPECTED_DAILY_REPORTS, 1);
-  const weeklyRatio = input.weeklyReportSubmitted === null ? null : input.weeklyReportSubmitted ? 1 : 0;
-  const reportingRatio = weeklyRatio === null ? dailyRatio : dailyRatio * 0.7 + weeklyRatio * 0.3;
+  // Phân bổ lại trong nhóm Kỷ luật (tổng 15) khi một thành phần không áp dụng.
+  const reportingMax = reportingProbe.isApplicable
+    ? announcementSummary.isApplicable
+      ? MVP_CRITERION_MAX.reporting
+      : MVP_DISCIPLINE_MAX
+    : 0;
+  const announcementMax = announcementSummary.isApplicable
+    ? reportingProbe.isApplicable
+      ? MVP_CRITERION_MAX.announcement
+      : MVP_DISCIPLINE_MAX
+    : 0;
+
+  const reportingSummary = evaluateReporting(obligations, reportingMax);
+  const announcementScore = announcementSummary.isApplicable
+    ? round1((announcementMax * announcementSummary.coefficientSum) / announcementSummary.counted)
+    : 0;
+
   components.push({
     criterion: "reporting",
     maxPoints: reportingMax,
-    earnedPoints: round1(reportingRatio * reportingMax),
-    formula:
-      weeklyRatio === null
-        ? `Số báo cáo ngày đã gửi ÷ ${MVP_EXPECTED_DAILY_REPORTS} × ${reportingMax}`
-        : `(Báo cáo ngày 70% + báo cáo tuần 30%) × ${reportingMax}`,
+    earnedPoints: reportingSummary.isApplicable ? reportingSummary.score : 0,
+    formula: reportingSummary.isApplicable
+      ? `Số nghĩa vụ báo cáo hoàn thành ÷ tổng nghĩa vụ hợp lệ × ${reportingMax}` +
+        (reportingSummary.byKind.weekly.required > 0 && reportingSummary.byKind.daily.required > 0
+          ? " (ngày 70% + tuần 30%)"
+          : "")
+      : "Không có nghĩa vụ báo cáo hợp lệ trong kỳ",
     sourceData: {
-      dailyReportsSubmitted: input.dailyReportsSubmitted,
-      expectedDaily: MVP_EXPECTED_DAILY_REPORTS,
-      weeklyReportSubmitted: input.weeklyReportSubmitted,
-      redistributedFromAnnouncement: !announcementSummary.isApplicable,
+      version: reportingSummary.version,
+      obligationCount: reportingSummary.required,
+      completed: reportingSummary.completed,
+      missing: reportingSummary.missing,
+      exempt: reportingSummary.exempt,
+      ratio: reportingSummary.ratio,
+      byKind: reportingSummary.byKind,
+      sources: reportingSummary.sources,
+      items: reportingSummary.items,
+      redistributedFromAnnouncement: reportingMax > MVP_CRITERION_MAX.reporting,
     },
-    isApplicable: true,
-    notApplicableReason: null,
+    isApplicable: reportingSummary.isApplicable,
+    notApplicableReason: reportingSummary.notApplicableReason,
+    dataState: reportingSummary.isApplicable ? "ok" : "not_applicable",
   });
 
   // 3b. Xác nhận thông báo bắt buộc đúng hạn.
   components.push({
     criterion: "announcement",
-    maxPoints: MVP_CRITERION_MAX.announcement,
-    earnedPoints: announcementSummary.isApplicable ? announcementSummary.score : 0,
-    formula: `${MVP_CRITERION_MAX.announcement} × tổng hệ số ÷ số thông báo hợp lệ (đúng hạn 1 · trễ ≤12h 0.75 · ≤24h 0.5 · ≤48h 0.25 · >48h hoặc chưa xác nhận 0)`,
+    maxPoints: announcementMax,
+    earnedPoints: announcementScore,
+    formula: `${announcementMax} × tổng hệ số ÷ số thông báo hợp lệ (đúng hạn 1 · trễ ≤12h 0.75 · ≤24h 0.5 · ≤48h 0.25 · >48h hoặc chưa xác nhận 0)`,
     sourceData: {
       version: announcementSummary.version,
       counted: announcementSummary.counted,
@@ -618,6 +751,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
     },
     isApplicable: announcementSummary.isApplicable,
     notApplicableReason: announcementSummary.notApplicableReason,
+    dataState: announcementSummary.isApplicable ? "ok" : "not_applicable",
   });
 
 
@@ -634,6 +768,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
     sourceData: { votesReceived: input.votesReceived, topVotes: input.topVotes },
     isApplicable: voteApplicable,
     notApplicableReason: voteApplicable ? null : "Kỳ này chưa có phiếu bầu hợp lệ",
+    dataState: voteApplicable ? "ok" : "missing",
   });
 
   // 5–7. Đánh giá thực tế.
@@ -653,6 +788,7 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
       sourceData: { hasReview: review !== null },
       isApplicable: review !== null,
       notApplicableReason: review !== null ? null : "Chưa có đánh giá của người quản lý trực tiếp",
+      dataState: review !== null ? "ok" : "missing",
     });
   }
 
@@ -675,11 +811,25 @@ export function computeMvpScore(input: MvpScoreInput): MvpScoreResult {
     Math.min(MVP_TOTAL_MAX, round1(autoScore + voteScore + reviewScore + bonusScore - penaltyScore)),
   );
 
-  const applicable = components.filter((c) => c.isApplicable);
+  /**
+   * MVP-FIX-04 — Độ đầy đủ dữ liệu chỉ xét các tiêu chí thực sự áp dụng.
+   * `not_applicable` (không có nghĩa vụ hợp lệ) bị loại khỏi cả tử số và mẫu số,
+   * khác với `missing` (có nghĩa vụ nhưng chưa có dữ liệu) vẫn làm giảm độ đầy đủ.
+   */
+  const stateOf = (c: MvpComponentResult) =>
+    c.dataState ?? (c.isApplicable ? "ok" : "missing");
+  const counting = components.filter((c) => stateOf(c) !== "not_applicable");
+  const completenessBase = counting.reduce((sum, c) => sum + c.maxPoints, 0);
   const dataCompleteness =
-    Math.round(
-      (applicable.reduce((sum, c) => sum + c.maxPoints, 0) / (MVP_AUTO_MAX + MVP_REVIEW_MAX)) * 10000,
-    ) / 100;
+    completenessBase > 0
+      ? Math.round(
+          (counting
+            .filter((c) => stateOf(c) === "ok")
+            .reduce((sum, c) => sum + c.maxPoints, 0) /
+            completenessBase) *
+            10000,
+        ) / 100
+      : 0;
 
   let ineligibleReason: string | null = null;
   if (committed.length < MVP_MIN_COMMITTED_TASKS) {
