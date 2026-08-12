@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
 import { maskName, primeLockedIdentity } from "@/lib/member-identity";
+import { memberName, primeMemberNames } from "@/lib/member-names";
 import {
   formatHanoiDate,
   formatHanoiDateTime,
@@ -208,7 +209,11 @@ function mapTask(raw: RawTask): TaskRow {
     projectManuallyArchivedAt: project?.manually_archived_at ?? null,
     projectResponsibleTeamId: project?.responsible_team_id ?? null,
     assignee_id: raw["assignee_id"] as string,
-    assigneeName: maskName(assignee?.display_name, raw["assignee_id"] as string) ?? null,
+    assigneeName:
+      maskName(
+        assignee?.display_name ?? memberName(raw["assignee_id"] as string | null),
+        raw["assignee_id"] as string,
+      ) ?? null,
     assigneeTeamId: assignee?.primary_team_id ?? null,
     team_id: (raw["team_id"] as string | null) ?? null,
     teamName: team?.name ?? null,
@@ -221,11 +226,19 @@ function mapTask(raw: RawTask): TaskRow {
     result_text: (raw["result_text"] as string | null) ?? null,
     result_updated_at: (raw["result_updated_at"] as string | null) ?? null,
     result_updated_by: (raw["result_updated_by"] as string | null) ?? null,
-    resultUpdatedByName: maskName(resultAuthor?.display_name) ?? null,
+    resultUpdatedByName:
+      maskName(
+        resultAuthor?.display_name ?? memberName(raw["result_updated_by"] as string | null),
+        raw["result_updated_by"] as string | null,
+      ) ?? null,
     manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
     manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
-    creatorName: maskName(creator?.display_name) ?? null,
+    creatorName:
+      maskName(
+        creator?.display_name ?? memberName(raw["created_by"] as string | null),
+        raw["created_by"] as string | null,
+      ) ?? null,
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
     approval_status: (raw["approval_status"] as TaskApprovalStatus | null) ?? "approved",
@@ -236,11 +249,16 @@ function mapTask(raw: RawTask): TaskRow {
     approvalDecidedByName: null,
     approval_note: (raw["approval_note"] as string | null) ?? null,
     participantIds: participants.map((p) => p.user_id),
-    participantNames: participants.map((p) => maskName(p.profiles?.display_name, p.user_id) ?? "—"),
+    participantNames: participants.map(
+      (p) => maskName(p.profiles?.display_name ?? memberName(p.user_id), p.user_id) ?? "—",
+    ),
     reviewer_type: (raw["reviewer_type"] as TaskReviewerKind | null) ?? null,
     reviewer_id: (raw["reviewer_id"] as string | null) ?? null,
     reviewerName:
-      maskName(reviewer?.display_name, (raw["reviewer_id"] as string | null) ?? undefined) ?? null,
+      maskName(
+        reviewer?.display_name ?? memberName((raw["reviewer_id"] as string | null) ?? null),
+        (raw["reviewer_id"] as string | null) ?? undefined,
+      ) ?? null,
     cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
     cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
     cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
@@ -248,7 +266,7 @@ function mapTask(raw: RawTask): TaskRow {
 }
 
 export async function fetchTasks(): Promise<TaskRow[]> {
-  await primeLockedIdentity();
+  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
   const { data, error } = await supabase
     .from("tasks")
     .select(SELECT)
@@ -265,7 +283,7 @@ export async function fetchTasks(): Promise<TaskRow[]> {
  * Yêu cầu đã thu hồi chỉ còn dấu vết trong Lịch sử hoạt động.
  */
 export async function fetchTaskApprovals(): Promise<TaskRow[]> {
-  await primeLockedIdentity();
+  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
   const { data, error } = await supabase
     .from("tasks")
     .select(SELECT)
@@ -281,7 +299,7 @@ export const taskApprovalsQuery = () =>
   queryOptions({ queryKey: ["task-approvals"], queryFn: fetchTaskApprovals });
 
 export async function fetchTask(id: string): Promise<TaskRow | null> {
-  await primeLockedIdentity();
+  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
   const { data, error } = await supabase
     .from("tasks")
     .select(SELECT)
@@ -628,7 +646,7 @@ export interface TaskResultEntry {
 }
 
 export async function fetchTaskResults(taskId: string): Promise<TaskResultEntry[]> {
-  await primeLockedIdentity();
+  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
   const { data, error } = await supabase
     .from("task_results")
     .select("id,result_text,created_at,created_by,author:profiles(display_name)")
@@ -763,7 +781,7 @@ export interface TaskHistoryEntry {
 }
 
 export async function fetchTaskHistory(taskId: string): Promise<TaskHistoryEntry[]> {
-  await primeLockedIdentity();
+  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
   const { data, error } = await supabase
     .from("audit_logs")
     .select("id,action,actor_email,created_at,before_data,after_data")
