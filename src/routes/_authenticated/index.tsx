@@ -7,6 +7,7 @@ import { ActionQueueCard } from "@/components/home/action-queue-card";
 import { QuickActions } from "@/components/home/quick-actions";
 import { RecognitionReceivedCard } from "@/components/recognition/recognition-received-card";
 import { TodayBanner } from "@/components/home/today-banner";
+import { WorkdayCard } from "@/components/home/workday-card";
 import { buildKpis, TodayKpiRow } from "@/components/home/today-kpis";
 import {
   MarketingHealthWidget,
@@ -144,6 +145,7 @@ function DashboardBody() {
       <RecognitionReceivedCard userId={access.userId} />
       {/* Hàng 1 */}
       <TodayBanner name={displayName || "bạn"} prompt={prompt} />
+      <WorkdayCard />
 
       {/* Hàng 2 */}
       <TodayKpiRow items={buildKpis(viewRole, metrics, range)} />
