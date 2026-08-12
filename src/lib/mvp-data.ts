@@ -121,7 +121,7 @@ export async function fetchScorecards(cycleId: string): Promise<MvpScorecardRow[
     .eq("cycle_id", cycleId)
     .order("total_score", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapScorecard(row as Record<string, unknown>));
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => mapScorecard(row));
 }
 
 export const mvpScorecardsQuery = (cycleId: string) =>
@@ -259,8 +259,7 @@ export async function fetchReviews(cycleId: string): Promise<MvpReviewRow[]> {
     )
     .eq("cycle_id", cycleId);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((raw) => {
-    const row = raw as Record<string, unknown>;
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => {
     const subject = row["subject"] as { display_name: string } | null;
     return {
       id: row["id"] as string,
@@ -439,8 +438,7 @@ export async function fetchBonusProposals(cycleId: string): Promise<MvpBonusRow[
     .eq("cycle_id", cycleId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((raw) => {
-    const row = raw as Record<string, unknown>;
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => {
     const subject = row["subject"] as { display_name: string } | null;
     const proposer = row["proposer"] as { display_name: string } | null;
     return {
