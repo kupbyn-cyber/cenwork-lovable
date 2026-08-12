@@ -136,9 +136,7 @@ function HistoryItem({
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         <StatusBadge
-          label={
-            row.day_status === "working" ? workShiftLabel(row.shift_type) : "Ngày nghỉ"
-          }
+          label={row.day_status === "working" ? workShiftLabel(row.shift_type) : "Ngày nghỉ"}
           tone={row.day_status === "working" ? "success" : "neutral"}
         />
         {row.started_at ? (
@@ -229,9 +227,7 @@ export function WorkdayHistoryDrawer({
   canAdjust: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const history = useQuery(
-    workDayHistoryQuery({ userId: target?.userId ?? null, from, to }),
-  );
+  const history = useQuery(workDayHistoryQuery({ userId: target?.userId ?? null, from, to }));
   const rows = history.data ?? [];
 
   return (
@@ -261,7 +257,12 @@ export function WorkdayHistoryDrawer({
           <p className="text-state-danger">
             Không thể tải dữ liệu ngày làm việc. Vui lòng thử lại.
           </p>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void history.refetch()}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => void history.refetch()}
+          >
             Thử lại
           </Button>
         </div>

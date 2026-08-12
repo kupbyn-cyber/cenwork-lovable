@@ -124,11 +124,7 @@ export function workDayOverviewQuery(input: {
   });
 }
 
-export function workDayHistoryQuery(input: {
-  userId: string | null;
-  from: string;
-  to: string;
-}) {
+export function workDayHistoryQuery(input: { userId: string | null; from: string; to: string }) {
   return queryOptions({
     queryKey: ["work-day-history", input.userId ?? "none", input.from, input.to],
     queryFn: async (): Promise<WorkDayHistoryRow[]> => {

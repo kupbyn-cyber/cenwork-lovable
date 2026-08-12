@@ -84,9 +84,7 @@ export function WorkdayStatsPanel({
   const [rangeKey, setRangeKey] = React.useState<WorkRangeKey>("today");
   const [customFrom, setCustomFrom] = React.useState(cenTodayISO());
   const [customTo, setCustomTo] = React.useState(cenTodayISO());
-  const [teamFilter, setTeamFilter] = React.useState(
-    canFilterTeam ? ALL : (defaultTeamId ?? ALL),
-  );
+  const [teamFilter, setTeamFilter] = React.useState(canFilterTeam ? ALL : (defaultTeamId ?? ALL));
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
   const [shiftFilter, setShiftFilter] = React.useState(ALL);
   const [target, setTarget] = React.useState<WorkdayHistoryTarget | null>(null);
@@ -395,7 +393,12 @@ export function WorkdayStatsPanel({
             <p className="text-state-danger">
               Không thể tải dữ liệu ngày làm việc. Vui lòng thử lại.
             </p>
-            <Button type="button" size="sm" variant="secondary" onClick={() => void overview.refetch()}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => void overview.refetch()}
+            >
               Thử lại
             </Button>
           </Card>
@@ -405,11 +408,7 @@ export function WorkdayStatsPanel({
           </Card>
         ) : (
           rows.map((row) => (
-            <Card
-              key={row.user_id}
-              className="cursor-pointer p-3"
-              onClick={() => openTarget(row)}
-            >
+            <Card key={row.user_id} className="cursor-pointer p-3" onClick={() => openTarget(row)}>
               <p className="text-body-strong text-text-primary">{row.display_name}</p>
               <p className="text-caption text-text-secondary">{row.team_name ?? "Không có Team"}</p>
               {isToday ? (

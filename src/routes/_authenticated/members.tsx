@@ -206,7 +206,9 @@ function MembersPage() {
       cell: (row: ArchivedMemberRow) => (
         <TableCellStack
           primary={
-            row.locked_at ? new Date(row.locked_at).toLocaleString("vi-VN", { timeZone: CEN_TIMEZONE }) : "—"
+            row.locked_at
+              ? new Date(row.locked_at).toLocaleString("vi-VN", { timeZone: CEN_TIMEZONE })
+              : "—"
           }
           secondary={row.locked_by_name ?? "—"}
         />
@@ -341,10 +343,7 @@ function MembersPage() {
       header: "Team",
       className: "min-w-[180px]",
       cell: (row: MemberRow) => (
-        <TableCellStack
-          primary={teamName(row.primary_team_id)}
-          secondary={row.email || "—"}
-        />
+        <TableCellStack primary={teamName(row.primary_team_id)} secondary={row.email || "—"} />
       ),
     },
     {
@@ -480,92 +479,92 @@ function MembersPage() {
         />
       ) : (
         <>
-      {access.isAdmin ? (
-        <Tabs value={tab} onValueChange={(value) => setTab(value as "active" | "archived")}>
-          <TabsList>
-            <TabsTrigger value="active">Đang hoạt động</TabsTrigger>
-            <TabsTrigger value="archived">
-              Tài khoản lưu trữ{" "}
-              {archivedResult.data?.length ? `(${archivedResult.data.length})` : ""}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
+          {access.isAdmin ? (
+            <Tabs value={tab} onValueChange={(value) => setTab(value as "active" | "archived")}>
+              <TabsList>
+                <TabsTrigger value="active">Đang hoạt động</TabsTrigger>
+                <TabsTrigger value="archived">
+                  Tài khoản lưu trữ{" "}
+                  {archivedResult.data?.length ? `(${archivedResult.data.length})` : ""}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : null}
 
-      {tab === "archived" && access.isAdmin ? (
-        <DataTable
-          columns={archivedColumns}
-          data={archivedResult.data ?? []}
-          getRowId={(row) => row.id}
-          density="compact"
-          loading={archivedResult.isLoading}
-          error={archivedResult.isError}
-          onRetry={() => void archivedResult.refetch()}
-          errorTitle="Không tải được tài khoản lưu trữ"
-          emptyTitle="Chưa có tài khoản nào bị khóa"
-          emptyDescription="Tài khoản sau khi khóa sẽ xuất hiện tại đây."
-          caption="Tài khoản lưu trữ"
-        />
-      ) : (
-        <>
-      <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <Input
-          type="search"
-          placeholder="Tìm theo tên, email, chức danh"
-          value={search}
-          aria-label="Tìm kiếm thành viên"
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger aria-label="Lọc theo Team">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả Team</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {access.isSystemAdmin ? (
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger aria-label="Lọc theo vai trò">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả vai trò</SelectItem>
-            {(["admin", "cmo", "leader", "member"] as AppRole[]).map((role) => (
-              <SelectItem key={role} value={role}>
-                {ROLE_LABEL[role]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        ) : null}
-      </div>
+          {tab === "archived" && access.isAdmin ? (
+            <DataTable
+              columns={archivedColumns}
+              data={archivedResult.data ?? []}
+              getRowId={(row) => row.id}
+              density="compact"
+              loading={archivedResult.isLoading}
+              error={archivedResult.isError}
+              onRetry={() => void archivedResult.refetch()}
+              errorTitle="Không tải được tài khoản lưu trữ"
+              emptyTitle="Chưa có tài khoản nào bị khóa"
+              emptyDescription="Tài khoản sau khi khóa sẽ xuất hiện tại đây."
+              caption="Tài khoản lưu trữ"
+            />
+          ) : (
+            <>
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <Input
+                  type="search"
+                  placeholder="Tìm theo tên, email, chức danh"
+                  value={search}
+                  aria-label="Tìm kiếm thành viên"
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <Select value={teamFilter} onValueChange={setTeamFilter}>
+                  <SelectTrigger aria-label="Lọc theo Team">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Tất cả Team</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {access.isSystemAdmin ? (
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger aria-label="Lọc theo vai trò">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL}>Tất cả vai trò</SelectItem>
+                      {(["admin", "cmo", "leader", "member"] as AppRole[]).map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {ROLE_LABEL[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
+              </div>
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        getRowId={(row) => row.id}
-        rowClassName={(row) =>
-          isBirthdayThisMonth(row.birthday)
-            ? "bg-brand-primary/10 hover:bg-brand-primary/15"
-            : undefined
-        }
-        density="compact"
-        loading={membersResult.isLoading}
-        error={membersResult.isError}
-        onRetry={() => void membersResult.refetch()}
-        errorTitle="Không tải được danh sách thành viên"
-        emptyTitle="Chưa có thành viên phù hợp"
-        emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
-        caption="Danh sách thành viên"
-      />
-        </>
-      )}
+              <DataTable
+                columns={columns}
+                data={rows}
+                getRowId={(row) => row.id}
+                rowClassName={(row) =>
+                  isBirthdayThisMonth(row.birthday)
+                    ? "bg-brand-primary/10 hover:bg-brand-primary/15"
+                    : undefined
+                }
+                density="compact"
+                loading={membersResult.isLoading}
+                error={membersResult.isError}
+                onRetry={() => void membersResult.refetch()}
+                errorTitle="Không tải được danh sách thành viên"
+                emptyTitle="Chưa có thành viên phù hợp"
+                emptyDescription="Điều chỉnh từ khóa hoặc bộ lọc để xem kết quả khác."
+                caption="Danh sách thành viên"
+              />
+            </>
+          )}
         </>
       )}
 
