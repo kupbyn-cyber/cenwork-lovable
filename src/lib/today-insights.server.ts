@@ -8,11 +8,13 @@ import {
   TEAM_ATTENTION_OVERDUE_RATIO,
   type MarketingFocus,
   type MyFocus,
+  type ReportPulse,
   type SystemFocus,
   type TaskBrief,
   type TeamAttention,
   type TeamFocus,
   type TodayInsights,
+  type TodayScopeMetrics,
 } from "@/lib/today-insights";
 
 /**
@@ -36,11 +38,25 @@ function weekStartOf(dateStr: string): string {
   return new Date(date.getTime() - day * DAY_MS).toISOString().slice(0, 10);
 }
 
+function hanoiDate(ms: number): string {
+  return new Date(ms + HANOI_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** Phạm vi thời gian đang chọn trên Dashboard (mốc epoch ms). */
+export interface InsightsRange {
+  start: number;
+  end: number;
+}
+
+const ACTIVE_PROJECT_STATUSES = ["planning", "in_progress", "pending_acceptance"];
+const UNAPPROVED_PROJECT_STATUSES = ["idea", "leader_review", "proposal", "rejected"];
+
 export async function buildTodayInsights(
   supabase: Client,
   userId: string,
   role: AppRoleKey | null,
   leaderTeamId: string | null,
+  range: InsightsRange,
 ): Promise<TodayInsights> {
   const now = new Date();
   const today = hanoiToday(now);
@@ -48,7 +64,20 @@ export async function buildTodayInsights(
   const privileged = isSystemAdminRole(role);
   const isAdmin = role === "admin";
   const failedSources: string[] = [];
+  const rangeStartDate = hanoiDate(range.start);
+  const rangeEndDate = hanoiDate(range.end);
+  const rangeStartISO = new Date(range.start).toISOString();
+  const rangeEndISO = new Date(range.end).toISOString();
+  const viewRole: "admin" | "leader" | "member" = privileged
+    ? "admin"
+    : role === "leader"
+      ? "leader"
+      : "member";
 
+  /**
+   * PERF-02: mỗi nguồn dữ liệu vẫn được cô lập lỗi như trước,
+   * nhưng các nguồn độc lập chạy song song thay vì xếp hàng chờ nhau.
+   */
   async function source(name: string, run: () => Promise<void>) {
     try {
       await run();
@@ -83,9 +112,42 @@ export async function buildTodayInsights(
   let tasks: TaskRow[] = [];
   const nameById = new Map<string, string>();
   const teamOfUser = new Map<string, string | null>();
+  let myDisplayName: string | null = null;
+
+  type ProjectRow = {
+    id: string;
+    status: string;
+    owner_id: string | null;
+    responsible_team_id: string | null;
+    deadline: string | null;
+    completed_at: string | null;
+  };
+  type DailyRow = { author_id: string; status: string; report_date: string };
+  type WeeklyRow = { status: string; submitted_at: string | null };
+  type TeamRow = { id: string; name: string; leader_id: string | null };
+
+  let projects: ProjectRow[] = [];
+  let dailyRangeRows: DailyRow[] = [];
+  let weeklyRangeRows: WeeklyRow[] = [];
+  let teams: TeamRow[] = [];
+  const dailyAuthorsToday = new Set<string>();
+  // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày, không tính vào "chưa gửi".
+  const dailyExempt = new Set<string>();
+  const systemDraft: SystemFocus = {
+    locked_accounts: 0,
+    members_without_team: 0,
+    telegram_unlinked: 0,
+    telegram_failed: 0,
+    outbox_pending: 0,
+    outbox_failed: 0,
+    announcements_overdue: 0,
+  };
+
+  // ---- Đợt 1: mọi truy vấn độc lập chạy song song, lỗi từng nguồn được cô lập ----
+  const wave: Promise<void>[] = [];
 
   // Danh bạ dùng chung cho mọi khối (một truy vấn, tránh N+1).
-  await source("profiles", async () => {
+  wave.push(source("profiles", async () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("id,display_name,primary_team_id,status,telegram_user_id,telegram_test_status")
@@ -94,10 +156,17 @@ export async function buildTodayInsights(
     for (const row of data ?? []) {
       nameById.set(row.id, row.display_name);
       teamOfUser.set(row.id, row.primary_team_id);
+      if (row.id === userId) myDisplayName = row.display_name;
+      if (isAdmin) {
+        if (row.status === "locked") systemDraft.locked_accounts += 1;
+        if (row.status !== "resigned" && !row.primary_team_id) systemDraft.members_without_team += 1;
+        if (row.status === "active" && !row.telegram_user_id) systemDraft.telegram_unlinked += 1;
+        if (row.telegram_test_status === "failed") systemDraft.telegram_failed += 1;
+      }
     }
-  });
+  }));
 
-  await source("tasks", async () => {
+  wave.push(source("tasks", async () => {
     const { data, error } = await supabase
       .from("tasks")
       .select("id,name,team_id,assignee_id,status,deadline,completed_at")
@@ -107,21 +176,9 @@ export async function buildTodayInsights(
       .limit(2000);
     check(error);
     tasks = (data ?? []) as TaskRow[];
+  }));
 
-    for (const task of tasks) {
-      const overdue = task.status !== "done" && new Date(task.deadline).getTime() < now.getTime();
-      if (task.assignee_id !== userId) continue;
-      if (task.status !== "done") {
-        me.open_tasks += 1;
-        if (overdue) me.overdue_tasks += 1;
-        if (task.deadline.slice(0, 10) === today) me.due_today += 1;
-      } else if (task.completed_at && task.completed_at >= `${weekStart}T00:00:00+07:00`) {
-        me.done_this_week += 1;
-      }
-    }
-  });
-
-  await source("recognitions", async () => {
+  wave.push(source("recognitions", async () => {
     const { count, error } = await supabase
       .from("recognitions")
       .select("id", { count: "exact", head: true })
@@ -130,12 +187,9 @@ export async function buildTodayInsights(
       .gte("created_at", `${weekStart}T00:00:00+07:00`);
     check(error);
     me.recognitions_received_week = count ?? 0;
-  });
+  }));
 
-  const dailyAuthorsToday = new Set<string>();
-  // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày, không tính vào "chưa gửi".
-  const dailyExempt = new Set<string>();
-  await source("daily_exempt_roles", async () => {
+  wave.push(source("daily_exempt_roles", async () => {
     const { data, error } = await supabase
       .from("user_roles")
       .select("user_id,role")
@@ -143,18 +197,94 @@ export async function buildTodayInsights(
       .limit(1000);
     check(error);
     for (const row of data ?? []) dailyExempt.add(row.user_id);
-  });
-  await source("daily_reports", async () => {
+  }));
+
+  // Một truy vấn báo cáo ngày cho cả "hôm nay" lẫn phạm vi đang chọn.
+  wave.push(source("daily_reports", async () => {
     const { data, error } = await supabase
       .from("daily_reports")
       .select("author_id,status")
-      .eq("report_date", today)
+      .gte("report_date", rangeStartDate)
+      .lt("report_date", rangeEndDate)
+      .limit(5000)
+      .select("author_id,status,report_date");
+    check(error);
+    dailyRangeRows = (data ?? []) as DailyRow[];
+    for (const row of dailyRangeRows) {
+      if (row.report_date !== today) continue;
+      if (row.status === "submitted" || row.status === "approved") {
+        dailyAuthorsToday.add(row.author_id);
+      }
+    }
+  }));
+
+  wave.push(source("weekly_reports", async () => {
+    const { data, error } = await supabase
+      .from("weekly_reports")
+      .select("status,submitted_at")
+      .eq("status", "submitted")
+      .gte("submitted_at", rangeStartISO)
+      .lt("submitted_at", rangeEndISO)
+      .limit(500);
+    check(error);
+    weeklyRangeRows = (data ?? []) as WeeklyRow[];
+  }));
+
+  wave.push(source("projects", async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id,status,owner_id,responsible_team_id,deadline,completed_at")
+      .is("deleted_at", null)
       .limit(1000);
     check(error);
-    for (const row of data ?? []) {
-      if (row.status === "submitted" || row.status === "approved") dailyAuthorsToday.add(row.author_id);
+    projects = (data ?? []) as ProjectRow[];
+  }));
+
+  wave.push(source("teams", async () => {
+    const { data, error } = await supabase.from("teams").select("id,name,leader_id").limit(200);
+    check(error);
+    teams = (data ?? []) as TeamRow[];
+  }));
+
+  if (isAdmin) {
+    wave.push(source("system_outbox", async () => {
+      const { data, error } = await supabase
+        .from("telegram_outbox")
+        .select("status")
+        .in("status", ["pending", "failed"])
+        .limit(1000);
+      check(error);
+      for (const row of data ?? []) {
+        if (row.status === "pending") systemDraft.outbox_pending += 1;
+        if (row.status === "failed") systemDraft.outbox_failed += 1;
+      }
+    }));
+
+    wave.push(source("system_announcements", async () => {
+      const { count, error } = await supabase
+        .from("announcement_recipients")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["unread", "reading"])
+        .lt("due_at", now.toISOString());
+      check(error);
+      systemDraft.announcements_overdue = count ?? 0;
+    }));
+  }
+
+  await Promise.all(wave);
+
+  // ---- Đợt 2: tổng hợp trên dữ liệu đã tải, không phát sinh truy vấn mới ----
+  for (const task of tasks) {
+    const overdue = task.status !== "done" && new Date(task.deadline).getTime() < now.getTime();
+    if (task.assignee_id !== userId) continue;
+    if (task.status !== "done") {
+      me.open_tasks += 1;
+      if (overdue) me.overdue_tasks += 1;
+      if (task.deadline.slice(0, 10) === today) me.due_today += 1;
+    } else if (task.completed_at && task.completed_at >= `${weekStart}T00:00:00+07:00`) {
+      me.done_this_week += 1;
     }
-  });
+  }
 
   function overdueOf(list: TaskRow[]): TaskRow[] {
     return list.filter(
@@ -177,15 +307,8 @@ export async function buildTodayInsights(
   // ---- Leader: sức khỏe Team mình phụ trách ----
   let team: TeamFocus | null = null;
   if (leaderTeamId) {
-    await source("team_focus", async () => {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("id,name")
-        .eq("id", leaderTeamId)
-        .maybeSingle();
-      check(error);
-      if (!data) return;
-
+    const data = teams.find((row) => row.id === leaderTeamId);
+    if (data) {
       const members = [...teamOfUser.entries()]
         .filter(([, teamId]) => teamId === leaderTeamId)
         .map(([id]) => id);
@@ -206,21 +329,13 @@ export async function buildTodayInsights(
         pending_reviews: teamTasks.filter((task) => task.status === "review").length,
         top_overdue: brief(overdue),
       };
-    });
+    }
   }
 
   // ---- CMO / Admin: sức khỏe marketing toàn hệ thống ----
   let marketing: MarketingFocus | null = null;
   if (privileged) {
-    await source("marketing_focus", async () => {
-      const { data: teamRows, error } = await supabase
-        .from("teams")
-        .select("id,name,leader_id")
-        .limit(200);
-      check(error);
-      const teams = teamRows ?? [];
-
-      const attention: TeamAttention[] = [];
+    const attention: TeamAttention[] = [];
       for (const row of teams) {
         const teamTasks = tasks.filter((task) => task.team_id === row.id);
         const open = teamTasks.filter((task) => task.status !== "done");
@@ -247,14 +362,6 @@ export async function buildTodayInsights(
       }
       attention.sort((a, b) => b.overdue_tasks - a.overdue_tasks || b.overdue_ratio - a.overdue_ratio);
 
-      const { data: projectRows, error: projectError } = await supabase
-        .from("projects")
-        .select("id,status,deadline,completed_at")
-        .is("deleted_at", null)
-        .limit(500);
-      check(projectError);
-      const projects = projectRows ?? [];
-
       const activeMembers = [...teamOfUser.entries()].filter(
         ([id, teamId]) => Boolean(teamId) && !dailyExempt.has(id),
       ).length;
@@ -277,64 +384,69 @@ export async function buildTodayInsights(
         daily_report_rate:
           activeMembers === 0 ? 0 : Math.min(1, dailyAuthorsToday.size / activeMembers),
       };
-    });
   }
 
   // ---- Admin: tình trạng vận hành kỹ thuật ----
-  let system: SystemFocus | null = null;
-  if (isAdmin) {
-    const draft: SystemFocus = {
-      locked_accounts: 0,
-      members_without_team: 0,
-      telegram_unlinked: 0,
-      telegram_failed: 0,
-      outbox_pending: 0,
-      outbox_failed: 0,
-      announcements_overdue: 0,
-    };
+  const system: SystemFocus | null = isAdmin ? systemDraft : null;
 
-    await source("system_accounts", async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,status,primary_team_id,telegram_user_id,telegram_test_status")
-        .limit(1000);
-      check(error);
-      for (const row of data ?? []) {
-        if (row.status === "locked") draft.locked_accounts += 1;
-        if (row.status !== "resigned" && !row.primary_team_id) draft.members_without_team += 1;
-        if (row.status === "active" && !row.telegram_user_id) draft.telegram_unlinked += 1;
-        if (row.telegram_test_status === "failed") draft.telegram_failed += 1;
-      }
-    });
+  // ---- KPI Dashboard: giữ nguyên công thức của today-metrics, chỉ trả về số đếm ----
+  const scopedTasks = tasks.filter((task) => {
+    if (viewRole === "member") return task.assignee_id === userId;
+    if (viewRole === "leader" && leaderTeamId) {
+      return task.team_id === leaderTeamId || teamOfUser.get(task.assignee_id) === leaderTeamId;
+    }
+    return true;
+  });
+  const scopedProjects = projects.filter((project) => {
+    if (viewRole === "leader" && leaderTeamId) {
+      return project.responsible_team_id === leaderTeamId || project.owner_id === userId;
+    }
+    if (viewRole === "member") return project.owner_id === userId;
+    return true;
+  });
+  const openScoped = scopedTasks.filter((task) => task.status !== "done");
+  const inRangeMs = (value: string | null | undefined) => {
+    if (!value) return false;
+    const iso = value.length === 10 ? `${value}T00:00:00+07:00` : value;
+    const time = new Date(iso).getTime();
+    if (Number.isNaN(time)) return false;
+    return time >= range.start && time < range.end;
+  };
 
-    await source("system_outbox", async () => {
-      const { data, error } = await supabase
-        .from("telegram_outbox")
-        .select("status")
-        .in("status", ["pending", "failed"])
-        .limit(1000);
-      check(error);
-      for (const row of data ?? []) {
-        if (row.status === "pending") draft.outbox_pending += 1;
-        if (row.status === "failed") draft.outbox_failed += 1;
-      }
-    });
-
-    await source("system_announcements", async () => {
-      const { count, error } = await supabase
-        .from("announcement_recipients")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["unread", "reading"])
-        .lt("due_at", now.toISOString());
-      check(error);
-      draft.announcements_overdue = count ?? 0;
-    });
-
-    system = draft;
+  const pendingDaily = dailyRangeRows.filter((row) => row.status === "submitted").length;
+  const pendingWeekly = weeklyRangeRows.length;
+  let pendingReports: number;
+  if (viewRole === "member") {
+    const mine = dailyRangeRows.find(
+      (row) => row.author_id === userId && row.report_date === today,
+    );
+    pendingReports =
+      !mine || mine.status === "draft" || mine.status === "changes_requested" ? 1 : 0;
+  } else {
+    pendingReports = pendingDaily + pendingWeekly;
   }
+
+  const metrics: TodayScopeMetrics = {
+    open_count: openScoped.length,
+    active_projects: scopedProjects.filter(
+      (project) =>
+        ACTIVE_PROJECT_STATUSES.includes(project.status) &&
+        !UNAPPROVED_PROJECT_STATUSES.includes(project.status),
+    ).length,
+    due_in_range_count: openScoped.filter((task) => inRangeMs(task.deadline)).length,
+    overdue_count: overdueOf(scopedTasks).length,
+    completed_in_range_count: scopedTasks.filter(
+      (task) => task.status === "done" && inRangeMs(task.completed_at),
+    ).length,
+    pending_report_count: pendingReports,
+  };
+  const reports: ReportPulse = { pending_daily: pendingDaily, pending_weekly: pendingWeekly };
 
   return {
     role,
+    display_name: myDisplayName,
+    metrics,
+    reports,
     me,
     team,
     marketing,
