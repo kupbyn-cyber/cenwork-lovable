@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/cen/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StatusTone } from "@/components/ui/status-badge";
 import type { AppRoleKey } from "@/lib/permissions";
-import { maskName, primeLockedIdentity } from "@/lib/member-identity";
-import { memberName, primeMemberNames } from "@/lib/member-names";
+import { isLockedMember, MASKED_NAME, maskName, primeLockedIdentity } from "@/lib/member-identity";
+import { memberName, memberTeamId, primeMemberNames } from "@/lib/member-names";
+import { primeTaskLookups, projectLookup, teamNameLookup } from "@/lib/task-lookups";
 import {
   formatHanoiDate,
   formatHanoiDateTime,
@@ -164,6 +165,12 @@ export const taskReviewerOptionsQuery = (projectId: string | null) =>
     staleTime: 30_000,
   });
 
+/**
+ * TASK-PERF-01 — danh sách chỉ đọc cột của chính bảng `tasks` cộng một quan hệ
+ * nhiều-nhiều bắt buộc (`task_participants`). Tên người, Dự án và Team lấy từ
+ * danh bạ nội bộ và bảng tra cứu đã nạp sẵn: cùng dữ liệu, cùng phạm vi RLS,
+ * nhưng không còn 7 truy vấn con chạy lại cho từng dòng.
+ */
 const SELECT = `
   id,name,description,project_id,assignee_id,team_id,start_date,deadline,priority,status,
   is_archived,completed_at,manually_archived_at,manually_archived_by,
@@ -171,36 +178,55 @@ const SELECT = `
   result_text,result_updated_at,result_updated_by,
   created_by,created_at,updated_at,
   approval_status,approval_round,submitted_at,approval_decided_at,approval_decided_by,approval_note,
-  reviewer_type,reviewer_id,recurrence_rule_id,occurrence_date,
-  project:projects(id,name,owner_id,manually_archived_at,responsible_team_id),
-  assignee:profiles!tasks_assignee_id_fkey(id,display_name,primary_team_id),
-  creator:profiles!tasks_created_by_fkey(id,display_name),
-  resultAuthor:profiles!tasks_result_updated_by_fkey(id,display_name),
-  reviewer:profiles!tasks_reviewer_id_fkey(id,display_name),
-  team:teams(id,name),
-  task_participants(user_id,profiles(display_name))
+  reviewer_type,reviewer_id,recurrence_rule_id,occurrence_date
 `;
 
-type RawTask = Record<string, unknown>;
+/** Chi tiết một Task: nhúng người tham gia là đủ rẻ vì chỉ có một dòng. */
+const SELECT_ONE = `${SELECT},task_participants(user_id)`;
 
-function mapTask(raw: RawTask): TaskRow {
-  const project = raw["project"] as {
-    name: string;
-    owner_id: string | null;
-    manually_archived_at: string | null;
-    responsible_team_id: string | null;
-  } | null;
-  const assignee = raw["assignee"] as
-    | { display_name: string; primary_team_id: string | null }
-    | null;
-  const creator = raw["creator"] as { display_name: string } | null;
-  const resultAuthor = raw["resultAuthor"] as { display_name: string } | null;
-  const reviewer = raw["reviewer"] as { display_name: string } | null;
-  const team = raw["team"] as { name: string } | null;
-  const participants = (raw["task_participants"] ?? []) as {
-    user_id: string;
-    profiles: { display_name: string } | null;
-  }[];
+type RawTask = Record<string, unknown>;
+type ParticipantMap = Map<string, string[]>;
+
+/**
+ * Người tham gia của mọi Task nhìn thấy được, lấy trong một lượt song song với
+ * truy vấn danh sách. Điều kiện hiển thị do database quyết định, giống hệt RLS.
+ */
+async function fetchParticipantMap(): Promise<ParticipantMap> {
+  const map: ParticipantMap = new Map();
+  const { data, error } = await (
+    supabase.rpc as unknown as (
+      fn: string,
+    ) => Promise<{ data: { task_id: string; user_id: string }[] | null; error: unknown }>
+  )("task_participants_visible");
+  if (error) return map;
+  for (const row of data ?? []) {
+    if (!row.task_id || !row.user_id) continue;
+    const list = map.get(row.task_id);
+    if (list) list.push(row.user_id);
+    else map.set(row.task_id, [row.user_id]);
+  }
+  return map;
+}
+
+/** Tên hiển thị từ danh bạ nội bộ, giữ nguyên quy tắc che tên tài khoản đã khóa. */
+function displayName(userId: string | null | undefined): string | null {
+  if (!userId) return null;
+  const name = memberName(userId);
+  if (!name) return isLockedMember(userId) ? MASKED_NAME : null;
+  return (maskName(name, userId) as string | null) ?? null;
+}
+
+/** Nạp song song mọi dữ liệu phụ trợ cần cho việc map Task. */
+function primeTaskContext(): Promise<unknown> {
+  return Promise.all([primeLockedIdentity(), primeMemberNames(), primeTaskLookups()]);
+}
+
+function mapTask(raw: RawTask, participantMap?: ParticipantMap): TaskRow {
+  const project = projectLookup(raw["project_id"] as string | null);
+  const assigneeId = raw["assignee_id"] as string;
+  const participantIds = participantMap
+    ? (participantMap.get(raw["id"] as string) ?? [])
+    : ((raw["task_participants"] ?? []) as { user_id: string }[]).map((p) => p.user_id);
 
   return {
     id: raw["id"] as string,
@@ -211,15 +237,11 @@ function mapTask(raw: RawTask): TaskRow {
     projectOwnerId: project?.owner_id ?? null,
     projectManuallyArchivedAt: project?.manually_archived_at ?? null,
     projectResponsibleTeamId: project?.responsible_team_id ?? null,
-    assignee_id: raw["assignee_id"] as string,
-    assigneeName:
-      maskName(
-        assignee?.display_name ?? memberName(raw["assignee_id"] as string | null),
-        raw["assignee_id"] as string,
-      ) ?? null,
-    assigneeTeamId: assignee?.primary_team_id ?? null,
+    assignee_id: assigneeId,
+    assigneeName: displayName(assigneeId),
+    assigneeTeamId: memberTeamId(assigneeId),
     team_id: (raw["team_id"] as string | null) ?? null,
-    teamName: team?.name ?? null,
+    teamName: teamNameLookup(raw["team_id"] as string | null),
     start_date: (raw["start_date"] as string | null) ?? null,
     deadline: raw["deadline"] as string,
     priority: raw["priority"] as TaskPriority,
@@ -229,19 +251,11 @@ function mapTask(raw: RawTask): TaskRow {
     result_text: (raw["result_text"] as string | null) ?? null,
     result_updated_at: (raw["result_updated_at"] as string | null) ?? null,
     result_updated_by: (raw["result_updated_by"] as string | null) ?? null,
-    resultUpdatedByName:
-      maskName(
-        resultAuthor?.display_name ?? memberName(raw["result_updated_by"] as string | null),
-        raw["result_updated_by"] as string | null,
-      ) ?? null,
+    resultUpdatedByName: displayName(raw["result_updated_by"] as string | null),
     manually_archived_at: (raw["manually_archived_at"] as string | null) ?? null,
     manually_archived_by: (raw["manually_archived_by"] as string | null) ?? null,
     created_by: raw["created_by"] as string,
-    creatorName:
-      maskName(
-        creator?.display_name ?? memberName(raw["created_by"] as string | null),
-        raw["created_by"] as string | null,
-      ) ?? null,
+    creatorName: displayName(raw["created_by"] as string | null),
     created_at: raw["created_at"] as string,
     updated_at: raw["updated_at"] as string,
     approval_status: (raw["approval_status"] as TaskApprovalStatus | null) ?? "approved",
@@ -251,17 +265,11 @@ function mapTask(raw: RawTask): TaskRow {
     approval_decided_by: (raw["approval_decided_by"] as string | null) ?? null,
     approvalDecidedByName: null,
     approval_note: (raw["approval_note"] as string | null) ?? null,
-    participantIds: participants.map((p) => p.user_id),
-    participantNames: participants.map(
-      (p) => maskName(p.profiles?.display_name ?? memberName(p.user_id), p.user_id) ?? "—",
-    ),
+    participantIds,
+    participantNames: participantIds.map((id) => displayName(id) ?? "—"),
     reviewer_type: (raw["reviewer_type"] as TaskReviewerKind | null) ?? null,
     reviewer_id: (raw["reviewer_id"] as string | null) ?? null,
-    reviewerName:
-      maskName(
-        reviewer?.display_name ?? memberName((raw["reviewer_id"] as string | null) ?? null),
-        (raw["reviewer_id"] as string | null) ?? undefined,
-      ) ?? null,
+    reviewerName: displayName((raw["reviewer_id"] as string | null) ?? null),
     cancelled_at: (raw["cancelled_at"] as string | null) ?? null,
     cancelled_by: (raw["cancelled_by"] as string | null) ?? null,
     cancel_reason: (raw["cancel_reason"] as string | null) ?? null,
@@ -271,16 +279,19 @@ function mapTask(raw: RawTask): TaskRow {
 }
 
 export async function fetchTasks(): Promise<TaskRow[]> {
-  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
-  const { data, error } = await supabase
+  // Truy vấn Task chạy song song với việc nạp danh bạ/tra cứu, không phải xếp hàng chờ.
+  const context = primeTaskContext();
+  const participants = fetchParticipantMap();
+  const request = supabase
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
     // Task đã hủy vẫn phải đọc được để hiển thị trong Lưu trữ, kể cả khi chưa từng được duyệt.
     .or("approval_status.eq.approved,cancelled_at.not.is.null")
     .order("deadline", { ascending: true });
+  const [{ data, error }, participantMap] = await Promise.all([request, participants, context]);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask, participantMap));
 }
 
 /**
@@ -288,29 +299,32 @@ export async function fetchTasks(): Promise<TaskRow[]> {
  * Yêu cầu đã thu hồi chỉ còn dấu vết trong Lịch sử hoạt động.
  */
 export async function fetchTaskApprovals(): Promise<TaskRow[]> {
-  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
-  const { data, error } = await supabase
+  const context = primeTaskContext();
+  const participants = fetchParticipantMap();
+  const request = supabase
     .from("tasks")
     .select(SELECT)
     .is("deleted_at", null)
     .is("cancelled_at", null)
     .in("approval_status", ["pending", "changes_requested"])
     .order("created_at", { ascending: false });
+  const [{ data, error }, participantMap] = await Promise.all([request, participants, context]);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapTask(row as unknown as RawTask));
+  return (data ?? []).map((row) => mapTask(row as unknown as RawTask, participantMap));
 }
 
 export const taskApprovalsQuery = () =>
   queryOptions({ queryKey: ["task-approvals"], queryFn: fetchTaskApprovals });
 
 export async function fetchTask(id: string): Promise<TaskRow | null> {
-  await Promise.all([primeLockedIdentity(), primeMemberNames()]);
-  const { data, error } = await supabase
+  const context = primeTaskContext();
+  const request = supabase
     .from("tasks")
-    .select(SELECT)
+    .select(SELECT_ONE)
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
+  const [{ data, error }] = await Promise.all([request, context]);
   if (error) throw new Error(error.message);
   return data ? mapTask(data as unknown as RawTask) : null;
 }
