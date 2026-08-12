@@ -125,10 +125,7 @@ export function WorkdayCard() {
         </CardContent>
       </Card>
 
-      <Dialog
-        open={open}
-        onOpenChange={(next) => (!save.isPending ? setOpen(next) : undefined)}
-      >
+      <Dialog open={open} onOpenChange={(next) => (!save.isPending ? setOpen(next) : undefined)}>
         <DialogContent className="max-w-md gap-4">
           <DialogHeader>
             <DialogTitle>Ngày làm việc hôm nay</DialogTitle>
