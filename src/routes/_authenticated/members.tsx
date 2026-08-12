@@ -566,6 +566,8 @@ function MembersPage() {
       />
         </>
       )}
+        </>
+      )}
 
       <TempPasswordModal
         open={tempPasswordTarget !== null}
