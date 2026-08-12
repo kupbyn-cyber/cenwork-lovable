@@ -1,8 +1,21 @@
--- TASK-RECUR-01 — Công việc lặp theo ngày / tuần / tháng.
-CREATE TYPE public.task_recurrence_freq AS ENUM ('daily','weekly','monthly');
-CREATE TYPE public.task_recurrence_status AS ENUM ('active','stopped','archived');
+-- TASK-RECUR-01 — Áp dụng an toàn (idempotent) lên PostgreSQL production đang có dữ liệu.
+-- Chỉ THÊM mới: không DROP bảng/cột, không xoá dữ liệu, không reset.
+-- Chạy toàn bộ file trong MỘT transaction (DBeaver: Execute script).
+BEGIN;
 
-CREATE TABLE public.task_recurrence_rules (
+DO $mig$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+                 WHERE n.nspname='public' AND t.typname='task_recurrence_freq') THEN
+    CREATE TYPE public.task_recurrence_freq AS ENUM ('daily','weekly','monthly');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+                 WHERE n.nspname='public' AND t.typname='task_recurrence_status') THEN
+    CREATE TYPE public.task_recurrence_status AS ENUM ('active','stopped','archived');
+  END IF;
+END $mig$;
+
+CREATE TABLE IF NOT EXISTS public.task_recurrence_rules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   description text,
@@ -30,20 +43,31 @@ GRANT SELECT ON public.task_recurrence_rules TO authenticated;
 GRANT ALL ON public.task_recurrence_rules TO service_role;
 ALTER TABLE public.task_recurrence_rules ENABLE ROW LEVEL SECURITY;
 
+DROP TRIGGER IF EXISTS trg_task_recurrence_updated_at ON public.task_recurrence_rules;
 CREATE TRIGGER trg_task_recurrence_updated_at BEFORE UPDATE ON public.task_recurrence_rules
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- Liên kết ngược từ Task đã sinh về lịch lặp + kỳ tương ứng.
-ALTER TABLE public.tasks
-  ADD COLUMN recurrence_rule_id uuid REFERENCES public.task_recurrence_rules(id),
-  ADD COLUMN occurrence_date date;
+-- Cột liên kết ngược trên tasks (ADD COLUMN IF NOT EXISTS: không đụng dữ liệu cũ, mặc định NULL).
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS recurrence_rule_id uuid;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS occurrence_date date;
 
--- Chống trùng tuyệt đối: một kỳ chỉ có đúng một Task.
-CREATE UNIQUE INDEX tasks_recurrence_occurrence_uidx
+DO $mig$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+                 WHERE conname = 'tasks_recurrence_rule_id_fkey'
+                   AND conrelid = 'public.tasks'::regclass) THEN
+    ALTER TABLE public.tasks
+      ADD CONSTRAINT tasks_recurrence_rule_id_fkey
+      FOREIGN KEY (recurrence_rule_id) REFERENCES public.task_recurrence_rules(id);
+  END IF;
+END $mig$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_recurrence_occurrence_uidx
   ON public.tasks (recurrence_rule_id, occurrence_date)
   WHERE recurrence_rule_id IS NOT NULL;
 
-CREATE INDEX idx_task_recurrence_active ON public.task_recurrence_rules (status, start_date);
+CREATE INDEX IF NOT EXISTS idx_task_recurrence_active
+  ON public.task_recurrence_rules (status, start_date);
 
 -- ===== Quyền =====
 CREATE OR REPLACE FUNCTION public.task_recurrence_can_view(_rule uuid)
@@ -80,6 +104,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
       );
 $$;
 
+DROP POLICY IF EXISTS task_recurrence_select_scoped ON public.task_recurrence_rules;
 CREATE POLICY task_recurrence_select_scoped ON public.task_recurrence_rules
 FOR SELECT TO authenticated USING (public.task_recurrence_can_view(id));
 
@@ -283,3 +308,5 @@ GRANT EXECUTE ON FUNCTION public.task_recurrence_update(uuid, public.task_recurr
 GRANT EXECUTE ON FUNCTION public.task_recurrence_set_status(uuid, public.task_recurrence_status) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.task_recurrence_can_view(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.task_recurrence_can_manage(uuid) TO authenticated;
+
+COMMIT;
