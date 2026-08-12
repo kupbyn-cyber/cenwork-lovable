@@ -263,8 +263,13 @@ export interface MvpReportObligationInput {
   dueAt: string | null;
   state: MvpObligationState;
   exemptReason?: string | null;
-  /** `obligation` = lấy từ report_obligations; `derived` = suy từ lịch làm việc thực tế. */
-  source: "obligation" | "derived";
+  /**
+   * `obligation` = lấy từ report_obligations; `work_record` = ngày làm việc do
+   * nhân sự xác nhận (WORKDAY-01); `derived` = suy từ lịch làm việc mặc định.
+   */
+  source: "obligation" | "derived" | "work_record";
+  /** WORKDAY-01 — truy vết nguồn ngày làm việc cho phần Explainability. */
+  workDay?: { status: "working" | "day_off"; shift: string | null } | null;
 }
 
 export interface MvpReportingSummary {

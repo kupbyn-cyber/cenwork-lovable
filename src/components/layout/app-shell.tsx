@@ -7,6 +7,7 @@ import { AppSidebar, CenLogo, SidebarNav } from "@/components/layout/app-sidebar
 import { TopBar } from "@/components/layout/top-bar";
 import { AnnouncementReminderBar } from "@/components/announcement/announcement-reminder-bar";
 import { NotificationPopupHost } from "@/components/notification/notification-popup-host";
+import { WorkdayStartDialog } from "@/components/workday/workday-start-dialog";
 
 /**
  * CEN 1.0 — App Shell (M1.2)
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh w-full overflow-hidden bg-background">
       <AppSidebar collapsed={collapsed} onToggleCollapsed={() => setCollapsed((v) => !v)} />
       <NotificationPopupHost />
+      <WorkdayStartDialog />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onOpenMobileNav={() => setMobileOpen(true)} />

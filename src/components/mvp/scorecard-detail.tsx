@@ -273,8 +273,17 @@ interface ObligationItem {
   dueAt: string | null;
   state: "completed" | "missing" | "exempt";
   exemptReason?: string | null;
-  source: "obligation" | "derived";
+  source: "obligation" | "derived" | "work_record";
+  workDay?: { status: "working" | "day_off"; shift: string | null } | null;
 }
+
+const WORK_SHIFT_LABEL: Record<string, string> = {
+  full_day: "Cả ngày",
+  morning: "Ca sáng",
+  afternoon: "Ca chiều",
+  evening: "Ca tối",
+  custom: "Ca khác",
+};
 
 const OBLIGATION_STATE_LABEL: Record<ObligationItem["state"], string> = {
   completed: "Đã hoàn thành",
@@ -295,7 +304,13 @@ function ReportingDetail({ source }: { source: Record<string, unknown> }) {
       <Row
         label="Nguồn nghĩa vụ"
         value={sources
-          .map((item) => (item === "obligation" ? "Sổ nghĩa vụ báo cáo" : "Suy từ lịch làm việc"))
+          .map((item) =>
+            item === "obligation"
+              ? "Sổ nghĩa vụ báo cáo"
+              : item === "work_record"
+                ? "Ngày làm việc đã xác nhận"
+                : "Suy từ lịch làm việc",
+          )
           .join(" · ") || "—"}
       />
       <Collapsible count={items.length} labelOpen="Ẩn danh sách nghĩa vụ" labelClosed="Xem từng nghĩa vụ">
@@ -315,6 +330,17 @@ function ReportingDetail({ source }: { source: Record<string, unknown> }) {
             }
             lines={[
               { label: "Hạn", value: item.dueAt ? formatHanoiDateTime(item.dueAt) : "—" },
+              ...(item.workDay
+                ? [
+                    {
+                      label: "Nguồn ngày làm việc",
+                      value:
+                        item.workDay.status === "working"
+                          ? `Ngày làm việc · ${WORK_SHIFT_LABEL[item.workDay.shift ?? ""] ?? "Cả ngày"}`
+                          : "Nhân sự tự khai ngày nghỉ (không tự miễn nghĩa vụ)",
+                    },
+                  ]
+                : []),
               ...(item.exemptReason ? [{ label: "Lý do miễn", value: item.exemptReason }] : []),
             ]}
           />

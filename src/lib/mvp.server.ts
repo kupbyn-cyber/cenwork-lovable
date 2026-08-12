@@ -540,6 +540,38 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
   const lockTime = new Date(announcementLockAt).getTime();
 
   /**
+   * WORKDAY-01 — ngày làm việc thực tế do nhân sự xác nhận.
+   * Bảng mới chưa có trong bộ type sinh tự động nên đọc qua cầu nối có kiểu tường minh.
+   */
+  type WorkRowResponse = Promise<{
+    data: Record<string, unknown>[] | null;
+    error: { message: string } | null;
+  }>;
+  const workRecords = await (
+    supabase.from as unknown as (table: string) => {
+      select: (columns: string) => {
+        gte: (
+          column: string,
+          value: string,
+        ) => { lte: (column: string, value: string) => WorkRowResponse };
+      };
+    }
+  )("daily_work_records")
+    .select("user_id,work_date,day_status,shift_type")
+    .gte("work_date", ctx.weekStart)
+    .lte("work_date", ctx.weekEnd);
+  if (workRecords.error) throw new Error(workRecords.error.message);
+
+  const workDayByUser = new Map<string, { status: "working" | "day_off"; shift: string | null }>();
+  for (const row of workRecords.data ?? []) {
+    const day = String(row["work_date"]).slice(0, 10);
+    workDayByUser.set(`${row["user_id"] as string}|${day}`, {
+      status: row["day_status"] === "day_off" ? "day_off" : "working",
+      shift: (row["shift_type"] as string | null) ?? null,
+    });
+  }
+
+  /**
    * Suy nghĩa vụ báo cáo ngày khi hệ thống chưa sinh report_obligations:
    * ngày làm việc trong kỳ, trừ ngày nghỉ đã duyệt, trừ thời gian trước khi
    * tài khoản tồn tại hoặc sau khi bị khóa, và chỉ tính ngày đã qua tại mốc chốt.
@@ -555,7 +587,11 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
       const activeFrom = profile.created_at ? String(profile.created_at).slice(0, 10) : null;
       const activeTo = profile.locked_at ? String(profile.locked_at).slice(0, 10) : null;
       for (const day of cycleDays) {
-        if (!isWorkingWeekday(day)) continue;
+        const workDay = workDayByUser.get(`${profile.id}|${day}`) ?? null;
+        // Ưu tiên ngày làm việc đã xác nhận (kể cả T7/CN). Ngày nghỉ tự khai
+        // KHÔNG tự miễn nghĩa vụ: chỉ nguồn miễn trừ chính thức mới miễn.
+        if (!workDay && !isWorkingWeekday(day)) continue;
+        if (workDay?.status === "day_off" && !isWorkingWeekday(day)) continue;
         if (activeFrom && day < activeFrom) continue;
         if (activeTo && day > activeTo) continue;
         if (new Date(hanoiDayBoundary(day, true)).getTime() > lockTime) continue;
@@ -575,7 +611,8 @@ export async function computeCycleScores(supabase: Db, cycleId: string) {
               ? "completed"
               : "missing",
           exemptReason: exemptReason ?? null,
-          source: "derived",
+          source: workDay ? "work_record" : "derived",
+          workDay,
         });
       }
     }
