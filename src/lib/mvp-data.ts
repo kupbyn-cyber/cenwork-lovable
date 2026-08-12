@@ -115,7 +115,7 @@ function mapScorecard(raw: Record<string, unknown>): MvpScorecardRow {
 }
 
 export async function fetchScorecards(cycleId: string): Promise<MvpScorecardRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("mvp_scorecards")
     .select(SCORECARD_SELECT)
     .eq("cycle_id", cycleId)
@@ -223,6 +223,14 @@ export async function updateCycleTaskWeight(id: string, weight: number) {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * MVP-REVIEW-01: cột `impact_score`, `bonus_score` và bảng `mvp_bonus_proposals`
+ * mới bổ sung nên bảng kiểu sinh tự động chưa có. Dùng client nới lỏng kiểu cho
+ * đúng các truy vấn này, phần còn lại vẫn giữ kiểu chặt.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as unknown as { from: (table: string) => any };
+
 /* ================= Đánh giá thực tế ================= */
 
 export interface MvpReviewRow {
@@ -242,7 +250,7 @@ export interface MvpReviewRow {
 }
 
 export async function fetchReviews(cycleId: string): Promise<MvpReviewRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("mvp_manual_reviews")
     .select(
       `id,cycle_id,subject_id,reviewer_id,quality_score,proactive_score,impact_score,teamwork_score,
@@ -303,8 +311,8 @@ export async function saveReview(input: SaveReviewInput) {
     status: (input.submit ? "submitted" : "draft") as MvpReviewStatus,
   };
   const query = input.existingId
-    ? supabase.from("mvp_manual_reviews").update(payload).eq("id", input.existingId)
-    : supabase.from("mvp_manual_reviews").insert(payload);
+    ? db.from("mvp_manual_reviews").update(payload).eq("id", input.existingId)
+    : db.from("mvp_manual_reviews").insert(payload);
   const { error } = await query;
   if (error) throw new Error(error.message);
 }
@@ -420,7 +428,7 @@ export interface MvpBonusRow {
 }
 
 export async function fetchBonusProposals(cycleId: string): Promise<MvpBonusRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("mvp_bonus_proposals")
     .select(
       `id,cycle_id,subject_id,proposer_id,points,reason,evidence,status,
@@ -470,7 +478,7 @@ export interface ProposeBonusInput {
 }
 
 export async function proposeBonus(input: ProposeBonusInput) {
-  const { error } = await supabase.from("mvp_bonus_proposals").insert({
+  const { error } = await db.from("mvp_bonus_proposals").insert({
     cycle_id: input.cycleId,
     subject_id: input.subjectId,
     proposer_id: input.proposerId,
@@ -487,7 +495,7 @@ export async function decideBonus(input: {
   approve: boolean;
   note?: string;
 }) {
-  const { error } = await supabase
+  const { error } = await db
     .from("mvp_bonus_proposals")
     .update({
       status: input.approve ? "approved" : "rejected",
@@ -498,6 +506,6 @@ export async function decideBonus(input: {
 }
 
 export async function withdrawBonus(id: string) {
-  const { error } = await supabase.from("mvp_bonus_proposals").delete().eq("id", id);
+  const { error } = await db.from("mvp_bonus_proposals").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
