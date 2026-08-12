@@ -658,7 +658,7 @@ export async function createTask(input: TaskInput & { createdBy: string }) {
     .from("tasks")
     .insert({
       // work_weight: kiểu sinh tự động chưa có cột mới, ghi qua object mở rộng.
-      ...({ work_weight: input.workWeight } as Record<string, never>),
+      ...({ work_weight: input.workWeight } as unknown as Record<string, never>),
       name: input.name,
       description: input.description,
       project_id: input.projectId,
