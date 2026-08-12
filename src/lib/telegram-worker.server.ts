@@ -30,19 +30,19 @@ async function runOnce(): Promise<void> {
 
     await withPrivileged(async (client) => {
       const { rows } = await client.query<{ locked: boolean }>(
-        "SELECT pg_try_advisory_lock($1) AS locked",
+        // Khóa cấp TRANSACTION: PostgreSQL tự nhả khi COMMIT/ROLLBACK.
+        // Bản cũ dùng khóa cấp session và nhả bằng câu lệnh riêng — nếu transaction
+        // đã lỗi thì câu nhả đó cũng lỗi, kết nối được trả về pool trong khi vẫn giữ
+        // khóa, và mọi lượt chạy sau đều bị chặn vĩnh viễn (worker im lặng, không gửi).
+        "SELECT pg_try_advisory_xact_lock($1) AS locked",
         [ADVISORY_LOCK_KEY],
       );
       if (!rows[0]?.locked) return;
-      try {
-        const result = await dispatchOutbox({ actorId: null });
-        if (result.sent || result.failed) {
-          console.log(
-            `[telegram-worker] sent=${result.sent} failed=${result.failed} skipped=${result.skipped}`,
-          );
-        }
-      } finally {
-        await client.query("SELECT pg_advisory_unlock($1)", [ADVISORY_LOCK_KEY]);
+      const result = await dispatchOutbox({ actorId: null });
+      if (result.sent || result.failed) {
+        console.log(
+          `[telegram-worker] sent=${result.sent} failed=${result.failed} skipped=${result.skipped}`,
+        );
       }
     });
   } catch (error) {

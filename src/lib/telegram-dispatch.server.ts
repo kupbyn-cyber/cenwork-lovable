@@ -13,6 +13,16 @@ export interface OutboxRow {
   topic_id: string | null;
   message: string;
   attempts: number;
+  target_type: string | null;
+}
+
+/**
+ * NOTI-FIX-01 — chỉ tin cá nhân sinh từ telegram_compose (đã escape, có thẻ <b>)
+ * mới gửi kèm parse_mode=HTML. Tin cũ trong hàng đợi và tin Group/Topic (báo cáo ngày)
+ * vẫn gửi văn bản thuần như trước.
+ */
+function htmlParseMode(row: OutboxRow): "HTML" | undefined {
+  return row.target_type === "user" && row.message.includes("</b>") ? "HTML" : undefined;
 }
 
 /** Lỗi cấu hình (chat/user không tồn tại, bot bị chặn…) → không retry vô hạn. */
@@ -47,7 +57,7 @@ export async function dispatchOutbox(options: {
 
   let query = supabaseAdmin
     .from("telegram_outbox")
-    .select("id,chat_id,topic_id,message,attempts")
+    .select("id,chat_id,topic_id,message,attempts,target_type")
     .neq("status", "sent")
     .lt("attempts", MAX_ATTEMPTS);
   query = options.ids?.length
@@ -77,13 +87,24 @@ export async function dispatchOutbox(options: {
     }
 
     const chatId = (row.chat_id ?? "").trim();
-    const result = chatId
+    const parseMode = htmlParseMode(row);
+    let result = chatId
       ? await sendTelegramMessage(token, {
           chatId,
           topicId: row.topic_id,
           message: row.message,
+          ...(parseMode ? { parseMode } : {}),
         })
       : ({ ok: false, error: "chat_id is empty" } as const);
+
+    // Nếu Telegram từ chối vì lỗi thẻ định dạng, gửi lại đúng nội dung đó dạng văn bản thuần.
+    if (!result.ok && parseMode && /parse|entit/i.test(result.error)) {
+      result = await sendTelegramMessage(token, {
+        chatId,
+        topicId: row.topic_id,
+        message: row.message.replace(/<\/?b>/g, ""),
+      });
+    }
 
     if (result.ok) {
       sent += 1;

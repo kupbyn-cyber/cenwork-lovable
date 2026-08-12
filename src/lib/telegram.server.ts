@@ -13,6 +13,8 @@ export interface TelegramTarget {
   chatId: string;
   topicId: string | null;
   message: string;
+  /** Chỉ đặt cho tin đã được escape đúng chuẩn (mẫu notification cá nhân). */
+  parseMode?: "HTML";
 }
 
 export interface TelegramConfig {
@@ -96,6 +98,7 @@ async function sendOnePart(
         chat_id: target.chatId,
         text,
         disable_web_page_preview: true,
+        ...(target.parseMode ? { parse_mode: target.parseMode } : {}),
         ...(target.topicId ? { message_thread_id: Number(target.topicId) } : {}),
       }),
     });
