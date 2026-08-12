@@ -341,19 +341,18 @@ export async function buildTodayHub(
   source("daily_reports", async (rows) => {
     // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày.
     const exemptAuthors = new Set<string>();
-    const { data: exemptRows } = await supabase
-      .from("user_roles")
-      .select("user_id,role")
-      .in("role", ["admin", "cmo"])
-      .limit(1000);
-    for (const row of exemptRows ?? []) exemptAuthors.add(row.user_id);
-
-    const { data, error } = await supabase
-      .from("daily_reports")
-      .select("id,report_date,author_id,team_id,status,created_at,updated_at")
-      .or(`author_id.eq.${userId},status.eq.submitted`)
-      .gte("report_date", thisWeek)
-      .limit(300);
+    const [exempt, reportsResult] = await Promise.all([
+      supabase.from("user_roles").select("user_id,role").in("role", ["admin", "cmo"]).limit(1000),
+      supabase
+        .from("daily_reports")
+        .select("id,report_date,author_id,team_id,status,created_at,updated_at")
+        .or(`author_id.eq.${userId},status.eq.submitted`)
+        .gte("report_date", thisWeek)
+        .limit(300),
+      permissionsReady,
+    ]);
+    for (const row of exempt.data ?? []) exemptAuthors.add(row.user_id);
+    const { data, error } = reportsResult;
     check(error);
     const list = data ?? [];
 
