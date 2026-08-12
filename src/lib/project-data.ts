@@ -187,6 +187,61 @@ export async function fetchProjectTaskCounts(): Promise<Record<string, number>> 
 export const projectTaskCountsQuery = () =>
   queryOptions({ queryKey: ["project-task-counts"], queryFn: fetchProjectTaskCounts });
 
+/**
+ * CEN-PERF-05 — KPI Task tổng hợp cho MỌI dự án nhìn thấy được, tính ở database.
+ * Một truy vấn duy nhất, không trả về Task rows và không N+1 theo từng dự án.
+ * Cờ `mine` phục vụ bộ lọc "Của tôi" (giữ nguyên định nghĩa nghiệp vụ).
+ */
+export interface ProjectTaskOverview {
+  stats: Record<string, ProjectTaskStats>;
+  /** project_id có Task liên quan trực tiếp tới người dùng hiện tại. */
+  mineProjectIds: Set<string>;
+}
+
+export async function fetchProjectTaskOverview(): Promise<ProjectTaskOverview> {
+  const { data, error } = await (
+    supabase.rpc as unknown as (
+      fn: string,
+    ) => Promise<{
+      data:
+        | {
+            project_id: string;
+            total: number | string;
+            active: number | string;
+            overdue: number | string;
+            done: number | string;
+            mine: boolean | null;
+          }[]
+        | null;
+      error: { message: string } | null;
+    }>
+  )("project_task_overview");
+  if (error) throw new Error(error.message);
+  const stats: Record<string, ProjectTaskStats> = {};
+  const mineProjectIds = new Set<string>();
+  for (const row of data ?? []) {
+    if (!row.project_id) continue;
+    const total = Number(row.total ?? 0);
+    const done = Number(row.done ?? 0);
+    stats[row.project_id] = {
+      total,
+      active: Number(row.active ?? 0),
+      overdue: Number(row.overdue ?? 0),
+      done,
+      progress: total === 0 ? 0 : Math.round((done / total) * 100),
+    };
+    if (row.mine) mineProjectIds.add(row.project_id);
+  }
+  return { stats, mineProjectIds };
+}
+
+export const projectTaskOverviewQuery = () =>
+  queryOptions({
+    queryKey: ["project-task-overview"],
+    queryFn: fetchProjectTaskOverview,
+    staleTime: 45_000,
+  });
+
 /** Danh sách nhân sự đang hoạt động mà người dùng hiện tại được nhìn thấy (RLS quyết định). */
 export interface PersonOption {
   id: string;
