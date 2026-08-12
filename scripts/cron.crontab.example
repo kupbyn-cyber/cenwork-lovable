@@ -10,7 +10,7 @@ CEN_CRON_SECRET=dan-bi-mat-cua-ban
 0 13 * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"report-reminders"}' >/dev/null
 5 17 * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"report-reminders"}' >/dev/null
 
-# Thông báo, phê duyệt quá hạn, trực nhật: mỗi 15 phút
+# Thông báo, phê duyệt quá hạn, trực nhật, công việc lặp: mỗi 15 phút
 */15 * * * * curl -fsS -X POST "$CEN_URL/api/public/hooks/cron" -H "x-cen-cron-secret: $CEN_CRON_SECRET" -H 'content-type: application/json' -d '{"job":"all"}' >/dev/null
 
 # Đẩy hàng đợi Telegram mỗi phút
