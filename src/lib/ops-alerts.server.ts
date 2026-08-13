@@ -258,7 +258,9 @@ export async function buildOpsAlerts(
       .from("projects")
       .select("id,name,status,updated_at,responsible_team_id")
       .is("deleted_at", null)
-      .not("status", "in", "(completed,archived,rejected)")
+      .neq("status", "completed")
+      .neq("status", "archived")
+      .neq("status", "rejected")
       .limit(300);
     check(error);
     const projects = data ?? [];

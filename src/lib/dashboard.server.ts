@@ -249,11 +249,14 @@ export async function buildDashboard(
 
   /* --------------------------- Tải Task theo phạm vi --------------------------- */
   function scopedTaskQuery() {
+    // Lớp dữ liệu tự triển khai không biên dịch được `not.in.(a,b)` dạng chuỗi:
+    // dùng hai điều kiện <> tương đương, giữ nguyên ngữ nghĩa loại pending/withdrawn.
     let q = supabase
       .from("tasks")
       .select(TASK_COLUMNS)
       .is("deleted_at", null)
-      .not("approval_status", "in", "(pending,withdrawn)");
+      .neq("approval_status", "pending")
+      .neq("approval_status", "withdrawn");
     if (scope === "member") q = q.eq("assignee_id", viewerId);
     else if (selectedTeamId) q = q.eq("team_id", selectedTeamId);
     return q;
@@ -532,7 +535,9 @@ export async function buildDashboard(
           .from("projects")
           .select("id,name,status,updated_at,responsible_team_id")
           .is("deleted_at", null)
-          .not("status", "in", "(completed,archived,rejected)")
+          .neq("status", "completed")
+          .neq("status", "archived")
+          .neq("status", "rejected")
           .limit(300);
         if (selectedTeamId) q = q.eq("responsible_team_id", selectedTeamId);
         const { data, error } = await q;
@@ -545,7 +550,8 @@ export async function buildDashboard(
           .select("project_id,status,deadline,approval_status,manually_archived_at,updated_at")
           .in("project_id", ids)
           .is("deleted_at", null)
-          .not("approval_status", "in", "(pending,withdrawn)")
+          .neq("approval_status", "pending")
+          .neq("approval_status", "withdrawn")
           .limit(8000);
         if (taskError) throw new Error(taskError.message);
         const agg = new Map<
@@ -717,6 +723,12 @@ export async function buildDashboard(
   const rangeSearch = { from: period.from, to: period.to };
   const teamSearch = selectedTeamId ? { team: selectedTeamId } : {};
   const kpis: DashKpi[] = [];
+  // Không hiển thị 0 giả: khi nguồn Task lỗi, KPI dựa trên Task phải là "—".
+  const tasksReady = !unavailable.some((name) => name.startsWith("tasks_"));
+  const taskCount = (value: number) => (tasksReady ? String(value) : "—");
+  const taskRate = (value: number | null) => (tasksReady ? formatRate(value) : "—");
+  const taskSub = (text: string) => (tasksReady ? text : "Dữ liệu Task chưa sẵn sàng");
+  const taskCompare = (text: string | null) => (tasksReady ? text : null);
 
   if (scope === "org") {
     kpis.push(
@@ -724,27 +736,27 @@ export async function buildDashboard(
         key: "completion",
         label: "Tỷ lệ Task hoàn thành",
         hint: DASH_HINT.completion_rate,
-        value: formatRate(current.completion_rate),
-        sub: `${current.completed_in_period}/${current.due_total} Task có deadline trong kỳ`,
-        compare: deltaLabel(current.completion_rate, prior.completion_rate, "rate"),
+        value: taskRate(current.completion_rate),
+        sub: taskSub(`${current.completed_in_period}/${current.due_total} Task có deadline trong kỳ`),
+        compare: taskCompare(deltaLabel(current.completion_rate, prior.completion_rate, "rate")),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch } },
       },
       {
         key: "on_time",
         label: "Tỷ lệ Task đúng hạn",
         hint: DASH_HINT.on_time_rate,
-        value: formatRate(current.on_time_rate),
-        sub: `${current.on_time}/${current.done_with_completion} Task hoàn thành trong kỳ`,
-        compare: deltaLabel(current.on_time_rate, prior.on_time_rate, "rate"),
+        value: taskRate(current.on_time_rate),
+        sub: taskSub(`${current.on_time}/${current.done_with_completion} Task hoàn thành trong kỳ`),
+        compare: taskCompare(deltaLabel(current.on_time_rate, prior.on_time_rate, "rate")),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch, status: "done" } },
       },
       {
         key: "overdue",
         label: "Task quá hạn",
         hint: DASH_HINT.overdue_now,
-        value: String(current.overdue_now),
-        sub: `Vi phạm deadline trong kỳ: ${current.violated}`,
-        tone: current.overdue_now > 0 ? "danger" : "default",
+        value: taskCount(current.overdue_now),
+        sub: taskSub(`Vi phạm deadline trong kỳ: ${current.violated}`),
+        tone: tasksReady && current.overdue_now > 0 ? "danger" : "default",
         drill: { to: "/tasks", search: { ...teamSearch, kind: "overdue" } },
       },
       {
@@ -767,26 +779,27 @@ export async function buildDashboard(
         key: "due",
         label: "Task đến hạn trong kỳ",
         hint: DASH_HINT.due_in_range,
-        value: String(dueInRange),
-        sub: `Đang quá hạn: ${current.overdue_now}`,
-        compare: deltaLabel(dueInRange, prior.due_total, "count"),
+        value: taskCount(dueInRange),
+        sub: taskSub(`Đang quá hạn: ${current.overdue_now}`),
+        compare: taskCompare(deltaLabel(dueInRange, prior.due_total, "count")),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch } },
       },
       {
         key: "review",
         label: "Task cần duyệt",
         hint: DASH_HINT.awaiting_review,
-        value: String(reviewCount),
-        tone: reviewCount > 0 ? "warning" : "default",
+        value: taskCount(reviewCount),
+        ...(tasksReady ? {} : { sub: "Dữ liệu Task chưa sẵn sàng" }),
+        tone: tasksReady && reviewCount > 0 ? "warning" : "default",
         drill: { to: "/tasks", search: { ...teamSearch, status: "review" } },
       },
       {
         key: "overload",
         label: "Nhân sự quá tải",
         hint: DASH_HINT.overload,
-        value: String(overloaded),
-        sub: `${memberRows?.length ?? 0} thành viên đang hoạt động`,
-        tone: overloaded > 0 ? "warning" : "default",
+        value: taskCount(overloaded),
+        sub: taskSub(`${memberRows?.length ?? 0} thành viên đang hoạt động`),
+        tone: tasksReady && overloaded > 0 ? "warning" : "default",
         drill: { to: "/members", search: { ...teamSearch } },
       },
       {
@@ -807,9 +820,11 @@ export async function buildDashboard(
         key: "on_time",
         label: "Task đúng hạn",
         hint: DASH_HINT.member_on_time,
-        value: String(current.on_time),
-        sub: `${formatRate(current.on_time_rate)} trong ${current.done_with_completion} Task hoàn thành`,
-        compare: deltaLabel(current.on_time_rate, prior.on_time_rate, "rate"),
+        value: taskCount(current.on_time),
+        sub: taskSub(
+          `${formatRate(current.on_time_rate)} trong ${current.done_with_completion} Task hoàn thành`,
+        ),
+        compare: taskCompare(deltaLabel(current.on_time_rate, prior.on_time_rate, "rate")),
         tone: "success",
         drill: { to: "/tasks", search: { ...rangeSearch, mine: "1", status: "done" } },
       },
@@ -817,16 +832,16 @@ export async function buildDashboard(
         key: "overdue",
         label: "Task quá hạn",
         hint: DASH_HINT.overdue_now,
-        value: String(current.overdue_now),
-        sub: `Vi phạm deadline trong kỳ: ${current.violated}`,
-        tone: current.overdue_now > 0 ? "danger" : "default",
+        value: taskCount(current.overdue_now),
+        sub: taskSub(`Vi phạm deadline trong kỳ: ${current.violated}`),
+        tone: tasksReady && current.overdue_now > 0 ? "danger" : "default",
         drill: { to: "/tasks", search: { mine: "1", kind: "overdue" } },
       },
       {
         key: "review",
         label: "Task chờ kiểm tra",
         hint: DASH_HINT.member_review,
-        value: String(allTasks.filter((t) => t.status === "review").length),
+        value: taskCount(allTasks.filter((t) => t.status === "review").length),
         drill: { to: "/tasks", search: { mine: "1", status: "review" } },
       },
       {
