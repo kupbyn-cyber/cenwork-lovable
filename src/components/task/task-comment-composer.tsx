@@ -71,7 +71,7 @@ export function TaskCommentComposer({
     setBody(value);
     const caret = inputRef.current?.selectionStart ?? value.length;
     const match = TRIGGER.exec(value.slice(0, caret));
-    setQuery(match ? match[2] : null);
+    setQuery(match ? (match[2] ?? "") : null);
   }
 
   function choose(person: MentionCandidate) {
@@ -80,7 +80,7 @@ export function TaskCommentComposer({
     const before = body.slice(0, caret);
     const match = TRIGGER.exec(before);
     if (!match) return;
-    const start = before.length - match[0].length + match[1].length;
+    const start = before.length - match[0].length + (match[1] ?? "").length;
     const next = `${body.slice(0, start)}@${person.display_name} ${body.slice(caret)}`;
     setBody(next);
     setPicked((prev) => (prev.some((p) => p.id === person.id) ? prev : [...prev, person]));
