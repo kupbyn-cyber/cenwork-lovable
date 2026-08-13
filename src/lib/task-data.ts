@@ -457,18 +457,15 @@ export function taskStatusView(task: TaskRow): { label: string; tone: StatusTone
 
 /**
  * Chỉ ẩn/hiện nút; quyền thật do RPC `task_cancel` kiểm tra ở database.
- * Admin/CMO hủy mọi Task; Leader hủy trong phạm vi quản lý; người tạo hủy khi chưa bắt đầu.
+ * TASK-FIX-04: Admin/CMO/Leader hủy mọi Task hợp lệ (Leader không bị giới hạn Team/Dự án);
+ * người tạo vẫn được hủy Task của mình khi chưa bắt đầu.
+ * Quyền Lưu trữ/Khôi phục thủ công giữ nguyên chỉ cho Admin/CMO.
  */
 export function canCancelTask(task: TaskRow, ctx: TaskAccessContext) {
   if (isTaskCancelled(task)) return false;
   if (task.status === "done") return false;
   if (isTaskManuallyArchived(task)) return false;
-  if (privileged(ctx)) return true;
-  if (ctx.leaderTeamId) {
-    if (task.team_id === ctx.leaderTeamId) return true;
-    if (task.assigneeTeamId === ctx.leaderTeamId) return true;
-    if (task.projectResponsibleTeamId === ctx.leaderTeamId) return true;
-  }
+  if (privileged(ctx) || ctx.role === "leader") return true;
   if (ctx.userId && task.created_by === ctx.userId && task.status === "not_started") return true;
   return false;
 }
