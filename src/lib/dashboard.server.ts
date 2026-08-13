@@ -723,6 +723,12 @@ export async function buildDashboard(
   const rangeSearch = { from: period.from, to: period.to };
   const teamSearch = selectedTeamId ? { team: selectedTeamId } : {};
   const kpis: DashKpi[] = [];
+  // Không hiển thị 0 giả: khi nguồn Task lỗi, KPI dựa trên Task phải là "—".
+  const tasksReady = !unavailable.some((name) => name.startsWith("tasks_"));
+  const taskCount = (value: number) => (tasksReady ? String(value) : "—");
+  const taskRate = (value: number | null) => (tasksReady ? formatRate(value) : "—");
+  const taskSub = (text: string) => (tasksReady ? text : "Dữ liệu Task chưa sẵn sàng");
+  const taskCompare = (text: string | null) => (tasksReady ? text : null);
 
   if (scope === "org") {
     kpis.push(
@@ -730,27 +736,27 @@ export async function buildDashboard(
         key: "completion",
         label: "Tỷ lệ Task hoàn thành",
         hint: DASH_HINT.completion_rate,
-        value: formatRate(current.completion_rate),
-        sub: `${current.completed_in_period}/${current.due_total} Task có deadline trong kỳ`,
-        compare: deltaLabel(current.completion_rate, prior.completion_rate, "rate"),
+        value: taskRate(current.completion_rate),
+        sub: taskSub(`${current.completed_in_period}/${current.due_total} Task có deadline trong kỳ`),
+        compare: taskCompare(deltaLabel(current.completion_rate, prior.completion_rate, "rate")),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch } },
       },
       {
         key: "on_time",
         label: "Tỷ lệ Task đúng hạn",
         hint: DASH_HINT.on_time_rate,
-        value: formatRate(current.on_time_rate),
-        sub: `${current.on_time}/${current.done_with_completion} Task hoàn thành trong kỳ`,
-        compare: deltaLabel(current.on_time_rate, prior.on_time_rate, "rate"),
+        value: taskRate(current.on_time_rate),
+        sub: taskSub(`${current.on_time}/${current.done_with_completion} Task hoàn thành trong kỳ`),
+        compare: taskCompare(deltaLabel(current.on_time_rate, prior.on_time_rate, "rate")),
         drill: { to: "/tasks", search: { ...rangeSearch, ...teamSearch, status: "done" } },
       },
       {
         key: "overdue",
         label: "Task quá hạn",
         hint: DASH_HINT.overdue_now,
-        value: String(current.overdue_now),
-        sub: `Vi phạm deadline trong kỳ: ${current.violated}`,
-        tone: current.overdue_now > 0 ? "danger" : "default",
+        value: taskCount(current.overdue_now),
+        sub: taskSub(`Vi phạm deadline trong kỳ: ${current.violated}`),
+        tone: tasksReady && current.overdue_now > 0 ? "danger" : "default",
         drill: { to: "/tasks", search: { ...teamSearch, kind: "overdue" } },
       },
       {
