@@ -754,31 +754,6 @@ export function TaskFormDrawer({
               </Select>
             )}
           </FormField>
-          <FormField
-            id="task-work-weight"
-            label="Trọng số công việc"
-            helperText={TASK_WEIGHT_HELPER}
-          >
-            {(control) => (
-              <Select
-                value={String(form.workWeight)}
-                onValueChange={(value) =>
-                  setForm({ ...form, workWeight: Number(value) as TaskWorkWeight })
-                }
-              >
-                <SelectTrigger {...control} aria-label="Trọng số công việc">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {weightOptions.map((weight) => (
-                    <SelectItem key={weight} value={String(weight)}>
-                      {taskWeightOptionLabel(weight)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </FormField>
 
           {memberFlow ? null : (
             <FormField id="task-status" label="Trạng thái">
@@ -802,6 +777,37 @@ export function TaskFormDrawer({
             </FormField>
           )}
         </div>
+
+        <FormField
+          id="task-work-weight"
+          label="Trọng số công việc"
+          helperText={TASK_WEIGHT_SHORT_NOTE}
+        >
+          {(control) => (
+            <Select
+              value={String(form.workWeight)}
+              onValueChange={(value) =>
+                setForm({ ...form, workWeight: Number(value) as TaskWorkWeight })
+              }
+            >
+              <SelectTrigger {...control} aria-label="Trọng số công việc">
+                <SelectValue>{taskWeightOptionLabel(form.workWeight)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {weightOptions.map((weight) => (
+                  <SelectItem key={weight} value={String(weight)}>
+                    <div className="flex flex-col gap-0 leading-tight">
+                      <span className="text-body">{taskWeightOptionLabel(weight)}</span>
+                      <span className="text-helper text-text-muted data-[state=checked]:text-brand-foreground">
+                        {TASK_WEIGHT_DESCRIPTION[weight]}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </FormField>
 
         {canScope ? (
           <FormField
