@@ -91,14 +91,26 @@ async function sendOnePart(
   text: string,
 ): Promise<TelegramSendResult> {
   try {
+    // NOTI-FIX-01.1 — nếu việc chia phần làm lệch cặp thẻ <b>, phần đó gửi văn bản
+    // thuần đã bỏ thẻ để người nhận không bao giờ thấy literal <b>/</b>.
+    let body = text;
+    let parseMode = target.parseMode;
+    if (parseMode) {
+      const open = (body.match(/<b>/g) ?? []).length;
+      const close = (body.match(/<\/b>/g) ?? []).length;
+      if (open !== close) {
+        body = body.replace(/<\/?b>/g, "");
+        parseMode = undefined;
+      }
+    }
     const response = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: target.chatId,
-        text,
+        text: body,
         disable_web_page_preview: true,
-        ...(target.parseMode ? { parse_mode: target.parseMode } : {}),
+        ...(parseMode ? { parse_mode: parseMode } : {}),
         ...(target.topicId ? { message_thread_id: Number(target.topicId) } : {}),
       }),
     });
