@@ -3,17 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, IconButton } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkifiedText } from "@/components/ui/linkified-text";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { formatHanoiDateTime } from "@/lib/datetime";
+import { TaskCommentComposer } from "@/components/task/task-comment-composer";
 import {
   deleteTaskComment,
   markTaskCommentsRead,
-  postTaskComment,
   taskCommentsQuery,
 } from "@/lib/task-comment-data";
 
@@ -25,7 +24,6 @@ export function TaskCommentThread({ taskId }: { taskId: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const comments = useQuery(taskCommentsQuery(taskId));
-  const [body, setBody] = React.useState("");
 
   const isSuccess = comments.isSuccess;
   React.useEffect(() => {
@@ -36,16 +34,6 @@ export function TaskCommentThread({ taskId }: { taskId: string }) {
       )
       .catch(() => undefined);
   }, [isSuccess, taskId, user?.id, queryClient, comments.dataUpdatedAt]);
-
-  const create = useMutation({
-    mutationFn: () => postTaskComment(taskId, user!.id, body),
-    onSuccess: () => {
-      setBody("");
-      void queryClient.invalidateQueries({ queryKey: ["task-comments", taskId] });
-      toast.success("Đã gửi bình luận.");
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteTaskComment(id),
@@ -101,23 +89,7 @@ export function TaskCommentThread({ taskId }: { taskId: string }) {
           </ul>
         )}
 
-        <div className="space-y-2">
-          <Textarea
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            placeholder="Nhập bình luận…"
-            rows={3}
-          />
-          <div className="flex justify-end">
-            <Button
-              disabled={body.trim() === "" || !user?.id}
-              loading={create.isPending}
-              onClick={() => create.mutate()}
-            >
-              Gửi bình luận
-            </Button>
-          </div>
-        </div>
+        <TaskCommentComposer taskId={taskId} />
       </CardContent>
     </Card>
   );
