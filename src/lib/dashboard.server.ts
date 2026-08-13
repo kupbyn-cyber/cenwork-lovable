@@ -249,11 +249,14 @@ export async function buildDashboard(
 
   /* --------------------------- Tải Task theo phạm vi --------------------------- */
   function scopedTaskQuery() {
+    // Lớp dữ liệu tự triển khai không biên dịch được `not.in.(a,b)` dạng chuỗi:
+    // dùng hai điều kiện <> tương đương, giữ nguyên ngữ nghĩa loại pending/withdrawn.
     let q = supabase
       .from("tasks")
       .select(TASK_COLUMNS)
       .is("deleted_at", null)
-      .not("approval_status", "in", "(pending,withdrawn)");
+      .neq("approval_status", "pending")
+      .neq("approval_status", "withdrawn");
     if (scope === "member") q = q.eq("assignee_id", viewerId);
     else if (selectedTeamId) q = q.eq("team_id", selectedTeamId);
     return q;
@@ -532,7 +535,9 @@ export async function buildDashboard(
           .from("projects")
           .select("id,name,status,updated_at,responsible_team_id")
           .is("deleted_at", null)
-          .not("status", "in", "(completed,archived,rejected)")
+          .neq("status", "completed")
+          .neq("status", "archived")
+          .neq("status", "rejected")
           .limit(300);
         if (selectedTeamId) q = q.eq("responsible_team_id", selectedTeamId);
         const { data, error } = await q;
@@ -545,7 +550,8 @@ export async function buildDashboard(
           .select("project_id,status,deadline,approval_status,manually_archived_at,updated_at")
           .in("project_id", ids)
           .is("deleted_at", null)
-          .not("approval_status", "in", "(pending,withdrawn)")
+          .neq("approval_status", "pending")
+          .neq("approval_status", "withdrawn")
           .limit(8000);
         if (taskError) throw new Error(taskError.message);
         const agg = new Map<
