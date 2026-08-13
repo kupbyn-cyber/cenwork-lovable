@@ -3,6 +3,12 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/cen/client";
 import { maskName, primeLockedIdentity } from "@/lib/member-identity";
 
+/** RPC mới (task_comment_post / task_mention_candidates) chưa có trong types sinh tự động. */
+const rpc = supabase.rpc as unknown as (
+  fn: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
 /**
  * CEN 1.0 — TASK-LIST-UI-02 (E). Bình luận Công việc + trạng thái đã đọc theo người dùng.
  * Phạm vi đọc/ghi do RLS quyết định (can_view_task); UI chỉ hiển thị.
@@ -50,7 +56,7 @@ export const taskCommentsQuery = (taskId: string) =>
  * lưu mention theo user_id thật và tạo thông báo CEN cho người được nhắc tên.
  */
 export async function postTaskComment(taskId: string, body: string, mentions: string[] = []) {
-  const { error } = await supabase.rpc("task_comment_post", {
+  const { error } = await rpc("task_comment_post", {
     _task: taskId,
     _body: body.trim(),
     _mentions: Array.from(new Set(mentions)),
@@ -66,7 +72,7 @@ export interface MentionCandidate {
 /** Danh sách người có thể nhắc tên — backend chỉ trả người vốn đã xem được Task. */
 export async function fetchTaskMentionCandidates(taskId: string): Promise<MentionCandidate[]> {
   await primeLockedIdentity();
-  const { data, error } = await supabase.rpc("task_mention_candidates", { _task: taskId });
+  const { data, error } = await rpc("task_mention_candidates", { _task: taskId });
   if (error) throw new Error(error.message);
   return ((data ?? []) as { id: string; display_name: string | null }[])
     .map((row) => ({
