@@ -607,7 +607,8 @@ export async function submitTaskForApproval(input: TaskSubmissionInput) {
     _participants: input.participantIds,
     _reviewer_type: input.reviewerType,
     _reviewer: input.reviewerId,
-    ...(input.assigneeId ? { _assignee: input.assigneeId } : {}),
+    // Luôn gửi cùng một shape để khớp đúng một signature RPC duy nhất.
+    _assignee: (input.assigneeId ?? null) as unknown as string,
   });
   if (error) throw new Error(error.message);
   return data as string;
