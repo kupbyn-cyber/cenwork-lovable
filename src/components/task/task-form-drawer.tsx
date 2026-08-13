@@ -1,6 +1,7 @@
 import {
   TASK_WEIGHT_DEFAULT,
-  TASK_WEIGHT_HELPER,
+  TASK_WEIGHT_DESCRIPTION,
+  TASK_WEIGHT_SHORT_NOTE,
   taskWeightOptionLabel,
   taskWeightOptions,
   type TaskWorkWeight,
