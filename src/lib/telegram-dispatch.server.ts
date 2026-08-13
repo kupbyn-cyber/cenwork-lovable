@@ -17,12 +17,20 @@ export interface OutboxRow {
 }
 
 /**
- * NOTI-FIX-01 — chỉ tin cá nhân sinh từ telegram_compose (đã escape, có thẻ <b>)
- * mới gửi kèm parse_mode=HTML. Tin cũ trong hàng đợi và tin Group/Topic (báo cáo ngày)
- * vẫn gửi văn bản thuần như trước.
+ * NOTI-FIX-01.1 — nhận diện tin do CEN compose bằng CHÍNH NỘI DUNG, không phụ thuộc
+ * target_type (cột này có thể thiếu/khác ở các bản ghi cũ hoặc path enqueue khác,
+ * khiến tin cá nhân bị gửi plain text và người dùng thấy nguyên thẻ <b>).
+ * Điều kiện bật HTML: có ít nhất một cặp <b>…</b> và số thẻ mở = số thẻ đóng.
+ * Tin Group/Topic (báo cáo ngày) là văn bản thuần, không có thẻ nên vẫn gửi như cũ.
  */
+export function hasBalancedBoldTags(message: string): boolean {
+  const open = (message.match(/<b>/g) ?? []).length;
+  const close = (message.match(/<\/b>/g) ?? []).length;
+  return open > 0 && open === close;
+}
+
 function htmlParseMode(row: OutboxRow): "HTML" | undefined {
-  return row.target_type === "user" && row.message.includes("</b>") ? "HTML" : undefined;
+  return hasBalancedBoldTags(row.message) ? "HTML" : undefined;
 }
 
 /** Lỗi cấu hình (chat/user không tồn tại, bot bị chặn…) → không retry vô hạn. */
