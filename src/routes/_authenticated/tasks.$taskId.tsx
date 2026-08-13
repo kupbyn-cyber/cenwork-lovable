@@ -518,7 +518,7 @@ function TaskDetailPage() {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-3">
+        <div id="task-comments" className="scroll-mt-24 lg:col-span-3">
           <TaskCommentThread taskId={task.id} />
         </div>
       </div>

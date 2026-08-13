@@ -8,6 +8,7 @@ export const NOTIFICATION_EVENT_LABEL: Record<string, string> = {
   "task.assignee_changed": "Đổi người phụ trách",
   "task.deadline_changed": "Đổi deadline",
   "task.review_requested": "Công việc chờ kiểm tra",
+  "task.mentioned": "Được nhắc tên trong công việc",
   "report.daily_submitted": "Báo cáo ngày chờ duyệt",
   "report.daily_changes_requested": "Báo cáo ngày cần chỉnh sửa",
   "report.weekly_submitted": "Báo cáo tuần chờ duyệt",
