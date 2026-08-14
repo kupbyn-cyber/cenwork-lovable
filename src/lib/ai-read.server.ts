@@ -40,8 +40,7 @@ export interface AiReadSuccess {
 }
 
 export type AiReadResult =
-  | { status: number; body: AiReadSuccess }
-  | { status: number; body: AiReadError };
+  { status: number; body: AiReadSuccess } | { status: number; body: AiReadError };
 
 type FilterKind = "uuid" | "text" | "bool" | "date";
 
@@ -80,7 +79,15 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
   tasks: {
     table: "tasks",
     fields: TASK_FIELDS,
-    sortable: ["deadline", "created_at", "updated_at", "completed_at", "priority", "status", "name"],
+    sortable: [
+      "deadline",
+      "created_at",
+      "updated_at",
+      "completed_at",
+      "priority",
+      "status",
+      "name",
+    ],
     defaultSort: { field: "deadline", ascending: true },
     filters: {
       status: { kind: "text", column: "status", op: "eq" },
@@ -194,7 +201,12 @@ async function readPerformance(
   }
   const from = filters["from"];
   const to = filters["to"];
-  if (typeof from !== "string" || !DAY_RE.test(from) || typeof to !== "string" || !DAY_RE.test(to)) {
+  if (
+    typeof from !== "string" ||
+    !DAY_RE.test(from) ||
+    typeof to !== "string" ||
+    !DAY_RE.test(to)
+  ) {
     return badRequest("INVALID_FILTER", 'Performance cần "from" và "to" dạng yyyy-MM-dd.', {
       allowed_filters: PERFORMANCE_FILTERS,
     });
@@ -269,10 +281,7 @@ async function memberRoleFilter(client: any, role: string): Promise<string[]> {
   return ((data ?? []) as any[]).map((row) => row.user_id as string);
 }
 
-export async function runAiRead(
-  viewerId: string,
-  request: AiReadRequest,
-): Promise<AiReadResult> {
+export async function runAiRead(viewerId: string, request: AiReadRequest): Promise<AiReadResult> {
   const resource = request.resource as AiReadResource;
   if (!AI_READ_RESOURCES.includes(resource)) {
     return badRequest("INVALID_RESOURCE", `Resource không hỗ trợ: ${String(request.resource)}.`, {
@@ -356,8 +365,8 @@ export async function runAiRead(
           continue;
         }
         if (resource === "members" && key === "search") {
-          const text = String(value).replace(/[,()]/g, " ");
-          query = query.or(`display_name.ilike.*${text}*,email.ilike.*${text}*`);
+          const text = String(value).replace(/[,().]/g, " ");
+          query = query.or(`display_name.ilike.%${text}%,email.ilike.%${text}%`);
           continue;
         }
         continue;
