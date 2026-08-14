@@ -8,6 +8,12 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createUserDataClient, createPrivilegedDataClient } from "@/lib/db/server-client.server";
+import {
+  createEntityResolver,
+  EntityResolveError,
+  type EntityType,
+  type ResolvedFilterMeta,
+} from "@/lib/ai-read-resolve.server";
 
 export const AI_READ_RESOURCES = [
   "tasks",
@@ -30,13 +36,27 @@ export interface AiReadRequest {
 }
 
 export interface AiReadError {
-  error: { code: string; message: string; allowed_filters?: string[]; allowed_values?: string[] };
+  error: {
+    code: string;
+    message: string;
+    allowed_filters?: string[];
+    allowed_values?: string[];
+    entity_type?: string;
+    query?: string;
+    candidates?: unknown[];
+  };
 }
 
 export interface AiReadSuccess {
   resource: AiReadResource;
   data: unknown[];
-  meta: { count: number; limit: number; offset: number; has_more: boolean };
+  meta: {
+    count: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+    resolved_filters?: Record<string, ResolvedFilterMeta>;
+  };
 }
 
 export type AiReadResult =
@@ -152,6 +172,18 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
 
 const PERFORMANCE_FILTERS = ["member", "team", "from", "to", "metric"];
 
+/**
+ * CEN-AI-READ-01.3 — filter nào nhận tên người dùng hiểu được (hoặc UUID / mảng).
+ * Leader/Owner/Author/Assignee đều dùng chung Member Resolver.
+ */
+const ENTITY_FILTERS: Record<AiReadResource, Record<string, EntityType>> = {
+  tasks: { team: "team", assignee: "member", member: "member", project: "project" },
+  projects: { team: "team", leader: "member", owner: "member" },
+  reports: { team: "team", author: "member", member: "member", project: "project" },
+  performance: { team: "team", member: "member" },
+  members: { team: "team" },
+};
+
 const UUID_RE = /^[0-9a-fA-F-]{36}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -189,8 +221,11 @@ function dayBound(value: string, edge: "start" | "end"): string {
 }
 
 async function readPerformance(
+  client: any,
   viewerId: string,
   filters: Record<string, unknown>,
+  resolvedIds: Record<string, string[]>,
+  resolvedMeta: Record<string, ResolvedFilterMeta>,
   limit: number,
   offset: number,
 ): Promise<AiReadResult> {
@@ -212,10 +247,18 @@ async function readPerformance(
       allowed_filters: PERFORMANCE_FILTERS,
     });
   }
-  const teamId = typeof filters["team"] === "string" ? (filters["team"] as string) : null;
-  const memberId = typeof filters["member"] === "string" ? (filters["member"] as string) : null;
+  for (const key of ["team", "member"]) {
+    if ((resolvedIds[key]?.length ?? 0) > 1) {
+      return badRequest(
+        "INVALID_FILTER",
+        `Performance chỉ nhận một giá trị cho "${key}". Gọi nhiều lần để so sánh.`,
+        { allowed_filters: PERFORMANCE_FILTERS },
+      );
+    }
+  }
+  const teamId = resolvedIds["team"]?.[0] ?? null;
+  const memberId = resolvedIds["member"]?.[0] ?? null;
 
-  const client = createUserDataClient(viewerId) as any;
   const { resolveCallerRole } = await import("@/lib/permission-guard");
   const { buildPerformanceDashboard } = await import("@/lib/performance.server");
   const role = await resolveCallerRole(client, viewerId);
@@ -253,7 +296,13 @@ async function readPerformance(
     body: {
       resource: "performance",
       data,
-      meta: { count: data.length, limit, offset, has_more: false },
+      meta: {
+        count: data.length,
+        limit,
+        offset,
+        has_more: false,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
     },
   };
 }
@@ -291,15 +340,21 @@ async function memberRoleFilter(client: any, role: string): Promise<string[]> {
  * Không mở RLS, không dùng đặc quyền — chỉ dùng lại đúng hàm UI đang dùng.
  */
 async function readMembers(
-  viewerId: string,
+  client: any,
   filters: Record<string, unknown>,
+  resolvedIds: Record<string, string[]>,
+  resolvedMeta: Record<string, ResolvedFilterMeta>,
   sortField: string,
   ascending: boolean,
   limit: number,
   offset: number,
 ): Promise<AiReadResult> {
-  const client = createUserDataClient(viewerId) as any;
   const { data, error } = await client.rpc("member_directory");
+  const { data: teamRows } = await client.from("teams").select("id,name");
+  const teamNames = new Map<string, string>();
+  for (const row of (teamRows ?? []) as any[]) {
+    if (row.id) teamNames.set(row.id, row.name ?? "");
+  }
   if (error) {
     return { status: 400, body: { error: { code: "QUERY_FAILED", message: error.message } } };
   }
@@ -309,6 +364,7 @@ async function readMembers(
     email: row.email ?? null,
     job_title: row.job_title ?? null,
     primary_team_id: row.primary_team_id ?? null,
+    team_name: row.primary_team_id ? (teamNames.get(row.primary_team_id) ?? null) : null,
     status: row.status,
     locked_at: row.locked_at ?? null,
     role: row.role ?? null,
@@ -316,9 +372,13 @@ async function readMembers(
 
   try {
     for (const [key, rawValue] of Object.entries(filters)) {
+      if (key === "team") {
+        const ids = new Set(resolvedIds["team"] ?? []);
+        rows = rows.filter((row) => row.primary_team_id && ids.has(row.primary_team_id));
+        continue;
+      }
       const value = coerce(rawValue, RESOURCES.members.filters[key]!.kind, key);
-      if (key === "team") rows = rows.filter((row) => row.primary_team_id === value);
-      else if (key === "status") rows = rows.filter((row) => row.status === value);
+      if (key === "status") rows = rows.filter((row) => row.status === value);
       else if (key === "active") {
         rows = value
           ? rows.filter((row) => row.status === "active")
@@ -358,7 +418,13 @@ async function readMembers(
     body: {
       resource: "members",
       data: page,
-      meta: { count: total, limit, offset, has_more: offset + page.length < total },
+      meta: {
+        count: total,
+        limit,
+        offset,
+        has_more: offset + page.length < total,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
     },
   };
 }
@@ -379,7 +445,38 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
   const offset = Number.isFinite(rawOffset) ? Math.max(Math.trunc(rawOffset), 0) : 0;
   const filters = (request.filters ?? {}) as Record<string, unknown>;
 
-  if (resource === "performance") return readPerformance(viewerId, filters, limit, offset);
+  const client = createUserDataClient(viewerId) as any;
+  const resolver = createEntityResolver(client);
+  const resolvedIds: Record<string, string[]> = {};
+  const resolvedMeta: Record<string, ResolvedFilterMeta> = {};
+  for (const [key, type] of Object.entries(ENTITY_FILTERS[resource])) {
+    if (!(key in filters)) continue;
+    try {
+      const outcome = await resolver.resolveFilter(type, filters[key]);
+      resolvedIds[key] = outcome.ids;
+      if (outcome.hasName) resolvedMeta[key] = outcome.meta;
+    } catch (error) {
+      if (error instanceof EntityResolveError) {
+        return {
+          status: 400,
+          body: {
+            error: {
+              code: error.code,
+              message: error.message,
+              entity_type: error.entityType,
+              query: error.query,
+              ...(error.candidates ? { candidates: error.candidates } : {}),
+            },
+          },
+        };
+      }
+      throw error;
+    }
+  }
+
+  if (resource === "performance") {
+    return readPerformance(client, viewerId, filters, resolvedIds, resolvedMeta, limit, offset);
+  }
 
   const def = RESOURCES[resource as Exclude<AiReadResource, "performance">];
   const invalid = Object.keys(filters).filter((key) => !(key in def.filters));
@@ -409,10 +506,18 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
   }
 
   if (resource === "members") {
-    return readMembers(viewerId, filters, sortField, ascending, limit, offset);
+    return readMembers(
+      client,
+      filters,
+      resolvedIds,
+      resolvedMeta,
+      sortField,
+      ascending,
+      limit,
+      offset,
+    );
   }
 
-  const client = createUserDataClient(viewerId) as any;
   let query = client.from(def.table).select(def.fields, { count: "exact" });
 
   query = query.is("deleted_at", null);
@@ -421,6 +526,14 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
   try {
     for (const [key, rawValue] of Object.entries(filters)) {
       const filterDef = def.filters[key]!;
+      const entityIds = resolvedIds[key];
+      if (entityIds) {
+        query =
+          entityIds.length === 1
+            ? query.eq(filterDef.column!, entityIds[0])
+            : query.in(filterDef.column!, entityIds);
+        continue;
+      }
       const value = coerce(rawValue, filterDef.kind, key);
 
       if (filterDef.custom) {
@@ -468,7 +581,13 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
     body: {
       resource,
       data: rows,
-      meta: { count: total, limit, offset, has_more: offset + rows.length < total },
+      meta: {
+        count: total,
+        limit,
+        offset,
+        has_more: offset + rows.length < total,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
     },
   };
 }
