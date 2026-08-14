@@ -414,7 +414,7 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
   const client = createUserDataClient(viewerId) as any;
   let query = client.from(def.table).select(def.fields, { count: "exact" });
 
-  if (resource !== "members") query = query.is("deleted_at", null);
+  query = query.is("deleted_at", null);
   if (resource === "tasks") query = query.eq("is_archived", false);
 
   try {
@@ -428,30 +428,6 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
           query = value
             ? query.lt("deadline", nowIso).neq("status", "done")
             : query.gte("deadline", nowIso);
-          continue;
-        }
-        if (resource === "members" && key === "active") {
-          query = value ? query.eq("status", "active") : query.neq("status", "active");
-          continue;
-        }
-        if (resource === "members" && key === "role") {
-          const ids = await memberRoleFilter(client, value as string);
-          if (ids.length === 0) {
-            return {
-              status: 200,
-              body: {
-                resource,
-                data: [],
-                meta: { count: 0, limit, offset, has_more: false },
-              },
-            };
-          }
-          query = query.in("id", ids);
-          continue;
-        }
-        if (resource === "members" && key === "search") {
-          const text = String(value).replace(/[,().]/g, " ");
-          query = query.or(`display_name.ilike.%${text}%,email.ilike.%${text}%`);
           continue;
         }
         continue;
