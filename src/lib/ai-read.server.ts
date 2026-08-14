@@ -25,8 +25,8 @@ export interface AiReadRequest {
   resource: string;
   filters?: Record<string, unknown>;
   sort?: { field?: string; direction?: string } | null;
-  limit?: number;
-  offset?: number;
+  limit?: number | undefined;
+  offset?: number | undefined;
 }
 
 export interface AiReadError {
