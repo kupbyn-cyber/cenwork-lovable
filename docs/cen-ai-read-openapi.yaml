@@ -41,7 +41,10 @@ paths:
                 $ref: "#/components/schemas/ReadResponse"
 
         "400":
-          description: Resource, filter hoặc sort không hợp lệ
+          description: >-
+            Resource, filter, sort không hợp lệ,
+            hoặc không resolve được entity theo tên
+            (ENTITY_NOT_FOUND / ENTITY_AMBIGUOUS)
           content:
             application/json:
               schema:
@@ -93,6 +96,18 @@ components:
           type: object
           description: >-
             Filter hỗ trợ theo resource.
+
+            Các filter entity: team, member, assignee, author,
+            leader, owner, project.
+            Mỗi filter entity nhận UUID, tên hiển thị
+            (không phân biệt hoa/thường, có hoặc không dấu),
+            hoặc một mảng gồm nhiều giá trị như vậy.
+            Không cần hỏi người dùng UUID.
+            Nếu tên không tồn tại trong phạm vi được xem,
+            API trả lỗi ENTITY_NOT_FOUND.
+            Nếu tên trùng nhiều entity, API trả ENTITY_AMBIGUOUS
+            kèm danh sách candidates để chọn lại.
+            performance chỉ nhận một giá trị cho team và member.
 
             tasks:
             status, project, assignee, member, team, priority,
@@ -193,6 +208,27 @@ components:
             has_more:
               type: boolean
 
+            resolved_filters:
+              type: object
+              description: >-
+                Chỉ xuất hiện khi filter được gửi bằng tên.
+                Cho biết CEN đã hiểu tên đó là entity nào.
+              additionalProperties:
+                type: object
+                properties:
+                  input: {}
+                  resolved:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        team_name:
+                          type: string
+
     ErrorResponse:
       type: object
       properties:
@@ -203,9 +239,34 @@ components:
 
             code:
               type: string
+              description: >-
+                INVALID_RESOURCE, INVALID_FILTER, INVALID_SORT,
+                ENTITY_NOT_FOUND, ENTITY_AMBIGUOUS, QUERY_FAILED,
+                UNAUTHORIZED, DB_NOT_CONFIGURED, INTERNAL_ERROR.
 
             message:
               type: string
+
+            entity_type:
+              type: string
+              description: team, member hoặc project (lỗi entity).
+
+            query:
+              type: string
+              description: Giá trị người dùng đã nhập gây lỗi entity.
+
+            candidates:
+              type: array
+              description: Danh sách entity trùng tên khi ENTITY_AMBIGUOUS.
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  team_name:
+                    type: string
 
             allowed_filters:
               type: array
