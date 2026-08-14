@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: CEN Analyst Read API
+  description: >-
+    API chỉ đọc dữ liệu vận hành của CEN (tasks, projects, reports, performance,
+    members). Không có thao tác ghi/sửa/xóa/duyệt.
+  version: "1.0.0"
+servers:
+  - url: https://cenwork.lovable.app
+    description: Đổi thành domain production CEN (self-host Mắt Bão) khi cấu hình GPT Action.
+security:
+  - bearerAuth: []
+paths:
+  /api/ai/read:
+    post:
+      operationId: cenAnalystRead
+      summary: Đọc dữ liệu CEN theo resource, filter, sort, phân trang.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReadRequest"
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadResponse"
+        "400":
+          description: Resource/filter/sort không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Thiếu hoặc sai API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Máy chủ chưa kết nối cơ sở dữ liệu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ReadRequest:
+      type: object
+      required: [resource]
+      properties:
+        resource:
+          type: string
+          enum: [tasks, projects, reports, performance, members]
+        filters:
+          type: object
+          description: >-
+            tasks: status, project, assignee, member, team, priority, overdue, from, to, search.
+            projects: status, leader, owner, team, from, to, search.
+            reports: report_type, author, member, team, project, status, from, to, search.
+            performance: member, team, from (bắt buộc), to (bắt buộc), metric.
+            members: team, status, active, role, search.
+          additionalProperties: true
+        sort:
+          type: object
+          properties:
+            field:
+              type: string
+              description: >-
+                tasks: deadline, created_at, updated_at, completed_at, priority, status, name.
+                projects: deadline, created_at, updated_at, completed_at, status, name.
+                reports: due_at, created_at, updated_at, last_submitted_at, status, period_key.
+                members: display_name, created_at, updated_at, status.
+            direction:
+              type: string
+              enum: [asc, desc]
+        limit:
+          type: integer
+          default: 100
+          minimum: 1
+          maximum: 500
+        offset:
+          type: integer
+          default: 0
+          minimum: 0
+    ReadResponse:
+      type: object
+      properties:
+        resource:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            count: { type: integer }
+            limit: { type: integer }
+            offset: { type: integer }
+            has_more: { type: boolean }
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            allowed_filters:
+              type: array
+              items: { type: string }
+            allowed_values:
+              type: array
+              items: { type: string }
