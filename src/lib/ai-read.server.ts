@@ -365,8 +365,8 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
           continue;
         }
         if (resource === "members" && key === "search") {
-          const text = String(value).replace(/[,()]/g, " ");
-          query = query.or(`display_name.ilike.*${text}*,email.ilike.*${text}*`);
+          const text = String(value).replace(/[,().]/g, " ");
+          query = query.or(`display_name.ilike.%${text}%,email.ilike.%${text}%`);
           continue;
         }
         continue;
