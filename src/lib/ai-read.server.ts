@@ -137,7 +137,8 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
   members: {
     table: "profiles",
     fields: MEMBER_FIELDS,
-    sortable: ["display_name", "created_at", "updated_at", "status"],
+    // Danh bạ (member_directory) không trả created_at/updated_at.
+    sortable: ["display_name", "status"],
     defaultSort: { field: "display_name", ascending: true },
     filters: {
       team: { kind: "uuid", column: "primary_team_id", op: "eq" },
