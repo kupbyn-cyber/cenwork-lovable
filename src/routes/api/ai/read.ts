@@ -38,6 +38,17 @@ export const Route = createFileRoute("/api/ai/read")({
             { status: 500 },
           );
         }
+        if (!process.env["DATABASE_URL"]) {
+          return Response.json(
+            {
+              error: {
+                code: "DB_NOT_CONFIGURED",
+                message: "Máy chủ chưa kết nối cơ sở dữ liệu CEN (DATABASE_URL).",
+              },
+            },
+            { status: 503 },
+          );
+        }
 
         let body: Record<string, unknown> = {};
         try {
