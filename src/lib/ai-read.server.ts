@@ -137,7 +137,8 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
   members: {
     table: "profiles",
     fields: MEMBER_FIELDS,
-    sortable: ["display_name", "created_at", "updated_at", "status"],
+    // Danh bạ (member_directory) không trả created_at/updated_at.
+    sortable: ["display_name", "status"],
     defaultSort: { field: "display_name", ascending: true },
     filters: {
       team: { kind: "uuid", column: "primary_team_id", op: "eq" },
@@ -281,6 +282,87 @@ async function memberRoleFilter(client: any, role: string): Promise<string[]> {
   return ((data ?? []) as any[]).map((row) => row.user_id as string);
 }
 
+/**
+ * CEN-AI-READ-01.2 — Members đi đúng data-access path của giao diện CEN.
+ *
+ * Giao diện đọc danh bạ bằng RPC `member_directory()` (SECURITY DEFINER, tự lọc
+ * cột nhạy cảm theo quyền người gọi). Đọc thẳng bảng `profiles` như trước làm
+ * AI Read chỉ thấy hồ sơ của chính viewer vì RLS của `profiles` rất hẹp.
+ * Không mở RLS, không dùng đặc quyền — chỉ dùng lại đúng hàm UI đang dùng.
+ */
+async function readMembers(
+  viewerId: string,
+  filters: Record<string, unknown>,
+  sortField: string,
+  ascending: boolean,
+  limit: number,
+  offset: number,
+): Promise<AiReadResult> {
+  const client = createUserDataClient(viewerId) as any;
+  const { data, error } = await client.rpc("member_directory");
+  if (error) {
+    return { status: 400, body: { error: { code: "QUERY_FAILED", message: error.message } } };
+  }
+  let rows = ((data ?? []) as any[]).map((row) => ({
+    id: row.id,
+    display_name: row.display_name,
+    email: row.email ?? null,
+    job_title: row.job_title ?? null,
+    primary_team_id: row.primary_team_id ?? null,
+    status: row.status,
+    locked_at: row.locked_at ?? null,
+    role: row.role ?? null,
+  }));
+
+  try {
+    for (const [key, rawValue] of Object.entries(filters)) {
+      const value = coerce(rawValue, RESOURCES.members.filters[key]!.kind, key);
+      if (key === "team") rows = rows.filter((row) => row.primary_team_id === value);
+      else if (key === "status") rows = rows.filter((row) => row.status === value);
+      else if (key === "active") {
+        rows = value
+          ? rows.filter((row) => row.status === "active")
+          : rows.filter((row) => row.status !== "active");
+      } else if (key === "role") {
+        const ids = new Set(await memberRoleFilter(client, String(value)));
+        rows = rows.filter((row) => row.role === value || ids.has(row.id));
+      } else if (key === "search") {
+        const text = String(value).toLowerCase();
+        rows = rows.filter(
+          (row) =>
+            String(row.display_name ?? "")
+              .toLowerCase()
+              .includes(text) ||
+            String(row.email ?? "")
+              .toLowerCase()
+              .includes(text),
+        );
+      }
+    }
+  } catch (err) {
+    return badRequest("INVALID_FILTER", (err as Error).message, {
+      allowed_filters: Object.keys(RESOURCES.members.filters),
+    });
+  }
+
+  rows.sort((a, b) => {
+    const left = String((a as any)[sortField] ?? "");
+    const right = String((b as any)[sortField] ?? "");
+    return ascending ? left.localeCompare(right) : right.localeCompare(left);
+  });
+
+  const total = rows.length;
+  const page = rows.slice(offset, offset + limit);
+  return {
+    status: 200,
+    body: {
+      resource: "members",
+      data: page,
+      meta: { count: total, limit, offset, has_more: offset + page.length < total },
+    },
+  };
+}
+
 export async function runAiRead(viewerId: string, request: AiReadRequest): Promise<AiReadResult> {
   const resource = request.resource as AiReadResource;
   if (!AI_READ_RESOURCES.includes(resource)) {
@@ -326,10 +408,14 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
     ascending = request.sort.direction === "asc";
   }
 
+  if (resource === "members") {
+    return readMembers(viewerId, filters, sortField, ascending, limit, offset);
+  }
+
   const client = createUserDataClient(viewerId) as any;
   let query = client.from(def.table).select(def.fields, { count: "exact" });
 
-  if (resource !== "members") query = query.is("deleted_at", null);
+  query = query.is("deleted_at", null);
   if (resource === "tasks") query = query.eq("is_archived", false);
 
   try {
@@ -343,30 +429,6 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
           query = value
             ? query.lt("deadline", nowIso).neq("status", "done")
             : query.gte("deadline", nowIso);
-          continue;
-        }
-        if (resource === "members" && key === "active") {
-          query = value ? query.eq("status", "active") : query.neq("status", "active");
-          continue;
-        }
-        if (resource === "members" && key === "role") {
-          const ids = await memberRoleFilter(client, value as string);
-          if (ids.length === 0) {
-            return {
-              status: 200,
-              body: {
-                resource,
-                data: [],
-                meta: { count: 0, limit, offset, has_more: false },
-              },
-            };
-          }
-          query = query.in("id", ids);
-          continue;
-        }
-        if (resource === "members" && key === "search") {
-          const text = String(value).replace(/[,().]/g, " ");
-          query = query.or(`display_name.ilike.%${text}%,email.ilike.%${text}%`);
           continue;
         }
         continue;
