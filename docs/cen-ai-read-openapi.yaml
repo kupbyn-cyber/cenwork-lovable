@@ -1,26 +1,37 @@
 openapi: 3.1.0
+
 info:
   title: CEN Analyst Read API
   description: >-
-    API chỉ đọc dữ liệu vận hành của CEN (tasks, projects, reports, performance,
-    members). Không có thao tác ghi/sửa/xóa/duyệt.
-  version: "1.0.0"
+    API chỉ đọc dữ liệu vận hành của CEN cho CEN Analyst.
+    Chỉ hỗ trợ truy vấn tasks, projects, reports, performance và members.
+    API không có khả năng tạo, sửa, xóa, duyệt hoặc thay đổi dữ liệu CEN.
+  version: "1.0.1"
+
 servers:
-  - url: https://cenwork.lovable.app
-    description: Đổi thành domain production CEN (self-host Mắt Bão) khi cấu hình GPT Action.
+  - url: https://cenwork.tudogroup.vn
+    description: CEN WORK production
+
 security:
   - bearerAuth: []
+
 paths:
   /api/ai/read:
     post:
       operationId: cenAnalystRead
-      summary: Đọc dữ liệu CEN theo resource, filter, sort, phân trang.
+      summary: Đọc dữ liệu CEN
+      description: >-
+        Chỉ đọc dữ liệu mà CEN_AI_VIEWER_USER_ID có quyền xem.
+        Sử dụng action này khi cần dữ liệu thật từ CEN để trả lời,
+        phân tích, thống kê, đánh giá hoặc lập báo cáo.
+        Không sử dụng action này để thay đổi dữ liệu.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/ReadRequest"
+
       responses:
         "200":
           description: Thành công
@@ -28,96 +39,180 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReadResponse"
+
         "400":
-          description: Resource/filter/sort không hợp lệ
+          description: Resource, filter hoặc sort không hợp lệ
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
         "401":
           description: Thiếu hoặc sai API key
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
         "503":
           description: Máy chủ chưa kết nối cơ sở dữ liệu
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
 components:
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
+
   schemas:
+
     ReadRequest:
       type: object
-      required: [resource]
+      required:
+        - resource
+
       properties:
+
         resource:
           type: string
-          enum: [tasks, projects, reports, performance, members]
+          enum:
+            - tasks
+            - projects
+            - reports
+            - performance
+            - members
+          description: >-
+            Nhóm dữ liệu cần đọc.
+            Chỉ sử dụng một trong 5 resource được liệt kê.
+
         filters:
           type: object
           description: >-
-            tasks: status, project, assignee, member, team, priority, overdue, from, to, search.
-            projects: status, leader, owner, team, from, to, search.
-            reports: report_type, author, member, team, project, status, from, to, search.
-            performance: member, team, from (bắt buộc), to (bắt buộc), metric.
-            members: team, status, active, role, search.
+            Filter hỗ trợ theo resource.
+
+            tasks:
+            status, project, assignee, member, team, priority,
+            overdue, from, to, search.
+
+            projects:
+            status, leader, owner, team, from, to, search.
+
+            reports:
+            report_type, author, member, team, project,
+            status, from, to, search.
+
+            performance:
+            member, team, from, to, metric.
+            from và to là bắt buộc khi đọc performance.
+
+            members:
+            team, status, active, role, search.
+
+            Chỉ gửi filter cần thiết cho câu hỏi.
+            Không tự tạo filter ngoài danh sách được hỗ trợ.
           additionalProperties: true
+
         sort:
           type: object
           properties:
+
             field:
               type: string
               description: >-
-                tasks: deadline, created_at, updated_at, completed_at, priority, status, name.
-                projects: deadline, created_at, updated_at, completed_at, status, name.
-                reports: due_at, created_at, updated_at, last_submitted_at, status, period_key.
-                members: display_name, created_at, updated_at, status.
+                Field được phép sort theo resource.
+
+                tasks:
+                deadline, created_at, updated_at,
+                completed_at, priority, status, name.
+
+                projects:
+                deadline, created_at, updated_at,
+                completed_at, status, name.
+
+                reports:
+                due_at, created_at, updated_at,
+                last_submitted_at, status, period_key.
+
+                members:
+                display_name, status.
+
+                Chỉ sử dụng field phù hợp với resource đang đọc.
+
             direction:
               type: string
-              enum: [asc, desc]
+              enum:
+                - asc
+                - desc
+
         limit:
           type: integer
           default: 100
           minimum: 1
           maximum: 500
+          description: >-
+            Số bản ghi tối đa mỗi request.
+            Khi cần phân tích nhiều dữ liệu, sử dụng offset để đọc tiếp.
+
         offset:
           type: integer
           default: 0
           minimum: 0
+
+      additionalProperties: false
+
     ReadResponse:
       type: object
       properties:
+
         resource:
           type: string
+
         data:
           type: array
           items:
             type: object
             additionalProperties: true
+
         meta:
           type: object
           properties:
-            count: { type: integer }
-            limit: { type: integer }
-            offset: { type: integer }
-            has_more: { type: boolean }
+
+            count:
+              type: integer
+
+            limit:
+              type: integer
+
+            offset:
+              type: integer
+
+            has_more:
+              type: boolean
+
     ErrorResponse:
       type: object
       properties:
+
         error:
           type: object
           properties:
-            code: { type: string }
-            message: { type: string }
+
+            code:
+              type: string
+
+            message:
+              type: string
+
             allowed_filters:
               type: array
-              items: { type: string }
+              items:
+                type: string
+
             allowed_values:
               type: array
-              items: { type: string }
+              items:
+                type: string
