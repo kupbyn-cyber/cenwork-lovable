@@ -217,15 +217,15 @@ async function readPerformance(
   const full: Record<string, unknown> = {
     range: { from, to },
     scope: dashboard.scope,
+    role: dashboard.role,
     totals: dashboard.totals,
-    workload: dashboard.workload,
-    efficiency: dashboard.efficiency,
-    quality: dashboard.quality,
-    reports: dashboard.reports,
+    previous_totals: dashboard.previous_totals,
     trend: dashboard.trend,
     teams: dashboard.teams,
+    team_details: dashboard.team_details,
     people: dashboard.people,
     alerts: dashboard.alerts,
+    unavailable: dashboard.unavailable,
   };
   if (metric) {
     if (!(metric in full)) {
