@@ -7,6 +7,7 @@ import {
   ArchiveRestore,
   CalendarClock,
   Check,
+  ChevronRight,
   Plus,
   Send,
   Trash2,
@@ -16,6 +17,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -183,6 +185,60 @@ function ProjectTaskSection({
     );
   }
   return <>{render(result.data ?? [])}</>;
+}
+
+/**
+ * PROJECT-TASK-UI-01 — Tách Task đang xử lý và Task lưu trữ của một dự án.
+ * Chỉ phân nhóm tại client từ dữ liệu đã tải (không thêm query thứ hai).
+ */
+function ProjectTaskGroups({
+  tasks,
+  renderList,
+}: {
+  tasks: TaskRow[];
+  renderList: (tasks: TaskRow[]) => React.ReactNode;
+}) {
+  const [archivedOpen, setArchivedOpen] = React.useState(false);
+  const activeTasks = React.useMemo(() => tasks.filter((task) => !isTaskArchived(task)), [tasks]);
+  const archivedTasks = React.useMemo(() => tasks.filter((task) => isTaskArchived(task)), [tasks]);
+
+  if (tasks.length === 0) {
+    return (
+      <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      {activeTasks.length > 0 ? (
+        renderList(activeTasks)
+      ) : (
+        <p className="py-2 text-body-sm text-text-muted">Không có công việc đang xử lý.</p>
+      )}
+
+      {archivedTasks.length > 0 ? (
+        <div className="min-w-0 rounded-card border border-border-default">
+          <button
+            type="button"
+            onClick={() => setArchivedOpen((prev) => !prev)}
+            aria-expanded={archivedOpen}
+            className="flex w-full items-center gap-2 rounded-card px-3 py-2 text-left text-body-sm text-text-secondary cen-transition hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+          >
+            <ChevronRight
+              aria-hidden="true"
+              className={cn("size-icon-sm cen-transition", archivedOpen && "rotate-90")}
+            />
+            <span>Lưu trữ ({archivedTasks.length})</span>
+          </button>
+          {archivedOpen ? (
+            <div className="min-w-0 border-t border-border-default p-2">
+              {renderList(archivedTasks)}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function ProjectsPage() {
@@ -582,11 +638,6 @@ function ProjectsPage() {
   ];
 
   const renderTaskRows = (tasks: TaskRow[]) => {
-    if (tasks.length === 0) {
-      return (
-        <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
-      );
-    }
     if (isMobile) {
       return (
         <TaskCardList
@@ -618,7 +669,10 @@ function ProjectsPage() {
 
   /** Task chỉ được tải khi dự án được mở rộng (accordion chỉ mount children khi mở). */
   const renderTaskList = (project: ProjectRow) => (
-    <ProjectTaskSection projectId={project.id} render={renderTaskRows} />
+    <ProjectTaskSection
+      projectId={project.id}
+      render={(tasks) => <ProjectTaskGroups tasks={tasks} renderList={renderTaskRows} />}
+    />
   );
 
   const renderApprovalHistory = (project: ProjectRow) => {
