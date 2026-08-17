@@ -128,7 +128,11 @@ export interface TaskRow {
 
 /* ================= Người duyệt Task ================= */
 
+/** Bao gồm cả `project_owner` để hiển thị đúng Task lịch sử. */
 export type TaskReviewerKind = "project_owner" | "my_leader" | "cmo";
+
+/** TASK-APPROVAL-01 — chỉ hai lựa chọn hợp lệ cho submission mới. */
+export type TaskReviewerSelectableKind = "my_leader" | "cmo";
 
 export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
   project_owner: "Chủ dự án",
@@ -136,7 +140,7 @@ export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
   cmo: "CMO",
 };
 
-export const TASK_REVIEWER_ORDER: TaskReviewerKind[] = ["project_owner", "my_leader", "cmo"];
+export const TASK_REVIEWER_ORDER: TaskReviewerSelectableKind[] = ["my_leader", "cmo"];
 
 export interface TaskReviewerOption {
   kind: TaskReviewerKind;
