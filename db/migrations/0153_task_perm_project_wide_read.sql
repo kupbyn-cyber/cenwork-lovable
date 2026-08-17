@@ -153,3 +153,51 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.task_participants_visible() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.can_view_task(uuid) TO authenticated, service_role;
+
+-- ============ Bản theo dự án (CEN-PERF-05) đồng bộ visibility mới ============
+CREATE OR REPLACE FUNCTION public.task_participants_visible(_project uuid)
+RETURNS TABLE(task_id uuid, user_id uuid)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT tp.task_id, tp.user_id
+  FROM public.task_participants tp
+  WHERE auth.uid() IS NOT NULL
+    AND tp.task_id IN (
+      SELECT t.id FROM public.tasks t
+      WHERE t.deleted_at IS NULL
+        AND t.project_id = _project
+        AND (
+          t.created_by = auth.uid()
+          OR t.assignee_id = auth.uid()
+          OR NOT EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = t.project_id AND p.deleted_at IS NOT NULL
+          )
+        )
+    );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.task_participants_visible(uuid) TO authenticated, service_role;
+
+-- ============ Dữ liệu phụ trợ của Project mở theo đúng READ mới ============
+-- Chỉ READ. Quyền ghi/xóa vẫn dùng can_edit_project_row như trước.
+DROP POLICY IF EXISTS project_teams_select ON public.project_teams;
+CREATE POLICY project_teams_select ON public.project_teams
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.projects p
+                 WHERE p.id = project_teams.project_id AND p.deleted_at IS NULL));
+
+DROP POLICY IF EXISTS project_facilities_select ON public.project_facilities;
+CREATE POLICY project_facilities_select ON public.project_facilities
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.projects p
+                 WHERE p.id = project_facilities.project_id AND p.deleted_at IS NULL));
+
+DROP POLICY IF EXISTS project_members_select ON public.project_members;
+CREATE POLICY project_members_select ON public.project_members
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.projects p
+                 WHERE p.id = project_members.project_id AND p.deleted_at IS NULL));
