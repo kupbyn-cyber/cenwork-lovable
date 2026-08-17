@@ -591,7 +591,7 @@ export interface TaskSubmissionInput {
   priority: TaskPriority;
   workWeight: TaskWorkWeight;
   participantIds: string[];
-  reviewerType: TaskReviewerKind;
+  reviewerType: TaskReviewerSelectableKind;
   reviewerId: string;
   /** Chủ dự án có thể giao việc cho người khác; bỏ trống = tự nhận việc. */
   assigneeId?: string | null;
