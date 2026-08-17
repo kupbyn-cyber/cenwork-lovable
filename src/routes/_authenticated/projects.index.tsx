@@ -638,11 +638,6 @@ function ProjectsPage() {
   ];
 
   const renderTaskRows = (tasks: TaskRow[]) => {
-    if (tasks.length === 0) {
-      return (
-        <p className="py-2 text-body-sm text-text-muted">Chưa có công việc nào trong dự án này.</p>
-      );
-    }
     if (isMobile) {
       return (
         <TaskCardList
@@ -674,7 +669,10 @@ function ProjectsPage() {
 
   /** Task chỉ được tải khi dự án được mở rộng (accordion chỉ mount children khi mở). */
   const renderTaskList = (project: ProjectRow) => (
-    <ProjectTaskSection projectId={project.id} render={renderTaskRows} />
+    <ProjectTaskSection
+      projectId={project.id}
+      render={(tasks) => <ProjectTaskGroups tasks={tasks} renderList={renderTaskRows} />}
+    />
   );
 
   const renderApprovalHistory = (project: ProjectRow) => {
