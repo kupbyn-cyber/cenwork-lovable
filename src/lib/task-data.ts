@@ -143,7 +143,7 @@ export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
 export const TASK_REVIEWER_ORDER: TaskReviewerSelectableKind[] = ["my_leader", "cmo"];
 
 export interface TaskReviewerOption {
-  kind: TaskReviewerKind;
+  kind: TaskReviewerSelectableKind;
   userId: string;
   displayName: string;
 }
@@ -159,11 +159,13 @@ export async function fetchTaskReviewerOptions(
     _project: projectId as unknown as string,
   });
   if (error) throw new Error(error.message);
-  return ((data ?? []) as { kind: string; user_id: string; display_name: string }[]).map((row) => ({
-    kind: row.kind as TaskReviewerKind,
-    userId: row.user_id,
-    displayName: row.display_name,
-  }));
+  return ((data ?? []) as { kind: string; user_id: string; display_name: string }[])
+    .filter((row) => row.kind === "my_leader" || row.kind === "cmo")
+    .map((row) => ({
+      kind: row.kind as TaskReviewerSelectableKind,
+      userId: row.user_id,
+      displayName: row.display_name,
+    }));
 }
 
 export const taskReviewerOptionsQuery = (projectId: string | null) =>
