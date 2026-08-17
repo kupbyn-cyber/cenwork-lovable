@@ -128,7 +128,11 @@ export interface TaskRow {
 
 /* ================= Người duyệt Task ================= */
 
+/** Bao gồm cả `project_owner` để hiển thị đúng Task lịch sử. */
 export type TaskReviewerKind = "project_owner" | "my_leader" | "cmo";
+
+/** TASK-APPROVAL-01 — chỉ hai lựa chọn hợp lệ cho submission mới. */
+export type TaskReviewerSelectableKind = "my_leader" | "cmo";
 
 export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
   project_owner: "Chủ dự án",
@@ -136,10 +140,10 @@ export const TASK_REVIEWER_LABEL: Record<TaskReviewerKind, string> = {
   cmo: "CMO",
 };
 
-export const TASK_REVIEWER_ORDER: TaskReviewerKind[] = ["project_owner", "my_leader", "cmo"];
+export const TASK_REVIEWER_ORDER: TaskReviewerSelectableKind[] = ["my_leader", "cmo"];
 
 export interface TaskReviewerOption {
-  kind: TaskReviewerKind;
+  kind: TaskReviewerSelectableKind;
   userId: string;
   displayName: string;
 }
@@ -155,11 +159,13 @@ export async function fetchTaskReviewerOptions(
     _project: projectId as unknown as string,
   });
   if (error) throw new Error(error.message);
-  return ((data ?? []) as { kind: string; user_id: string; display_name: string }[]).map((row) => ({
-    kind: row.kind as TaskReviewerKind,
-    userId: row.user_id,
-    displayName: row.display_name,
-  }));
+  return ((data ?? []) as { kind: string; user_id: string; display_name: string }[])
+    .filter((row) => row.kind === "my_leader" || row.kind === "cmo")
+    .map((row) => ({
+      kind: row.kind as TaskReviewerSelectableKind,
+      userId: row.user_id,
+      displayName: row.display_name,
+    }));
 }
 
 export const taskReviewerOptionsQuery = (projectId: string | null) =>
@@ -587,7 +593,7 @@ export interface TaskSubmissionInput {
   priority: TaskPriority;
   workWeight: TaskWorkWeight;
   participantIds: string[];
-  reviewerType: TaskReviewerKind;
+  reviewerType: TaskReviewerSelectableKind;
   reviewerId: string;
   /** Chủ dự án có thể giao việc cho người khác; bỏ trống = tự nhận việc. */
   assigneeId?: string | null;

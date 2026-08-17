@@ -225,7 +225,7 @@ export function TaskFormDrawer({
   const scopedPool: PersonOption[] =
     selectedProject && scopePeople.data ? scopePeople.data : people;
 
-  /** Người duyệt: chỉ 3 lựa chọn hợp lệ, database kiểm tra lại khi ghi. */
+  /** Người duyệt: chỉ Leader của tôi hoặc CMO, database kiểm tra lại khi ghi. */
   const reviewerResult = useQuery(taskReviewerOptionsQuery(selectedProject?.id ?? null));
   const reviewerOptions = reviewerResult.data ?? [];
   const selectedReviewer =
@@ -613,7 +613,7 @@ export function TaskFormDrawer({
           helperText={
             reviewerOptions.length === 0
               ? "Chưa xác định được người duyệt hợp lệ. Vui lòng liên hệ Admin/CMO."
-              : "Chỉ được chọn Chủ dự án, Leader của bạn hoặc CMO."
+              : "Chỉ được chọn Leader của bạn hoặc CMO."
           }
         >
           {(control) => (
@@ -635,11 +635,7 @@ export function TaskFormDrawer({
                   };
                 }
                 const missing =
-                  kind === "my_leader"
-                    ? "Chưa có Leader hợp lệ"
-                    : kind === "cmo"
-                      ? "Chưa có CMO hợp lệ"
-                      : "Chưa có Chủ dự án hợp lệ";
+                  kind === "my_leader" ? "Chưa có Leader hợp lệ" : "Chưa có CMO hợp lệ";
                 return {
                   value: kind,
                   label: TASK_REVIEWER_LABEL[kind],
