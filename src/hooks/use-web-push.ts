@@ -7,8 +7,8 @@ import {
 } from "@/lib/push.functions";
 
 /**
- * CEN WORK — NOTIFY-PUSH-01: quản lý Web Push ở phía trình duyệt.
- * Không bao giờ tự xin quyền: chỉ chạy khi người dùng bấm nút bật.
+ * CEN-PUSH-P01 — quản lý Web Push ở phía trình duyệt.
+ * Không bao giờ tự xin quyền khi tải trang: chỉ xin sau khi người dùng bấm nút.
  */
 export type PushStatus = "unsupported" | "unconfigured" | "blocked" | "enabled" | "disabled";
 
@@ -23,13 +23,29 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return output;
 }
 
-function supported(): boolean {
+export function pushSupported(): boolean {
   return (
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window
   );
+}
+
+/**
+ * Đăng xuất: gỡ liên kết thiết bị hiện tại theo kiểu best-effort.
+ * Mọi lỗi đều nuốt — dọn dẹp push không được chặn đăng xuất.
+ */
+export async function unlinkCurrentPushSubscription(): Promise<void> {
+  try {
+    if (!pushSupported()) return;
+    const registration = await navigator.serviceWorker.getRegistration(SW_URL);
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return;
+    await deletePushSubscription({ data: { endpoint: subscription.endpoint } });
+  } catch {
+    /* best-effort */
+  }
 }
 
 export function useWebPush() {
@@ -40,7 +56,7 @@ export function useWebPush() {
   const publicKeyRef = React.useRef<string | null>(null);
 
   const sync = React.useCallback(async () => {
-    if (!supported()) {
+    if (!pushSupported()) {
       setStatus("unsupported");
       setReady(true);
       return;
@@ -59,7 +75,7 @@ export function useWebPush() {
       const registration = await navigator.serviceWorker.getRegistration(SW_URL);
       const subscription = await registration?.pushManager.getSubscription();
       if (subscription && Notification.permission === "granted") {
-        // Đồng bộ lại: endpoint có thể đã đổi/hết hạn giữa hai phiên.
+        // Máy dùng chung: đồng bộ lại để endpoint gắn đúng người đang đăng nhập.
         const json = subscription.toJSON();
         await savePushSubscription({
           data: {
@@ -89,7 +105,7 @@ export function useWebPush() {
     setBusy(true);
     setError(null);
     try {
-      if (!supported()) {
+      if (!pushSupported()) {
         setStatus("unsupported");
         return;
       }
@@ -149,6 +165,7 @@ export function useWebPush() {
       const registration = await navigator.serviceWorker.getRegistration(SW_URL);
       const subscription = await registration?.pushManager.getSubscription();
       if (subscription) {
+        // Chỉ tắt thiết bị này: các thiết bị khác của cùng người dùng giữ nguyên.
         await deletePushSubscription({ data: { endpoint: subscription.endpoint } });
         await subscription.unsubscribe();
       }

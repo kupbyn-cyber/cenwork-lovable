@@ -7,6 +7,7 @@ import { AppSidebar, CenLogo, SidebarNav } from "@/components/layout/app-sidebar
 import { TopBar } from "@/components/layout/top-bar";
 import { AnnouncementReminderBar } from "@/components/announcement/announcement-reminder-bar";
 import { NotificationPopupHost } from "@/components/notification/notification-popup-host";
+import { PushOnboardingBanner } from "@/components/notification/push-onboarding-banner";
 import { WorkdayStartDialog } from "@/components/workday/workday-start-dialog";
 
 /**
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AnnouncementReminderBar />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+            <PushOnboardingBanner />
             {children}
           </div>
         </main>

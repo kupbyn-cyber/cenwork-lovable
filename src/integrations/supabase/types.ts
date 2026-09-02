@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1325,6 +1325,59 @@ export type Database = {
           },
         ]
       }
+      daily_work_records: {
+        Row: {
+          change_count: number
+          confirmed_at: string
+          created_at: string
+          day_status: string
+          id: string
+          shift_type: string | null
+          source: string
+          started_at: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_date: string
+        }
+        Insert: {
+          change_count?: number
+          confirmed_at?: string
+          created_at?: string
+          day_status: string
+          id?: string
+          shift_type?: string | null
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          work_date: string
+        }
+        Update: {
+          change_count?: number
+          confirmed_at?: string
+          created_at?: string
+          day_status?: string
+          id?: string
+          shift_type?: string | null
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_work_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deadline_change_requests: {
         Row: {
           created_at: string
@@ -2177,15 +2230,96 @@ export type Database = {
           },
         ]
       }
+      mvp_bonus_proposals: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          evidence: string
+          id: string
+          points: number
+          proposer_id: string
+          reason: string
+          status: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence: string
+          id?: string
+          points: number
+          proposer_id: string
+          reason: string
+          status?: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence?: string
+          id?: string
+          points?: number
+          proposer_id?: string
+          reason?: string
+          status?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_bonus_proposals_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "mvp_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_bonus_proposals_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_bonus_proposals_proposer_id_fkey"
+            columns: ["proposer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mvp_bonus_proposals_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mvp_cycle_tasks: {
         Row: {
           created_at: string
           cycle_id: string
+          excluded_at: string | null
+          excluded_reason: string | null
+          final_completed_at: string | null
           final_status: Database["public"]["Enums"]["task_status"] | null
           id: string
           is_committed: boolean
           is_locked: boolean
           original_deadline: string | null
+          snapshot_at: string
           task_id: string
           updated_at: string
           user_id: string
@@ -2196,11 +2330,15 @@ export type Database = {
         Insert: {
           created_at?: string
           cycle_id: string
+          excluded_at?: string | null
+          excluded_reason?: string | null
+          final_completed_at?: string | null
           final_status?: Database["public"]["Enums"]["task_status"] | null
           id?: string
           is_committed?: boolean
           is_locked?: boolean
           original_deadline?: string | null
+          snapshot_at?: string
           task_id: string
           updated_at?: string
           user_id: string
@@ -2211,11 +2349,15 @@ export type Database = {
         Update: {
           created_at?: string
           cycle_id?: string
+          excluded_at?: string | null
+          excluded_reason?: string | null
+          final_completed_at?: string | null
           final_status?: Database["public"]["Enums"]["task_status"] | null
           id?: string
           is_committed?: boolean
           is_locked?: boolean
           original_deadline?: string | null
+          snapshot_at?: string
           task_id?: string
           updated_at?: string
           user_id?: string
@@ -2371,6 +2513,7 @@ export type Database = {
           cycle_id: string
           evidence: string | null
           id: string
+          impact_score: number
           proactive_score: number
           quality_score: number
           reason: string | null
@@ -2386,6 +2529,7 @@ export type Database = {
           cycle_id: string
           evidence?: string | null
           id?: string
+          impact_score?: number
           proactive_score?: number
           quality_score?: number
           reason?: string | null
@@ -2401,6 +2545,7 @@ export type Database = {
           cycle_id?: string
           evidence?: string | null
           id?: string
+          impact_score?: number
           proactive_score?: number
           quality_score?: number
           reason?: string | null
@@ -2498,6 +2643,7 @@ export type Database = {
       mvp_scorecards: {
         Row: {
           auto_score: number
+          bonus_score: number
           computed_at: string | null
           created_at: string
           cycle_id: string
@@ -2516,6 +2662,7 @@ export type Database = {
         }
         Insert: {
           auto_score?: number
+          bonus_score?: number
           computed_at?: string | null
           created_at?: string
           cycle_id: string
@@ -2534,6 +2681,7 @@ export type Database = {
         }
         Update: {
           auto_score?: number
+          bonus_score?: number
           computed_at?: string | null
           created_at?: string
           cycle_id?: string
@@ -3203,6 +3351,101 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_outbox: {
+        Row: {
+          attempts: number
+          body: string | null
+          created_at: string
+          event_type: string | null
+          id: string
+          last_error: string | null
+          link: string | null
+          notification_id: string
+          recipient_id: string
+          sent_at: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          attempts?: number
+          body?: string | null
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          last_error?: string | null
+          link?: string | null
+          notification_id: string
+          recipient_id: string
+          sent_at?: string | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          attempts?: number
+          body?: string | null
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          last_error?: string | null
+          link?: string | null
+          notification_id?: string
+          recipient_id?: string
+          sent_at?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_outbox_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: true
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          enabled: boolean
+          endpoint: string
+          id: string
+          last_error: string | null
+          last_success_at: string | null
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          enabled?: boolean
+          endpoint: string
+          id?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          enabled?: boolean
+          endpoint?: string
+          id?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       recognition_reactions: {
         Row: {
@@ -4410,6 +4653,52 @@ export type Database = {
           },
         ]
       }
+      task_comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comment_mentions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comment_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comment_reads: {
         Row: {
           last_read_at: string
@@ -4521,6 +4810,117 @@ export type Database = {
           },
         ]
       }
+      task_recurrence_rules: {
+        Row: {
+          assignee_id: string
+          created_at: string
+          created_by: string
+          deadline_time: string
+          description: string | null
+          end_date: string | null
+          freq: Database["public"]["Enums"]["task_recurrence_freq"]
+          id: string
+          last_generated_date: string | null
+          month_day: number | null
+          name: string
+          participant_ids: string[]
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string | null
+          reviewer_id: string | null
+          reviewer_type: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["task_recurrence_status"]
+          team_id: string | null
+          updated_at: string
+          weekdays: number[]
+          work_weight: number
+        }
+        Insert: {
+          assignee_id: string
+          created_at?: string
+          created_by: string
+          deadline_time?: string
+          description?: string | null
+          end_date?: string | null
+          freq: Database["public"]["Enums"]["task_recurrence_freq"]
+          id?: string
+          last_generated_date?: string | null
+          month_day?: number | null
+          name: string
+          participant_ids?: string[]
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["task_recurrence_status"]
+          team_id?: string | null
+          updated_at?: string
+          weekdays?: number[]
+          work_weight?: number
+        }
+        Update: {
+          assignee_id?: string
+          created_at?: string
+          created_by?: string
+          deadline_time?: string
+          description?: string | null
+          end_date?: string | null
+          freq?: Database["public"]["Enums"]["task_recurrence_freq"]
+          id?: string
+          last_generated_date?: string | null
+          month_day?: number | null
+          name?: string
+          participant_ids?: string[]
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["task_recurrence_status"]
+          team_id?: string | null
+          updated_at?: string
+          weekdays?: number[]
+          work_weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_recurrence_rules_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrence_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrence_rules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrence_rules_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrence_rules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_results: {
         Row: {
           created_at: string
@@ -4627,8 +5027,10 @@ export type Database = {
           manually_archived_at: string | null
           manually_archived_by: string | null
           name: string
+          occurrence_date: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           project_id: string | null
+          recurrence_rule_id: string | null
           result_text: string | null
           result_updated_at: string | null
           result_updated_by: string | null
@@ -4639,6 +5041,7 @@ export type Database = {
           submitted_at: string | null
           team_id: string | null
           updated_at: string
+          work_weight: number
         }
         Insert: {
           approval_decided_at?: string | null
@@ -4662,8 +5065,10 @@ export type Database = {
           manually_archived_at?: string | null
           manually_archived_by?: string | null
           name: string
+          occurrence_date?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          recurrence_rule_id?: string | null
           result_text?: string | null
           result_updated_at?: string | null
           result_updated_by?: string | null
@@ -4674,6 +5079,7 @@ export type Database = {
           submitted_at?: string | null
           team_id?: string | null
           updated_at?: string
+          work_weight?: number
         }
         Update: {
           approval_decided_at?: string | null
@@ -4697,8 +5103,10 @@ export type Database = {
           manually_archived_at?: string | null
           manually_archived_by?: string | null
           name?: string
+          occurrence_date?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           project_id?: string | null
+          recurrence_rule_id?: string | null
           result_text?: string | null
           result_updated_at?: string | null
           result_updated_by?: string | null
@@ -4709,6 +5117,7 @@ export type Database = {
           submitted_at?: string | null
           team_id?: string | null
           updated_at?: string
+          work_weight?: number
         }
         Relationships: [
           {
@@ -4744,6 +5153,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_recurrence_rule_id_fkey"
+            columns: ["recurrence_rule_id"]
+            isOneToOne: false
+            referencedRelation: "task_recurrence_rules"
             referencedColumns: ["id"]
           },
           {
@@ -5484,6 +5900,7 @@ export type Database = {
       can_manage_profile: { Args: { _target: string }; Returns: boolean }
       can_manage_project: { Args: { _project: string }; Returns: boolean }
       can_manage_task: { Args: { _task: string }; Returns: boolean }
+      can_manage_work_record: { Args: { _user: string }; Returns: boolean }
       can_moderate_announcement: { Args: never; Returns: boolean }
       can_recognize: { Args: { _target: string }; Returns: boolean }
       can_request_deadline_change: {
@@ -5497,6 +5914,10 @@ export type Database = {
       can_review_daily_report: { Args: { _author: string }; Returns: boolean }
       can_review_mvp: { Args: { _subject: string }; Returns: boolean }
       can_review_weekly_report: { Args: never; Returns: boolean }
+      can_set_work_weight: {
+        Args: { _user: string; _weight: number }
+        Returns: boolean
+      }
       can_view_announcement: { Args: { _a: string }; Returns: boolean }
       can_view_daily_report: {
         Args: { _author: string; _team: string }
@@ -5514,6 +5935,8 @@ export type Database = {
         Returns: boolean
       }
       can_view_weekly_report: { Args: { _team: string }; Returns: boolean }
+      can_view_work_record: { Args: { _user: string }; Returns: boolean }
+      cen_today: { Args: never; Returns: string }
       current_app_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -5784,6 +6207,17 @@ export type Database = {
         Args: { _project: string }
         Returns: Database["public"]["Enums"]["project_status"]
       }
+      project_task_overview: {
+        Args: never
+        Returns: {
+          active: number
+          done: number
+          mine: boolean
+          overdue: number
+          project_id: string
+          total: number
+        }[]
+      }
       recognition_actor_active: { Args: { _user: string }; Returns: boolean }
       recognition_directory: {
         Args: never
@@ -5986,6 +6420,10 @@ export type Database = {
         Returns: undefined
       }
       task_cancel_notify: { Args: { _task: string }; Returns: undefined }
+      task_comment_post: {
+        Args: { _body: string; _mentions?: string[]; _task: string }
+        Returns: string
+      }
       task_comments_mark_read: { Args: { _task: string }; Returns: undefined }
       task_log_approval_event: {
         Args: {
@@ -6009,10 +6447,90 @@ export type Database = {
           _reviewer?: string
           _reviewer_type?: string
           _start_date: string
+          _work_weight?: number
         }
         Returns: string
       }
       task_member_withdraw: { Args: { _task: string }; Returns: undefined }
+      task_mention_candidates: {
+        Args: { _task: string }
+        Returns: {
+          display_name: string
+          id: string
+          primary_team_id: string
+        }[]
+      }
+      task_participants_visible:
+        | {
+            Args: never
+            Returns: {
+              task_id: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: { _project: string }
+            Returns: {
+              task_id: string
+              user_id: string
+            }[]
+          }
+      task_recurrence_can_manage: { Args: { _rule: string }; Returns: boolean }
+      task_recurrence_can_view: { Args: { _rule: string }; Returns: boolean }
+      task_recurrence_create: {
+        Args: {
+          _assignee: string
+          _deadline_time: string
+          _description: string
+          _end_date: string
+          _freq: Database["public"]["Enums"]["task_recurrence_freq"]
+          _month_day: number
+          _name: string
+          _participants: string[]
+          _priority: Database["public"]["Enums"]["task_priority"]
+          _project: string
+          _reviewer: string
+          _reviewer_type: string
+          _start_date: string
+          _team: string
+          _weekdays: number[]
+          _work_weight?: number
+        }
+        Returns: Json
+      }
+      task_recurrence_generate: {
+        Args: { _d: string; _rule: string }
+        Returns: string
+      }
+      task_recurrence_matches: {
+        Args: {
+          _d: string
+          _freq: Database["public"]["Enums"]["task_recurrence_freq"]
+          _month_day: number
+          _weekdays: number[]
+        }
+        Returns: boolean
+      }
+      task_recurrence_run: { Args: never; Returns: number }
+      task_recurrence_set_status: {
+        Args: {
+          _rule: string
+          _status: Database["public"]["Enums"]["task_recurrence_status"]
+        }
+        Returns: undefined
+      }
+      task_recurrence_update: {
+        Args: {
+          _deadline_time: string
+          _end_date: string
+          _freq: Database["public"]["Enums"]["task_recurrence_freq"]
+          _month_day: number
+          _rule: string
+          _start_date: string
+          _weekdays: number[]
+        }
+        Returns: undefined
+      }
       task_reviewer_candidates: {
         Args: { _actor?: string; _project: string }
         Returns: {
@@ -6052,9 +6570,65 @@ export type Database = {
         Args: { _body: string; _event: string; _link: string; _title: string }
         Returns: string
       }
+      telegram_escape_html: { Args: { _text: string }; Returns: string }
       telegram_icon: { Args: { _event: string }; Returns: string }
       verify_admin_bootstrap: { Args: { _user: string }; Returns: Json }
       verify_system_defaults: { Args: never; Returns: Json }
+      work_day_can_view_dashboard: { Args: never; Returns: boolean }
+      work_day_changes: {
+        Args: { _record: string }
+        Returns: {
+          actor_name: string
+          after_shift: string
+          after_status: string
+          before_shift: string
+          before_status: string
+          changed_at: string
+        }[]
+      }
+      work_day_history: {
+        Args: { _from: string; _to: string; _user: string }
+        Returns: {
+          change_count: number
+          confirmed_at: string
+          day_status: string
+          id: string
+          shift_type: string
+          started_at: string
+          work_date: string
+        }[]
+      }
+      work_day_overview: {
+        Args: { _from: string; _team?: string; _to: string }
+        Returns: {
+          avatar_path: string
+          change_count: number
+          day_off_days: number
+          display_name: string
+          full_days: number
+          other_shift_days: number
+          team_id: string
+          team_name: string
+          today_changed: boolean
+          today_shift: string
+          today_started_at: string
+          today_status: string
+          user_id: string
+          weekend_days: number
+          working_days: number
+        }[]
+      }
+      work_day_set: {
+        Args: {
+          _day?: string
+          _shift?: string
+          _source?: string
+          _status: string
+          _user?: string
+        }
+        Returns: Json
+      }
+      work_day_today: { Args: never; Returns: Json }
       write_audit: {
         Args: {
           _action: string
@@ -6184,6 +6758,8 @@ export type Database = {
         | "approved"
         | "withdrawn"
       task_priority: "low" | "medium" | "high"
+      task_recurrence_freq: "daily" | "weekly" | "monthly"
+      task_recurrence_status: "active" | "stopped" | "archived"
       task_status: "not_started" | "in_progress" | "review" | "done"
     }
     CompositeTypes: {
@@ -6441,6 +7017,8 @@ export const Constants = {
         "withdrawn",
       ],
       task_priority: ["low", "medium", "high"],
+      task_recurrence_freq: ["daily", "weekly", "monthly"],
+      task_recurrence_status: ["active", "stopped", "archived"],
       task_status: ["not_started", "in_progress", "review", "done"],
     },
   },

@@ -9,6 +9,7 @@
     "build:node": "NITRO_PRESET=node vite build",
     "start": "node .output/server/index.mjs",
     "db:migrate": "node scripts/migrate.mjs",
+    "push:vapid": "node scripts/generate-vapid.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",

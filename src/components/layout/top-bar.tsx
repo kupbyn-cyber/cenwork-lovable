@@ -20,6 +20,7 @@ import { avatarUrlQuery } from "@/lib/avatar-data";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cenToast } from "@/components/ui/toast";
 import { getDisplayName, useAuth } from "@/hooks/use-auth";
+import { unlinkCurrentPushSubscription } from "@/hooks/use-web-push";
 import { logSelfAuditEvent } from "@/lib/audit-data";
 import { supabase } from "@/integrations/cen/client";
 
@@ -44,6 +45,8 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       // Ghi audit trước khi phiên bị thu hồi (không lưu token hay mật khẩu).
       await logSelfAuditEvent(user.id, "account.signed_out_all").catch(() => undefined);
     }
+    // CEN-PUSH-P01: gỡ liên kết push của trình duyệt này, best-effort.
+    await unlinkCurrentPushSubscription();
     await queryClient.cancelQueries();
     queryClient.clear();
     const { error } = await supabase.auth.signOut({ scope });
