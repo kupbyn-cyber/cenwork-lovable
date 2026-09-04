@@ -45,6 +45,7 @@ export function internalItem(row: InboxRow): InboxItem {
     status: effectiveRecipientStatus(row),
     link: null,
     due_at: row.due_at,
+    actionable: isPendingAck(row),
     original: row,
   };
 }
@@ -60,14 +61,14 @@ export function systemItem(row: NotificationRow): InboxItem {
     status: row.read_at ? "read" : "unread",
     link: row.link,
     due_at: null,
+    actionable: !row.read_at,
     original: row,
   };
 }
 
-/** Nội bộ chưa hoàn thành / hệ thống chưa đọc. */
+/** Nội bộ còn hiệu lực & chưa xác nhận / hệ thống chưa đọc. */
 export function isTodo(item: InboxItem): boolean {
-  if (item.source === "system") return item.status === "unread";
-  return item.status !== "completed" && item.status !== "exempt";
+  return item.actionable;
 }
 
 export function matchesStatusFilter(
@@ -99,7 +100,7 @@ export function sortNewestFirst(items: InboxItem[]): InboxItem[] {
  */
 export function sortByPriority(items: InboxItem[]): InboxItem[] {
   const rank = (item: InboxItem) => {
-    if (item.source === "internal" && item.status === "overdue") return 0;
+    if (item.source === "internal" && item.status === "overdue" && item.actionable) return 0;
     if (isTodo(item)) return 1;
     return 2;
   };
