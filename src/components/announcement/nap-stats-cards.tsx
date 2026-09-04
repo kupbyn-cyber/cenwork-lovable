@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
+import { effectiveRecipientStatus, inboxQuery, pendingAckRows } from "@/lib/announcement-data";
 import { napStatsQuery, type NapOperationStats } from "@/lib/nap-stats-data";
 import { cn } from "@/lib/utils";
 
@@ -101,6 +103,12 @@ function buildItems(
 
 export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   const stats = useQuery(napStatsQuery());
+  const { user } = useAuth();
+  // CEN-ANN-FIX-01 — counter thông báo phải cùng nguồn với danh sách của chính user.
+  const inbox = useQuery({
+    ...inboxQuery(user?.id),
+    enabled: scope === "announcement" && Boolean(user?.id),
+  });
 
   if (stats.isLoading || (!stats.data && !stats.isError)) {
     return (
@@ -122,7 +130,18 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
     );
   }
 
-  const items = buildItems(scope, stats.data, onSelect);
+  let source = stats.data;
+  if (scope === "announcement" && inbox.data) {
+    const mine = pendingAckRows(inbox.data, user?.id);
+    source = {
+      ...source,
+      announcement_unconfirmed: mine.length,
+      announcement_overdue: mine.filter((row) => effectiveRecipientStatus(row) === "overdue")
+        .length,
+    };
+  }
+
+  const items = buildItems(scope, source, onSelect);
 
   return (
     <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">

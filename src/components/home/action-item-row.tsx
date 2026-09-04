@@ -59,11 +59,20 @@ export function ActionItemRow({ item, onDone }: { item: ActionItem; onDone?: () 
             Hoàn thành
           </Button>
         ) : null}
-        <Button variant="ghost" size="sm" onClick={open}>
-          Mở
-          <ChevronRight />
-        </Button>
+        {/* CEN-ANN-FIX-01 — thông báo chưa xác nhận (kể cả quá hạn) có CTA xử lý rõ ràng. */}
+        {item.quick_action === "acknowledge_announcement" ? (
+          <Button size="sm" onClick={open}>
+            Mở để xác nhận
+            <ChevronRight />
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={open}>
+            Mở
+            <ChevronRight />
+          </Button>
+        )}
       </div>
+
 
       <TaskCompleteDialog
         task={completeOpen ? { id: item.object_id, name: item.title } : null}

@@ -119,7 +119,23 @@ export function AnnouncementAckCard({
               tone={RECIPIENT_STATUS_TONE[status]}
               label={RECIPIENT_STATUS_LABEL[status]}
             />
-            {onOpenDetail ? (
+            {/* CEN-ANN-FIX-01 — chưa xác nhận (kể cả quá hạn) luôn có CTA xử lý. */}
+            {canAcknowledge ? (
+              onOpenDetail ? (
+                <Button type="button" size="sm" onClick={onOpenDetail}>
+                  Mở để xác nhận
+                </Button>
+              ) : (
+                <Button asChild size="sm">
+                  <Link
+                    to="/announcements/$announcementId"
+                    params={{ announcementId: row.announcement_id }}
+                  >
+                    Mở để xác nhận
+                  </Link>
+                </Button>
+              )
+            ) : onOpenDetail ? (
               <Button type="button" variant="secondary" size="sm" onClick={onOpenDetail}>
                 Xem chi tiết
               </Button>
@@ -136,6 +152,7 @@ export function AnnouncementAckCard({
               {open ? "Thu gọn" : "Xem nhanh"}
             </Button>
           </div>
+
         </div>
 
         {!open ? (
