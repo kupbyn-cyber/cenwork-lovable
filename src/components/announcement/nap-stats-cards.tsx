@@ -133,7 +133,19 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
     );
   }
 
-  const items = buildItems(scope, stats.data, onSelect);
+  let source = stats.data;
+  if (scope === "announcement" && inbox.data) {
+    const mine = pendingAckRows(inbox.data, user?.id);
+    source = {
+      ...source,
+      announcement_unconfirmed: mine.length,
+      announcement_overdue: mine.filter((row) => effectiveRecipientStatus(row) === "overdue")
+        .length,
+    };
+  }
+
+  const items = buildItems(scope, source, onSelect);
+
 
   return (
     <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
