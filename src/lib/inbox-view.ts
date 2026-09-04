@@ -79,7 +79,8 @@ export function matchesStatusFilter(
   if (status === "all") return true;
   if (status === "todo") return isTodo(item);
   if (status === "done") return !isTodo(item);
-  if (status === "overdue") return item.source === "internal" && item.status === "overdue";
+  if (status === "overdue")
+    return item.source === "internal" && item.status === "overdue" && item.actionable;
   // CEN-ANN-FIX-01 — "chưa xác nhận" của thông báo nội bộ gồm cả mục quá hạn,
   // đúng bằng nguồn logic của counter "Tôi chưa xác nhận".
   if (status === "unread" && item.source === "internal") return isTodo(item);
