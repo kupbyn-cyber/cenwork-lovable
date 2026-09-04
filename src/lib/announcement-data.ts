@@ -151,7 +151,10 @@ export const ANNOUNCEMENT_SYNC_KEYS = [
   "announcement-recipients",
   "announcement-answers",
   "announcement-ack-stats",
+  "nap-stats",
+  "today-hub",
 ] as const;
+
 
 /** Thông báo tôi nhận. */
 export async function fetchInbox(): Promise<InboxRow[]> {
