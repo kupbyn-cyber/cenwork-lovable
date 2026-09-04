@@ -1,4 +1,8 @@
-import { effectiveRecipientStatus, type InboxRow } from "@/lib/announcement-data";
+import {
+  effectiveRecipientStatus,
+  isPendingAck,
+  type InboxRow,
+} from "@/lib/announcement-data";
 import type { NotificationRow } from "@/lib/notification-data";
 
 /**
@@ -22,6 +26,11 @@ export interface InboxItem {
   link: string | null;
   /** Hạn xử lý (chỉ thông báo nội bộ). */
   due_at: string | null;
+  /**
+   * CEN-ANN-FIX-02 — mục còn cần người dùng xử lý.
+   * Nội bộ dùng đúng predicate `isPendingAck` (loại thu hồi/lưu trữ) mà counter dùng.
+   */
+  actionable: boolean;
   original: InboxRow | NotificationRow;
 }
 
@@ -36,6 +45,7 @@ export function internalItem(row: InboxRow): InboxItem {
     status: effectiveRecipientStatus(row),
     link: null,
     due_at: row.due_at,
+    actionable: isPendingAck(row),
     original: row,
   };
 }
@@ -51,14 +61,14 @@ export function systemItem(row: NotificationRow): InboxItem {
     status: row.read_at ? "read" : "unread",
     link: row.link,
     due_at: null,
+    actionable: !row.read_at,
     original: row,
   };
 }
 
-/** Nội bộ chưa hoàn thành / hệ thống chưa đọc. */
+/** Nội bộ còn hiệu lực & chưa xác nhận / hệ thống chưa đọc. */
 export function isTodo(item: InboxItem): boolean {
-  if (item.source === "system") return item.status === "unread";
-  return item.status !== "completed" && item.status !== "exempt";
+  return item.actionable;
 }
 
 export function matchesStatusFilter(
@@ -69,7 +79,8 @@ export function matchesStatusFilter(
   if (status === "all") return true;
   if (status === "todo") return isTodo(item);
   if (status === "done") return !isTodo(item);
-  if (status === "overdue") return item.source === "internal" && item.status === "overdue";
+  if (status === "overdue")
+    return item.source === "internal" && item.status === "overdue" && item.actionable;
   // CEN-ANN-FIX-01 — "chưa xác nhận" của thông báo nội bộ gồm cả mục quá hạn,
   // đúng bằng nguồn logic của counter "Tôi chưa xác nhận".
   if (status === "unread" && item.source === "internal") return isTodo(item);
@@ -90,7 +101,7 @@ export function sortNewestFirst(items: InboxItem[]): InboxItem[] {
  */
 export function sortByPriority(items: InboxItem[]): InboxItem[] {
   const rank = (item: InboxItem) => {
-    if (item.source === "internal" && item.status === "overdue") return 0;
+    if (item.source === "internal" && item.status === "overdue" && item.actionable) return 0;
     if (isTodo(item)) return 1;
     return 2;
   };

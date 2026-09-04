@@ -210,8 +210,12 @@ export async function fetchRecipients(id: string): Promise<RecipientRow[]> {
 /** Nghĩa vụ quá hạn của chính mình — nguồn duy nhất để khóa thao tác ở UI. */
 export async function fetchMyOverdue(userId: string): Promise<InboxRow[]> {
   const rows = await fetchInbox();
+  // CEN-ANN-FIX-02 — thông báo đã thu hồi/lưu trữ không còn là nghĩa vụ quá hạn.
   return rows.filter(
-    (row) => row.user_id === userId && effectiveRecipientStatus(row) === "overdue",
+    (row) =>
+      row.user_id === userId &&
+      isAnnouncementActive(row.announcement) &&
+      effectiveRecipientStatus(row) === "overdue",
   );
 }
 
