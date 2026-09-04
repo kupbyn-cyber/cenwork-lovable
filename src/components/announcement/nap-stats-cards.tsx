@@ -108,6 +108,10 @@ function buildItems(
 
 export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   const stats = useQuery(napStatsQuery());
+  const { user } = useAuth();
+  // CEN-ANN-FIX-01 — counter thông báo phải cùng nguồn với danh sách của chính user.
+  const inbox = useQuery({ ...inboxQuery(user?.id), enabled: scope === "announcement" && Boolean(user?.id) });
+
 
   if (stats.isLoading || (!stats.data && !stats.isError)) {
     return (
