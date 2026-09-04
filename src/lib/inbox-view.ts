@@ -1,4 +1,8 @@
-import { effectiveRecipientStatus, type InboxRow } from "@/lib/announcement-data";
+import {
+  effectiveRecipientStatus,
+  isPendingAck,
+  type InboxRow,
+} from "@/lib/announcement-data";
 import type { NotificationRow } from "@/lib/notification-data";
 
 /**
