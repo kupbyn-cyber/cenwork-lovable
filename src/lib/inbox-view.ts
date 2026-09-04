@@ -26,6 +26,11 @@ export interface InboxItem {
   link: string | null;
   /** Hạn xử lý (chỉ thông báo nội bộ). */
   due_at: string | null;
+  /**
+   * CEN-ANN-FIX-02 — mục còn cần người dùng xử lý.
+   * Nội bộ dùng đúng predicate `isPendingAck` (loại thu hồi/lưu trữ) mà counter dùng.
+   */
+  actionable: boolean;
   original: InboxRow | NotificationRow;
 }
 
