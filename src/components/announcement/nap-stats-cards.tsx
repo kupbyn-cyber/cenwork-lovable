@@ -3,8 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  effectiveRecipientStatus,
+  inboxQuery,
+  pendingAckRows,
+} from "@/lib/announcement-data";
 import { napStatsQuery, type NapOperationStats } from "@/lib/nap-stats-data";
 import { cn } from "@/lib/utils";
+
 
 /**
  * NAP-06 — Thẻ thống kê vận hành (chỉ đếm số lượng, không có chỉ số hiệu suất
