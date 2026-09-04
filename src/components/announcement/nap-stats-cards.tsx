@@ -4,14 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  effectiveRecipientStatus,
-  inboxQuery,
-  pendingAckRows,
-} from "@/lib/announcement-data";
+import { effectiveRecipientStatus, inboxQuery, pendingAckRows } from "@/lib/announcement-data";
 import { napStatsQuery, type NapOperationStats } from "@/lib/nap-stats-data";
 import { cn } from "@/lib/utils";
-
 
 /**
  * NAP-06 — Thẻ thống kê vận hành (chỉ đếm số lượng, không có chỉ số hiệu suất
@@ -110,8 +105,10 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   const stats = useQuery(napStatsQuery());
   const { user } = useAuth();
   // CEN-ANN-FIX-01 — counter thông báo phải cùng nguồn với danh sách của chính user.
-  const inbox = useQuery({ ...inboxQuery(user?.id), enabled: scope === "announcement" && Boolean(user?.id) });
-
+  const inbox = useQuery({
+    ...inboxQuery(user?.id),
+    enabled: scope === "announcement" && Boolean(user?.id),
+  });
 
   if (stats.isLoading || (!stats.data && !stats.isError)) {
     return (
@@ -145,7 +142,6 @@ export function NapStatsCards({ scope, onSelect }: NapStatsCardsProps) {
   }
 
   const items = buildItems(scope, source, onSelect);
-
 
   return (
     <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
