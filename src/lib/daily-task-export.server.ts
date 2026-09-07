@@ -206,6 +206,7 @@ export async function collectDailyTaskRows(businessDate: string): Promise<DailyE
     const deadline = ms(task.deadline);
     const completed = ms(task.completed_at);
     const cancelled = ms(task.cancelled_at);
+    const startDate = ms(task.start_date);
     if (created === null || created >= endMs) continue;
 
     const completedBeforeEnd = completed !== null && completed < endMs;
@@ -213,8 +214,15 @@ export async function collectDailyTaskRows(businessDate: string): Promise<DailyE
     const createdOn = created >= startMs && created < endMs;
     const deadlineOn = deadline !== null && deadline >= startMs && deadline < endMs;
     const completedOn = completed !== null && completed >= startMs && completed < endMs;
+    // ACTIVE trong business_date khi task đã tồn tại, chưa hoàn thành/hủy trước đầu ngày,
+    // và chưa đến ngày bắt đầu (start_date null hoặc < cuối ngày nghiệp vụ theo giờ Hà Nội).
+    // Task có start_date >= cuối ngày nghiệp vụ không được coi là active — dù vẫn có thể
+    // được include nhờ một rule độc lập khác (CREATED/DEADLINE/COMPLETED/OVERDUE).
+    const startedOnBusinessDate = startDate === null || startDate < endMs;
     const active =
-      (completed === null || completed >= startMs) && (cancelled === null || cancelled >= startMs);
+      startedOnBusinessDate &&
+      (completed === null || completed >= startMs) &&
+      (cancelled === null || cancelled >= startMs);
     const overdue =
       deadline !== null && deadline < endMs && !completedBeforeEnd && !cancelledBeforeEnd;
     const daysOverdue = overdue && deadline !== null
