@@ -21,13 +21,16 @@ export const SETTING_LABEL: Record<string, string> = {
   session_idle_minutes: "Số phút không hoạt động trước khi cảnh báo phiên",
 };
 
+/** Cấu hình có UI riêng (TASK-DAILY-01B) — không hiển thị ở danh sách khoá/giá trị chung. */
+const SETTING_KEYS_WITH_OWN_UI = new Set(["daily_task_report"]);
+
 export async function fetchAppSettings(): Promise<AppSettingRow[]> {
   const { data, error } = await supabase
     .from("app_settings")
     .select("key,value,description,updated_at")
     .order("key");
   if (error) throw new Error(error.message);
-  return (data ?? []) as AppSettingRow[];
+  return ((data ?? []) as AppSettingRow[]).filter((row) => !SETTING_KEYS_WITH_OWN_UI.has(row.key));
 }
 
 export const appSettingsQuery = () =>

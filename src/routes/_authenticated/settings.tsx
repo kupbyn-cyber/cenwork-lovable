@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { cenToast } from "@/components/ui/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSettingsSection } from "@/components/settings/admin-settings-section";
+import { DailyReportSection } from "@/components/settings/daily-report-section";
 import { AvatarUploader } from "@/components/settings/avatar-uploader";
 import { DevicePushSection } from "@/components/settings/device-push-section";
 import { useOrgAccess } from "@/hooks/use-org-access";
@@ -256,7 +257,10 @@ function SettingsPage() {
         </TabsContent>
         {access.canManageSettings ? (
           <TabsContent value="system">
-            <AdminSettingsSection />
+            <div className="grid min-w-0 gap-5">
+              <AdminSettingsSection />
+              <DailyReportSection />
+            </div>
           </TabsContent>
         ) : null}
       </Tabs>
