@@ -106,3 +106,21 @@ Kết quả: `CEN_DAILY_TASKS_2026-09-06.xlsx` trong thư mục hiện tại.
 - `task_status` / `approval_status` phản ánh hiện tại, không phải cuối ngày nghiệp vụ.
 - Task xóa mềm (`deleted_at`) không xuất hiện, kể cả khi từng active trong ngày đó.
 - Package này không gửi email, không lập lịch, không phân tích AI.
+
+## TASK-DAILY-01B — Cấu hình & gửi email
+
+- Đường dẫn: `/settings` → tab **Hệ thống** → thẻ **Báo cáo công việc hằng ngày**.
+- Trường: `Tự động gửi báo cáo mỗi ngày` (bật/tắt), `Email nhận báo cáo`, `Giờ gửi` (HH:mm), `Múi giờ` (read-only `Asia/Ho_Chi_Minh`).
+- Lưu tại `public.app_settings` key `daily_task_report`:
+  `{"enabled": bool, "recipient_email": string|null, "send_time": "HH:mm"}`.
+  Khoá này bị ẩn khỏi danh sách cấu hình chung để tránh chỉnh sửa JSON thô.
+- Quyền: `settings.admin`, kiểm tra ở server bằng `requirePermission` (không chỉ ẩn UI).
+- Gửi email: SMTP qua `nodemailer`, chỉ chạy server-side. Biến môi trường:
+  `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`.
+  Thiếu cấu hình → UI báo "chưa cấu hình dịch vụ email", nút gửi thử bị khoá.
+- Gửi thử: dùng `business_date` = ngày hôm trước theo `Asia/Ho_Chi_Minh`, gọi lại
+  engine 01A (`generateDailyTaskReport`), đính kèm `CEN_DAILY_TASKS_YYYY-MM-DD.xlsx`,
+  tiêu đề `[CEN DAILY] Báo cáo công việc DD/MM/YYYY`. Ghi audit
+  `settings.daily_report_test_sent` (best-effort, không chặn kết quả gửi).
+- Không có scheduler trong package này: bật công tắc chỉ lưu ý định, việc chạy tự động
+  hằng ngày sẽ do package sau đảm nhiệm.
