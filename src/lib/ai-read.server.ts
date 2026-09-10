@@ -14,11 +14,13 @@ import {
   type EntityType,
   type ResolvedFilterMeta,
 } from "@/lib/ai-read-resolve.server";
+import { shiftConfirmationStateOf, type ShiftConfirmationState } from "@/lib/daily-report-shift";
 
 export const AI_READ_RESOURCES = [
   "tasks",
   "projects",
   "reports",
+  "daily_reports",
   "performance",
   "members",
 ] as const;
@@ -95,6 +97,14 @@ const REPORT_FIELDS =
 const MEMBER_FIELDS =
   "id,display_name,email,job_title,primary_team_id,status,locked_at,created_at,updated_at";
 
+/**
+ * CEN-N8N-R02A — Daily Report thật (bảng `daily_reports`, khác hoàn toàn bảng
+ * `reports` generic ở resource "reports" — không dùng chung, không đổi resource cũ).
+ */
+const DAILY_REPORT_FIELDS =
+  "id,report_date,author_id,team_id,status,results,blockers,next_plan,reviewer_id,review_note," +
+  "submitted_at,reviewed_at";
+
 const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
   tasks: {
     table: "tasks",
@@ -154,6 +164,20 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
       search: { kind: "text", column: "period_key", op: "ilike" },
     },
   },
+  daily_reports: {
+    table: "daily_reports",
+    fields: DAILY_REPORT_FIELDS,
+    sortable: ["report_date", "submitted_at", "reviewed_at", "status"],
+    defaultSort: { field: "report_date", ascending: false },
+    filters: {
+      status: { kind: "text", column: "status", op: "eq" },
+      author: { kind: "uuid", column: "author_id", op: "eq" },
+      member: { kind: "uuid", column: "author_id", op: "eq" },
+      team: { kind: "uuid", column: "team_id", op: "eq" },
+      from: { kind: "date", column: "report_date", op: "gte" },
+      to: { kind: "date", column: "report_date", op: "lte" },
+    },
+  },
   members: {
     table: "profiles",
     fields: MEMBER_FIELDS,
@@ -180,6 +204,7 @@ const ENTITY_FILTERS: Record<AiReadResource, Record<string, EntityType>> = {
   tasks: { team: "team", assignee: "member", member: "member", project: "project" },
   projects: { team: "team", leader: "member", owner: "member" },
   reports: { team: "team", author: "member", member: "member", project: "project" },
+  daily_reports: { team: "team", author: "member", member: "member" },
   performance: { team: "team", member: "member" },
   members: { team: "team" },
 };
@@ -429,6 +454,135 @@ async function readMembers(
   };
 }
 
+/**
+ * CEN-N8N-R02A — Trạng thái ca (WORKDAY-01) của đúng author_id + report_date,
+ * dùng lại nguyên predicate `shiftConfirmationStateOf` (không suy diễn lại
+ * Business Rule ca ở đây). RLS của `daily_work_records` tự giới hạn theo đúng
+ * phạm vi viewer, giống hệt phạm vi RLS của `daily_reports`.
+ */
+async function loadShiftStatusMap(
+  client: any,
+  rows: { author_id: string; report_date: string }[],
+): Promise<Map<string, ShiftConfirmationState>> {
+  const map = new Map<string, ShiftConfirmationState>();
+  if (rows.length === 0) return map;
+  const authorIds = [...new Set(rows.map((row) => row.author_id))];
+  const reportDates = [...new Set(rows.map((row) => row.report_date))];
+  const { data } = await client
+    .from("daily_work_records")
+    .select("user_id,work_date,day_status")
+    .in("user_id", authorIds)
+    .in("work_date", reportDates);
+  for (const rec of (data ?? []) as { user_id: string; work_date: string; day_status: string | null }[]) {
+    map.set(`${rec.user_id}|${rec.work_date}`, shiftConfirmationStateOf(rec.day_status));
+  }
+  return map;
+}
+
+function mapDailyReportRow(row: any, shiftMap: Map<string, ShiftConfirmationState>): Record<string, unknown> {
+  const author = row.author as { display_name: string } | null;
+  const team = row.team as { name: string } | null;
+  return {
+    id: row.id,
+    report_date: row.report_date,
+    author_id: row.author_id,
+    author_name: author?.display_name ?? null,
+    team_id: row.team_id,
+    team_name: team?.name ?? null,
+    status: row.status,
+    results: row.results,
+    blockers: row.blockers,
+    next_plan: row.next_plan,
+    reviewer_id: row.reviewer_id,
+    review_note: row.review_note,
+    submitted_at: row.submitted_at,
+    reviewed_at: row.reviewed_at,
+    shift_status: shiftMap.get(`${row.author_id}|${row.report_date}`) ?? "NOT_CONFIRMED",
+  };
+}
+
+/**
+ * CEN-N8N-R02A — Daily Report thật cho n8n (khác bảng `reports` ở resource "reports").
+ * Đọc thẳng `daily_reports` dưới đúng danh tính viewer (RLS `daily_reports_select_scoped`
+ * là ranh giới quyền); chỉ enrich thêm tên hiển thị + trạng thái ca, không đổi nội dung gốc.
+ */
+async function readDailyReports(
+  client: any,
+  filters: Record<string, unknown>,
+  resolvedIds: Record<string, string[]>,
+  resolvedMeta: Record<string, ResolvedFilterMeta>,
+  sortField: string,
+  ascending: boolean,
+  limit: number,
+  offset: number,
+): Promise<AiReadResult> {
+  let query = client.from("daily_reports").select(
+    "id,report_date,author_id,team_id,status,results,blockers,next_plan,reviewer_id,review_note," +
+      "submitted_at,reviewed_at," +
+      "author:profiles!daily_reports_author_id_fkey(display_name)," +
+      "team:teams(name)",
+    { count: "exact" },
+  );
+
+  try {
+    for (const [key, rawValue] of Object.entries(filters)) {
+      if (key === "author" || key === "member") {
+        const ids = resolvedIds[key] ?? [];
+        query = ids.length === 1 ? query.eq("author_id", ids[0]) : query.in("author_id", ids);
+        continue;
+      }
+      if (key === "team") {
+        const ids = resolvedIds["team"] ?? [];
+        query = ids.length === 1 ? query.eq("team_id", ids[0]) : query.in("team_id", ids);
+        continue;
+      }
+      if (key === "status") {
+        query = query.eq("status", coerce(rawValue, "text", key));
+        continue;
+      }
+      if (key === "from") {
+        // report_date là cột `date` thuần — so sánh trực tiếp yyyy-MM-dd, không quy đổi múi giờ.
+        query = query.gte("report_date", coerce(rawValue, "date", key));
+        continue;
+      }
+      if (key === "to") {
+        query = query.lte("report_date", coerce(rawValue, "date", key));
+        continue;
+      }
+    }
+  } catch (error) {
+    return badRequest("INVALID_FILTER", (error as Error).message, {
+      allowed_filters: Object.keys(RESOURCES.daily_reports.filters),
+    });
+  }
+
+  const { data, error, count } = await query
+    .order(sortField, { ascending, nullsFirst: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    return { status: 400, body: { error: { code: "QUERY_FAILED", message: error.message } } };
+  }
+
+  const rows = (data ?? []) as any[];
+  const shiftMap = await loadShiftStatusMap(client, rows);
+  const total = typeof count === "number" ? count : offset + rows.length;
+  return {
+    status: 200,
+    body: {
+      resource: "daily_reports",
+      data: rows.map((row) => mapDailyReportRow(row, shiftMap)),
+      meta: {
+        count: total,
+        limit,
+        offset,
+        has_more: offset + rows.length < total,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
+    },
+  };
+}
+
 export async function runAiRead(viewerId: string, request: AiReadRequest): Promise<AiReadResult> {
   const resource = request.resource as AiReadResource;
   if (!AI_READ_RESOURCES.includes(resource)) {
@@ -507,6 +661,19 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
 
   if (resource === "members") {
     return readMembers(
+      client,
+      filters,
+      resolvedIds,
+      resolvedMeta,
+      sortField,
+      ascending,
+      limit,
+      offset,
+    );
+  }
+
+  if (resource === "daily_reports") {
+    return readDailyReports(
       client,
       filters,
       resolvedIds,
