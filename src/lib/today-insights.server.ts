@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
+import { isDailyReportRequiredForShift } from "@/lib/daily-report-shift";
 import { isSystemAdminRole, type AppRoleKey } from "@/lib/permissions";
 import {
   TEAM_ATTENTION_LIMIT,
@@ -133,6 +134,8 @@ export async function buildTodayInsights(
   const dailyAuthorsToday = new Set<string>();
   // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày, không tính vào "chưa gửi".
   const dailyExempt = new Set<string>();
+  // CEN-REPORT-SHIFT-01: trạng thái ca hôm nay (WORKDAY-01) theo user — nguồn xác định "bắt buộc".
+  const shiftDayStatusToday = new Map<string, string | null>();
   const systemDraft: SystemFocus = {
     locked_accounts: 0,
     members_without_team: 0,
@@ -205,6 +208,19 @@ export async function buildTodayInsights(
         .limit(1000);
       check(error);
       for (const row of data ?? []) dailyExempt.add(row.user_id);
+    }),
+  );
+
+  // CEN-REPORT-SHIFT-01: yêu cầu báo cáo hôm nay theo trạng thái ca hiệu lực (WORKDAY-01).
+  wave.push(
+    source("daily_work_records", async () => {
+      const { data, error } = await supabase
+        .from("daily_work_records")
+        .select("user_id,day_status")
+        .eq("work_date", today)
+        .limit(1000);
+      check(error);
+      for (const row of data ?? []) shiftDayStatusToday.set(row.user_id, row.day_status);
     }),
   );
 
@@ -293,6 +309,10 @@ export async function buildTodayInsights(
 
   await Promise.all(wave);
 
+  // CEN-REPORT-SHIFT-01: predicate duy nhất — bắt buộc chỉ khi ca hôm nay là CONFIRMED_SHIFT.
+  const requiresDailyReportToday = (id: string) =>
+    isDailyReportRequiredForShift(shiftDayStatusToday.get(id) ?? null);
+
   // ---- Đợt 2: tổng hợp trên dữ liệu đã tải, không phát sinh truy vấn mới ----
   for (const task of tasks) {
     const overdue = task.status !== "done" && new Date(task.deadline).getTime() < now.getTime();
@@ -343,7 +363,10 @@ export async function buildTodayInsights(
         open_tasks: openTasks.length,
         overdue_tasks: overdue.length,
         missing_daily: members
-          .filter((id) => !dailyAuthorsToday.has(id) && !dailyExempt.has(id))
+          .filter(
+            (id) =>
+              !dailyAuthorsToday.has(id) && !dailyExempt.has(id) && requiresDailyReportToday(id),
+          )
           .slice(0, 8)
           .map((id) => ({ id, name: nameById.get(id) ?? "Không rõ" })),
         pending_reviews: teamTasks.filter((task) => task.status === "review").length,
@@ -365,7 +388,11 @@ export async function buildTodayInsights(
       const byRatio = ratio >= TEAM_ATTENTION_OVERDUE_RATIO && overdue.length > 0;
       if (!byCount && !byRatio) continue;
       const missing = [...teamOfUser.entries()].filter(
-        ([id, teamId]) => teamId === row.id && !dailyAuthorsToday.has(id) && !dailyExempt.has(id),
+        ([id, teamId]) =>
+          teamId === row.id &&
+          !dailyAuthorsToday.has(id) &&
+          !dailyExempt.has(id) &&
+          requiresDailyReportToday(id),
       ).length;
       attention.push({
         team_id: row.id,
@@ -385,7 +412,7 @@ export async function buildTodayInsights(
     );
 
     const activeMembers = [...teamOfUser.entries()].filter(
-      ([id, teamId]) => Boolean(teamId) && !dailyExempt.has(id),
+      ([id, teamId]) => Boolean(teamId) && !dailyExempt.has(id) && requiresDailyReportToday(id),
     ).length;
 
     marketing = {
@@ -442,8 +469,11 @@ export async function buildTodayInsights(
     const mine = dailyRangeRows.find(
       (row) => row.author_id === userId && row.report_date === today,
     );
+    const requiredToday = requiresDailyReportToday(userId);
     pendingReports =
-      !mine || mine.status === "draft" || mine.status === "changes_requested" ? 1 : 0;
+      requiredToday && (!mine || mine.status === "draft" || mine.status === "changes_requested")
+        ? 1
+        : 0;
   } else {
     pendingReports = pendingDaily + pendingWeekly;
   }

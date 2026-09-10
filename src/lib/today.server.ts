@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
+import { isDailyReportRequiredForShift } from "@/lib/daily-report-shift";
 import { isSystemAdminRole, PERMISSIONS, type AppRoleKey } from "@/lib/permissions";
 import {
   ACTION_REASON_WEIGHT,
@@ -339,7 +340,7 @@ export async function buildTodayHub(
   source("daily_reports", async (rows) => {
     // REPORT-FIX-01: Admin/CMO được miễn báo cáo ngày.
     const exemptAuthors = new Set<string>();
-    const [exempt, reportsResult] = await Promise.all([
+    const [exempt, reportsResult, myShift] = await Promise.all([
       supabase.from("user_roles").select("user_id,role").in("role", ["admin", "cmo"]).limit(1000),
       supabase
         .from("daily_reports")
@@ -347,12 +348,21 @@ export async function buildTodayHub(
         .or(`author_id.eq.${userId},status.eq.submitted`)
         .gte("report_date", thisWeek)
         .limit(300),
+      // CEN-REPORT-SHIFT-01: yêu cầu báo cáo hôm nay theo trạng thái ca hiệu lực (WORKDAY-01).
+      supabase
+        .from("daily_work_records")
+        .select("day_status")
+        .eq("user_id", userId)
+        .eq("work_date", today)
+        .maybeSingle(),
       permissionsReady,
     ]);
     for (const row of exempt.data ?? []) exemptAuthors.add(row.user_id);
     const { data, error } = reportsResult;
     check(error);
+    check(myShift.error);
     const list = data ?? [];
+    const myReportRequiredToday = isDailyReportRequiredForShift(myShift.data?.day_status);
 
     for (const report of list) {
       if (exemptAuthors.has(report.author_id)) continue;
@@ -391,7 +401,7 @@ export async function buildTodayHub(
       }
     }
 
-    if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY) && !privileged) {
+    if (can(PERMISSIONS.REPORTS_SUBMIT_DAILY) && !privileged && myReportRequiredToday) {
       const mineToday = list.find((row) => row.author_id === userId && row.report_date === today);
       const done =
         mineToday && (mineToday.status === "submitted" || mineToday.status === "approved");
