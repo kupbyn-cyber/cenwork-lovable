@@ -34,7 +34,7 @@ import {
   type TaskRecurrenceFreq,
 } from "@/lib/task-recurrence";
 import { getTaskNameWarning, TASK_NAME_HELPER, TASK_NAME_PLACEHOLDER } from "@/lib/task-name-hint";
-import { hanoiStartOfDayMs, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
+import { hanoiStartOfDayMs, hanoiToday, hanoiToUtcISO, utcToHanoiInputs } from "@/lib/datetime";
 import type { TeamRow } from "@/lib/org-data";
 import { hasPrefill, type TaskPrefill } from "@/lib/task-prefill";
 import {
@@ -92,7 +92,12 @@ export interface TaskFormDrawerProps {
   lockedProjectId?: string | null;
   /** Giá trị tự điền từ bộ lọc hiện tại của danh sách (chỉ áp dụng khi tạo mới). */
   prefill?: TaskPrefill | null;
-  onCreated?: (taskId: string) => void;
+  /**
+   * CEN-TASK-RECUR-FIX-01 — `meta.recurring` = tạo qua lịch lặp; `meta.hasTaskToday` =
+   * kỳ hôm nay đã thực sự sinh Task (false khi lịch lặp chưa tới kỳ, ví dụ lặp tuần/tháng
+   * chưa khớp hôm nay) hay khi tạo Task thường (không lặp, luôn true nếu tạo thành công).
+   */
+  onCreated?: (taskId: string, meta: { recurring: boolean; hasTaskToday: boolean }) => void;
 }
 
 interface FormState {
@@ -267,7 +272,9 @@ export function TaskFormDrawer({
       : undefined;
 
   const mutation = useMutation({
-    mutationFn: async (state: FormState) => {
+    mutationFn: async (
+      state: FormState,
+    ): Promise<{ id: string; recurring: boolean; hasTaskToday: boolean }> => {
       const payload = {
         name: state.name.trim(),
         description: state.description.trim() || null,
@@ -282,7 +289,7 @@ export function TaskFormDrawer({
       };
 
       if (memberFlow) {
-        return submitTaskForApproval({
+        const id = await submitTaskForApproval({
           projectId: payload.projectId!,
           name: payload.name,
           description: payload.description,
@@ -295,6 +302,7 @@ export function TaskFormDrawer({
           reviewerId: selectedReviewer!.userId,
           assigneeId: allowOthers ? payload.assigneeId : null,
         });
+        return { id, recurring: false, hasTaskToday: true };
       }
 
       if (isCreate) {
@@ -313,7 +321,11 @@ export function TaskFormDrawer({
             ...schedule,
             freq: repeat,
           });
-          return created.taskId ?? "";
+          // CEN-TASK-RECUR-FIX-01: task_recurrence_create có thể tạo lịch lặp thành công
+          // mà chưa sinh Task cho hôm nay (ví dụ lặp tuần/tháng chưa tới đúng kỳ). Phải
+          // phân biệt rõ hai trường hợp này, không được báo "Đã tạo công việc" khi thực
+          // tế chưa có Task nào — người dùng cần biết chính xác việc gì vừa xảy ra.
+          return { id: created.taskId ?? "", recurring: true, hasTaskToday: Boolean(created.taskId) };
         }
         const id = await createTask({
           ...payload,
@@ -324,7 +336,7 @@ export function TaskFormDrawer({
         if (state.participantIds.length > 0) {
           await syncTaskParticipants(id, [], state.participantIds);
         }
-        return id;
+        return { id, recurring: false, hasTaskToday: true };
       }
 
       await updateTask(
@@ -348,9 +360,9 @@ export function TaskFormDrawer({
       if (canScope) {
         await syncTaskParticipants(task.id, task.participantIds, state.participantIds);
       }
-      return task.id;
+      return { id: task.id, recurring: false, hasTaskToday: true };
     },
-    onSuccess: (taskId) => {
+    onSuccess: ({ id: taskId, recurring, hasTaskToday }) => {
       void queryClient.invalidateQueries({ queryKey: ["tasks"] });
       void queryClient.invalidateQueries({ queryKey: ["task-approvals"] });
       void queryClient.invalidateQueries({ queryKey: ["task", taskId] });
@@ -358,15 +370,22 @@ export function TaskFormDrawer({
       void queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       invalidateProjectTaskScope(queryClient, task?.project_id ?? null);
       invalidateProjectTaskScope(queryClient, form.projectId === NONE ? null : form.projectId);
-      cenToast.success(
-        memberFlow
-          ? "Đã gửi công việc tới Leader phê duyệt."
-          : isCreate
-            ? "Đã tạo công việc."
-            : "Đã cập nhật công việc.",
-      );
+      if (recurring && !hasTaskToday) {
+        // Nói đúng thực tế: lịch lặp đã lưu, nhưng hôm nay chưa tới kỳ nên chưa có Task nào.
+        cenToast.success(
+          "Đã lưu lịch lặp. Hôm nay chưa tới kỳ nên chưa có công việc nào được tạo — kỳ tiếp theo sẽ tự sinh đúng lịch.",
+        );
+      } else {
+        cenToast.success(
+          memberFlow
+            ? "Đã gửi công việc tới Leader phê duyệt."
+            : isCreate
+              ? "Đã tạo công việc."
+              : "Đã cập nhật công việc.",
+        );
+      }
       onOpenChange(false);
-      if (isCreate) onCreated?.(taskId);
+      if (isCreate) onCreated?.(taskId, { recurring, hasTaskToday });
     },
     onError: (error: Error) => setFormError(error.message),
   });
@@ -846,10 +865,13 @@ export function TaskFormDrawer({
                     setRepeat(next);
                     setRecurError(undefined);
                     if (next !== "none") {
+                      // CEN-TASK-RECUR-FIX-01: mặc định "hôm nay" theo giờ Hà Nội thay vì để
+                      // trống — input[type=date] của trình duyệt không biết múi giờ nghiệp vụ,
+                      // để trống dễ khiến người dùng chọn nhầm ngày khi máy không ở giờ Việt Nam.
                       setSchedule((prev) => ({
                         ...prev,
                         freq: next,
-                        startDate: prev.startDate || form.startDate || form.deadlineDate,
+                        startDate: prev.startDate || form.startDate || form.deadlineDate || hanoiToday(),
                         deadlineTime: prev.deadlineTime || form.deadlineTime || "17:00",
                       }));
                     }

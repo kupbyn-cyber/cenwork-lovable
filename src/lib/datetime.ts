@@ -56,6 +56,12 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
+/** Ngày `yyyy-MM-dd` hiện tại theo giờ Hà Nội — không phụ thuộc múi giờ máy người dùng. */
+export function hanoiToday(): string {
+  const p = zonedParts(new Date());
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+}
+
 /** `yyyy-MM-dd` + `HH:mm` giờ Hà Nội → ISO UTC để lưu database. */
 export function hanoiToUtcISO(dateStr: string, timeStr: string): string | null {
   if (!dateStr || !timeStr) return null;

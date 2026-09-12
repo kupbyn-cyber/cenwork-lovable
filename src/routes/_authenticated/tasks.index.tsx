@@ -730,6 +730,13 @@ function TasksPage() {
           teams={teams}
           people={people}
           prefill={createPrefill}
+          onCreated={(taskId, meta) => {
+            // CEN-TASK-RECUR-FIX-01: mở thẳng Task lặp vừa tạo hôm nay — không phụ thuộc
+            // Saved View/bộ lọc đang áp dụng trên danh sách, không đổi Saved View nào cả.
+            if (meta.recurring && meta.hasTaskToday) {
+              void navigate({ to: "/tasks/$taskId", params: { taskId } });
+            }
+          }}
         />
       ) : null}
 
