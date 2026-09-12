@@ -39,6 +39,7 @@ import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_au
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks.index'
 import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenticated/tasks.$taskId'
+import { Route as ApiAiActRouteImport } from './routes/api/ai/act'
 import { Route as ApiAiReadRouteImport } from './routes/api/ai/read'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files.$'
 import { Route as AuthenticatedReportsDailyReportIdRouteImport } from './routes/_authenticated/reports.daily.$reportId'
@@ -211,6 +212,11 @@ const AuthenticatedTasksTaskIdRoute =
     path: '/tasks/$taskId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiAiActRoute = ApiAiActRouteImport.update({
+  id: '/api/ai/act',
+  path: '/api/ai/act',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiReadRoute = ApiAiReadRouteImport.update({
   id: '/api/ai/read',
   path: '/api/ai/read',
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/ai/act': typeof ApiAiActRoute
   '/api/ai/read': typeof ApiAiReadRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
@@ -312,6 +319,7 @@ export interface FileRoutesByTo {
   '/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/ai/act': typeof ApiAiActRoute
   '/api/ai/read': typeof ApiAiReadRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/_authenticated/mvp/$cycleId': typeof AuthenticatedMvpCycleIdRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/tasks/$taskId': typeof AuthenticatedTasksTaskIdRoute
+  '/api/ai/act': typeof ApiAiActRoute
   '/api/ai/read': typeof ApiAiReadRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/api/ai/act'
     | '/api/ai/read'
     | '/api/files/$'
     | '/announcements/'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/mvp/$cycleId'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/api/ai/act'
     | '/api/ai/read'
     | '/api/files/$'
     | '/announcements'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mvp/$cycleId'
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/tasks/$taskId'
+    | '/api/ai/act'
     | '/api/ai/read'
     | '/api/files/$'
     | '/_authenticated/announcements/'
@@ -490,6 +502,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  ApiAiActRoute: typeof ApiAiActRoute
   ApiAiReadRoute: typeof ApiAiReadRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiPublicHooksCronRoute: typeof ApiPublicHooksCronRoute
@@ -708,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTasksTaskIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/ai/act': {
+      id: '/api/ai/act'
+      path: '/api/ai/act'
+      fullPath: '/api/ai/act'
+      preLoaderRoute: typeof ApiAiActRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/read': {
       id: '/api/ai/read'
       path: '/api/ai/read'
@@ -835,6 +855,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  ApiAiActRoute: ApiAiActRoute,
   ApiAiReadRoute: ApiAiReadRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiPublicHooksCronRoute: ApiPublicHooksCronRoute,

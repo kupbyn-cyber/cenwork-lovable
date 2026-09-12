@@ -80,3 +80,45 @@ Lỗi:
 - Import schema: `docs/cen-ai-read-openapi.yaml` (sửa `servers.url` thành domain production CEN).
 - Authentication: API Key → Bearer → dán `CEN_AI_READ_KEY`.
 - URL Action: `https://<domain-production-CEN>/api/ai/read`.
+
+## 6. Duyệt Báo cáo ngày từ n8n
+
+Endpoint ghi dùng chung `CEN_AI_READ_KEY` và danh tính `CEN_AI_VIEWER_USER_ID` với endpoint đọc:
+
+```
+POST https://<domain-production-CEN>/api/ai/act
+Authorization: Bearer $CEN_AI_READ_KEY
+Content-Type: application/json
+```
+
+Chỉ có action `daily_report_review`. `decision` chỉ nhận `approved` hoặc
+`changes_requested`; `note` bắt buộc có nội dung cho cả hai quyết định.
+
+```bash
+curl -s -X POST https://<domain>/api/ai/act \
+  -H "Authorization: Bearer $CEN_AI_READ_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"daily_report_review","report_id":"<report-uuid>",
+       "decision":"approved","note":"Đã kiểm tra kết quả và kế hoạch."}'
+```
+
+Response thành công:
+
+```json
+{
+  "action": "daily_report_review",
+  "data": {
+    "report_id": "…",
+    "status": "approved",
+    "review_note": "Đã kiểm tra kết quả và kế hoạch.",
+    "reviewer_id": "…",
+    "reviewed_at": "2026-08-14 09:30:00+00"
+  }
+}
+```
+
+Thao tác chạy dưới quyền của `CEN_AI_VIEWER_USER_ID`. RLS và trigger hiện có sẽ
+từ chối nếu user này không được duyệt báo cáo hoặc báo cáo không còn ở trạng thái
+`submitted`; client nhận JSON chứa `code` và `message` tương ứng. Mỗi lần gọi được
+ghi vào `audit_logs` với action `ai.act`, nhưng nội dung `note` không được đưa vào
+metadata audit.
