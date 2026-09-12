@@ -31,8 +31,8 @@ curl -s -X POST https://<domain>/api/ai/read \
 # Dự án đang hoạt động
 curl ... -d '{"resource":"projects","filters":{"status":"in_progress"}}'
 
-# Báo cáo trong tuần
-curl ... -d '{"resource":"reports","filters":{"report_type":"daily","from":"2026-08-10","to":"2026-08-14"}}'
+# Báo cáo ngày đang chờ duyệt
+curl ... -d '{"resource":"daily_reports","filters":{"status":"submitted"},"sort":{"field":"report_date","direction":"desc"},"limit":10}'
 
 # Hiệu suất theo Team và thời gian
 curl ... -d '{"resource":"performance","filters":{"from":"2026-08-01","to":"2026-08-14","team":"<team-uuid>"}}'
