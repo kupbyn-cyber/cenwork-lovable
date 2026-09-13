@@ -34,6 +34,12 @@ curl ... -d '{"resource":"projects","filters":{"status":"in_progress"}}'
 # Báo cáo ngày đang chờ duyệt
 curl ... -d '{"resource":"daily_reports","filters":{"status":"submitted"},"sort":{"field":"report_date","direction":"desc"},"limit":10}'
 
+# Thông báo đã phát hành mới nhất
+curl ... -d '{"resource":"announcements","filters":{"status":"published"},"sort":{"field":"published_at","direction":"desc"},"limit":5}'
+
+# Yêu cầu phê duyệt đang chờ, việc gấp lên trước
+curl ... -d '{"resource":"approvals","filters":{"status":"pending"},"sort":{"field":"due_at","direction":"asc"},"limit":10}'
+
 # Hiệu suất theo Team và thời gian
 curl ... -d '{"resource":"performance","filters":{"from":"2026-08-01","to":"2026-08-14","team":"<team-uuid>"}}'
 

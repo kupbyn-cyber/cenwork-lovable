@@ -87,11 +87,13 @@ components:
             - projects
             - reports
             - daily_reports
+            - announcements
+            - approvals
             - performance
             - members
           description: >-
             Nhóm dữ liệu cần đọc.
-            Chỉ sử dụng một trong 5 resource được liệt kê.
+            Chỉ sử dụng một trong 8 resource được liệt kê.
 
         filters:
           type: object

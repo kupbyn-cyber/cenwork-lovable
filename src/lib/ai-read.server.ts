@@ -21,6 +21,8 @@ export const AI_READ_RESOURCES = [
   "projects",
   "reports",
   "daily_reports",
+  "announcements",
+  "approvals",
   "performance",
   "members",
 ] as const;
@@ -105,6 +107,13 @@ const DAILY_REPORT_FIELDS =
   "id,report_date,author_id,team_id,status,results,blockers,next_plan,reviewer_id,review_note," +
   "submitted_at,reviewed_at";
 
+const ANNOUNCEMENT_FIELDS =
+  "id,title,body,status,due_at,published_at,created_by,created_at,updated_at";
+
+const APPROVAL_FIELDS =
+  "id,title,content,sender_id,approval_mode,status,due_at,current_version,approved_at," +
+  "rejected_at,withdrawn_at,created_at,updated_at";
+
 const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
   tasks: {
     table: "tasks",
@@ -178,6 +187,31 @@ const RESOURCES: Record<Exclude<AiReadResource, "performance">, ResourceDef> = {
       to: { kind: "date", column: "report_date", op: "lte" },
     },
   },
+  announcements: {
+    table: "announcements",
+    fields: ANNOUNCEMENT_FIELDS,
+    sortable: ["published_at", "due_at", "created_at", "updated_at"],
+    defaultSort: { field: "published_at", ascending: false },
+    filters: {
+      status: { kind: "text", column: "status", op: "eq" },
+      creator: { kind: "uuid", column: "created_by", op: "eq" },
+      from: { kind: "date", column: "published_at", op: "gte" },
+      to: { kind: "date", column: "published_at", op: "lte" },
+    },
+  },
+  approvals: {
+    table: "approval_requests",
+    fields: APPROVAL_FIELDS,
+    sortable: ["due_at", "created_at", "updated_at", "status"],
+    defaultSort: { field: "due_at", ascending: true },
+    filters: {
+      status: { kind: "text", column: "status", op: "eq" },
+      sender: { kind: "uuid", column: "sender_id", op: "eq" },
+      mode: { kind: "text", column: "approval_mode", op: "eq" },
+      from: { kind: "date", column: "due_at", op: "gte" },
+      to: { kind: "date", column: "due_at", op: "lte" },
+    },
+  },
   members: {
     table: "profiles",
     fields: MEMBER_FIELDS,
@@ -205,6 +239,8 @@ const ENTITY_FILTERS: Record<AiReadResource, Record<string, EntityType>> = {
   projects: { team: "team", leader: "member", owner: "member" },
   reports: { team: "team", author: "member", member: "member", project: "project" },
   daily_reports: { team: "team", author: "member", member: "member" },
+  announcements: { creator: "member" },
+  approvals: { sender: "member" },
   performance: { team: "team", member: "member" },
   members: { team: "team" },
 };
@@ -473,13 +509,20 @@ async function loadShiftStatusMap(
     .select("user_id,work_date,day_status")
     .in("user_id", authorIds)
     .in("work_date", reportDates);
-  for (const rec of (data ?? []) as { user_id: string; work_date: string; day_status: string | null }[]) {
+  for (const rec of (data ?? []) as {
+    user_id: string;
+    work_date: string;
+    day_status: string | null;
+  }[]) {
     map.set(`${rec.user_id}|${rec.work_date}`, shiftConfirmationStateOf(rec.day_status));
   }
   return map;
 }
 
-function mapDailyReportRow(row: any, shiftMap: Map<string, ShiftConfirmationState>): Record<string, unknown> {
+function mapDailyReportRow(
+  row: any,
+  shiftMap: Map<string, ShiftConfirmationState>,
+): Record<string, unknown> {
   const author = row.author as { display_name: string } | null;
   const team = row.team as { name: string } | null;
   return {
@@ -516,13 +559,15 @@ async function readDailyReports(
   limit: number,
   offset: number,
 ): Promise<AiReadResult> {
-  let query = client.from("daily_reports").select(
-    "id,report_date,author_id,team_id,status,results,blockers,next_plan,reviewer_id,review_note," +
-      "submitted_at,reviewed_at," +
-      "author:profiles!daily_reports_author_id_fkey(display_name)," +
-      "team:teams(name)",
-    { count: "exact" },
-  );
+  let query = client
+    .from("daily_reports")
+    .select(
+      "id,report_date,author_id,team_id,status,results,blockers,next_plan,reviewer_id,review_note," +
+        "submitted_at,reviewed_at," +
+        "author:profiles!daily_reports_author_id_fkey(display_name)," +
+        "team:teams(name)",
+      { count: "exact" },
+    );
 
   try {
     for (const [key, rawValue] of Object.entries(filters)) {
@@ -572,6 +617,247 @@ async function readDailyReports(
     body: {
       resource: "daily_reports",
       data: rows.map((row) => mapDailyReportRow(row, shiftMap)),
+      meta: {
+        count: total,
+        limit,
+        offset,
+        has_more: offset + rows.length < total,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
+    },
+  };
+}
+
+/**
+ * Thông báo nhìn thấy theo RLS của viewer; trạng thái cá nhân chỉ lấy đúng dòng
+ * recipient của viewer hiện tại, kể cả khi viewer có quyền xem recipient khác.
+ */
+async function readAnnouncements(
+  client: any,
+  viewerId: string,
+  filters: Record<string, unknown>,
+  resolvedIds: Record<string, string[]>,
+  resolvedMeta: Record<string, ResolvedFilterMeta>,
+  sortField: string,
+  ascending: boolean,
+  limit: number,
+  offset: number,
+): Promise<AiReadResult> {
+  let query = client
+    .from("announcements")
+    .select(`${ANNOUNCEMENT_FIELDS},creator:profiles!announcements_created_by_fkey(display_name)`, {
+      count: "exact",
+    })
+    .is("deleted_at", null);
+
+  try {
+    for (const [key, rawValue] of Object.entries(filters)) {
+      if (key === "creator") {
+        const ids = resolvedIds[key] ?? [];
+        query = ids.length === 1 ? query.eq("created_by", ids[0]) : query.in("created_by", ids);
+        continue;
+      }
+      if (key === "status") {
+        query = query.eq("status", coerce(rawValue, "text", key));
+        continue;
+      }
+      if (key === "from") {
+        query = query.gte(
+          "published_at",
+          dayBound(coerce(rawValue, "date", key) as string, "start"),
+        );
+        continue;
+      }
+      if (key === "to") {
+        query = query.lte("published_at", dayBound(coerce(rawValue, "date", key) as string, "end"));
+      }
+    }
+  } catch (error) {
+    return badRequest("INVALID_FILTER", (error as Error).message, {
+      allowed_filters: Object.keys(RESOURCES.announcements.filters),
+    });
+  }
+
+  const { data, error, count } = await query
+    .order(sortField, { ascending, nullsFirst: false })
+    .range(offset, offset + limit - 1);
+  if (error) {
+    return { status: 400, body: { error: { code: "QUERY_FAILED", message: error.message } } };
+  }
+
+  const rows = (data ?? []) as any[];
+  const recipientByAnnouncement = new Map<
+    string,
+    { status: string; due_at: string; acknowledged_at: string | null }
+  >();
+  if (rows.length > 0) {
+    const { data: recipients, error: recipientError } = await client
+      .from("announcement_recipients")
+      .select("announcement_id,status,due_at,acknowledged_at")
+      .eq("user_id", viewerId)
+      .in(
+        "announcement_id",
+        rows.map((row) => row.id),
+      );
+    if (recipientError) {
+      return {
+        status: 400,
+        body: { error: { code: "QUERY_FAILED", message: recipientError.message } },
+      };
+    }
+    for (const recipient of recipients ?? []) {
+      recipientByAnnouncement.set(recipient.announcement_id, recipient);
+    }
+  }
+
+  const total = typeof count === "number" ? count : offset + rows.length;
+  return {
+    status: 200,
+    body: {
+      resource: "announcements",
+      data: rows.map((row) => {
+        const recipient = recipientByAnnouncement.get(row.id);
+        const creator = row.creator as { display_name: string } | null;
+        return {
+          id: row.id,
+          title: row.title,
+          body: row.body,
+          status: row.status,
+          due_at: row.due_at,
+          published_at: row.published_at,
+          created_by: row.created_by,
+          creator_name: creator?.display_name ?? null,
+          my_status: recipient?.status ?? null,
+          my_due_at: recipient?.due_at ?? null,
+          my_acknowledged_at: recipient?.acknowledged_at ?? null,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        };
+      }),
+      meta: {
+        count: total,
+        limit,
+        offset,
+        has_more: offset + rows.length < total,
+        ...(Object.keys(resolvedMeta).length > 0 ? { resolved_filters: resolvedMeta } : {}),
+      },
+    },
+  };
+}
+
+/**
+ * Yêu cầu phê duyệt nhìn thấy theo RLS của viewer; quyết định cá nhân chỉ lấy
+ * đúng approver_id của viewer và khớp current_version của từng yêu cầu.
+ */
+async function readApprovals(
+  client: any,
+  viewerId: string,
+  filters: Record<string, unknown>,
+  resolvedIds: Record<string, string[]>,
+  resolvedMeta: Record<string, ResolvedFilterMeta>,
+  sortField: string,
+  ascending: boolean,
+  limit: number,
+  offset: number,
+): Promise<AiReadResult> {
+  let query = client
+    .from("approval_requests")
+    .select(`${APPROVAL_FIELDS},sender:profiles!approval_requests_sender_id_fkey(display_name)`, {
+      count: "exact",
+    })
+    .is("archived_at", null);
+
+  try {
+    for (const [key, rawValue] of Object.entries(filters)) {
+      if (key === "sender") {
+        const ids = resolvedIds[key] ?? [];
+        query = ids.length === 1 ? query.eq("sender_id", ids[0]) : query.in("sender_id", ids);
+        continue;
+      }
+      if (key === "status") {
+        query = query.eq("status", coerce(rawValue, "text", key));
+        continue;
+      }
+      if (key === "mode") {
+        query = query.eq("approval_mode", coerce(rawValue, "text", key));
+        continue;
+      }
+      if (key === "from") {
+        query = query.gte("due_at", dayBound(coerce(rawValue, "date", key) as string, "start"));
+        continue;
+      }
+      if (key === "to") {
+        query = query.lte("due_at", dayBound(coerce(rawValue, "date", key) as string, "end"));
+      }
+    }
+  } catch (error) {
+    return badRequest("INVALID_FILTER", (error as Error).message, {
+      allowed_filters: Object.keys(RESOURCES.approvals.filters),
+    });
+  }
+
+  const { data, error, count } = await query
+    .order(sortField, { ascending, nullsFirst: false })
+    .range(offset, offset + limit - 1);
+  if (error) {
+    return { status: 400, body: { error: { code: "QUERY_FAILED", message: error.message } } };
+  }
+
+  const rows = (data ?? []) as any[];
+  const decisionByRequestVersion = new Map<
+    string,
+    { decision_status: string; decision_at: string | null }
+  >();
+  if (rows.length > 0) {
+    const { data: decisions, error: decisionError } = await client
+      .from("approval_decisions")
+      .select("approval_request_id,version_no,decision_status,decision_at")
+      .eq("approver_id", viewerId)
+      .in(
+        "approval_request_id",
+        rows.map((row) => row.id),
+      );
+    if (decisionError) {
+      return {
+        status: 400,
+        body: { error: { code: "QUERY_FAILED", message: decisionError.message } },
+      };
+    }
+    for (const decision of decisions ?? []) {
+      decisionByRequestVersion.set(
+        `${decision.approval_request_id}|${decision.version_no}`,
+        decision,
+      );
+    }
+  }
+
+  const total = typeof count === "number" ? count : offset + rows.length;
+  return {
+    status: 200,
+    body: {
+      resource: "approvals",
+      data: rows.map((row) => {
+        const decision = decisionByRequestVersion.get(`${row.id}|${row.current_version}`);
+        const sender = row.sender as { display_name: string } | null;
+        return {
+          id: row.id,
+          title: row.title,
+          content: row.content,
+          sender_id: row.sender_id,
+          sender_name: sender?.display_name ?? null,
+          approval_mode: row.approval_mode,
+          status: row.status,
+          due_at: row.due_at,
+          current_version: row.current_version,
+          my_decision_status: decision?.decision_status ?? null,
+          my_decision_at: decision?.decision_at ?? null,
+          approved_at: row.approved_at,
+          rejected_at: row.rejected_at,
+          withdrawn_at: row.withdrawn_at,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        };
+      }),
       meta: {
         count: total,
         limit,
@@ -675,6 +961,34 @@ export async function runAiRead(viewerId: string, request: AiReadRequest): Promi
   if (resource === "daily_reports") {
     return readDailyReports(
       client,
+      filters,
+      resolvedIds,
+      resolvedMeta,
+      sortField,
+      ascending,
+      limit,
+      offset,
+    );
+  }
+
+  if (resource === "announcements") {
+    return readAnnouncements(
+      client,
+      viewerId,
+      filters,
+      resolvedIds,
+      resolvedMeta,
+      sortField,
+      ascending,
+      limit,
+      offset,
+    );
+  }
+
+  if (resource === "approvals") {
+    return readApprovals(
+      client,
+      viewerId,
       filters,
       resolvedIds,
       resolvedMeta,
